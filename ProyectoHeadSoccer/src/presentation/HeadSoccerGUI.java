@@ -12,7 +12,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Ventana GUI principal del juego POOBSoccer.
+ * Main GUI window and application entry point for the POOBSoccer game.
+ * 
+ * @author Juan Esppitia
+ * @author Cristian Salamanca
  */
 public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener {
     private HeadSoccer game;
@@ -21,7 +24,7 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
     private Set<Integer> activeKeys;
 
     /**
-     * Construye la ventana principal e inicializa el bucle de juego.
+     * Constructs the main application window and starts the game loop timer.
      */
     public HeadSoccerGUI() {
         super("POOBSoccer 2026-2 - Head Soccer Arcade");
@@ -34,7 +37,7 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         this.add(photo, BorderLayout.CENTER);
         this.pack();
         this.setLocationRelativeTo(null);
-        this.setResizable(false);
+        this.setResizable(true);
 
         this.addKeyListener(this);
         this.setFocusable(true);
@@ -44,7 +47,9 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
     }
 
     /**
-     * Ejecuta una iteracion del bucle de juego y redibuja la vista.
+     * Executes one game loop tick, processing continuous inputs and repainting the view.
+     * 
+     * @param e Action event triggered by timer
      */
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -54,30 +59,38 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
     }
 
     /*
-     * Procesa las teclas de movimiento continuo mantenidas presionadas.
+     * Dispatches active keyboard keys to player controllers polymorphically.
      */
     private void processContinuousKeys() {
         if (game.getState() != GameStatus.PLAYING && game.getState() != GameStatus.GOLDEN_GOAL) return;
 
-        if (activeKeys.contains(KeyEvent.VK_A)) {
-            game.getPlayer1().moveLeft();
-        }
-        if (activeKeys.contains(KeyEvent.VK_D)) {
-            game.getPlayer1().moveRight();
+        Set<PlayerAction> p1Actions = new HashSet<>();
+        if (activeKeys.contains(KeyEvent.VK_A)) p1Actions.add(PlayerAction.LEFT);
+        if (activeKeys.contains(KeyEvent.VK_D)) p1Actions.add(PlayerAction.RIGHT);
+        if (activeKeys.contains(KeyEvent.VK_W)) p1Actions.add(PlayerAction.JUMP);
+        if (activeKeys.contains(KeyEvent.VK_S)) p1Actions.add(PlayerAction.KICK);
+        if (activeKeys.contains(KeyEvent.VK_Q)) p1Actions.add(PlayerAction.POWER);
+
+        if (game.getController1() != null) {
+            game.getController1().receive(p1Actions);
         }
 
-        if (game.getController2() instanceof HumanController) {
-            if (activeKeys.contains(KeyEvent.VK_LEFT)) {
-                game.getPlayer2().moveLeft();
-            }
-            if (activeKeys.contains(KeyEvent.VK_RIGHT)) {
-                game.getPlayer2().moveRight();
-            }
+        Set<PlayerAction> p2Actions = new HashSet<>();
+        if (activeKeys.contains(KeyEvent.VK_LEFT)) p2Actions.add(PlayerAction.LEFT);
+        if (activeKeys.contains(KeyEvent.VK_RIGHT)) p2Actions.add(PlayerAction.RIGHT);
+        if (activeKeys.contains(KeyEvent.VK_UP)) p2Actions.add(PlayerAction.JUMP);
+        if (activeKeys.contains(KeyEvent.VK_DOWN)) p2Actions.add(PlayerAction.KICK);
+        if (activeKeys.contains(KeyEvent.VK_CONTROL)) p2Actions.add(PlayerAction.POWER);
+
+        if (game.getController2() != null) {
+            game.getController2().receive(p2Actions);
         }
     }
 
     /**
-     * Captura las teclas presionadas para ejecutar acciones de juego o control.
+     * Records pressed keys and triggers global shortcuts such as pause and reset.
+     * 
+     * @param e Key event
      */
     @Override
     public void keyPressed(KeyEvent e) {
@@ -89,55 +102,32 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         } else if (code == KeyEvent.VK_R) {
             game.reset();
         }
-
-        if (game.getState() == GameStatus.PLAYING || game.getState() == GameStatus.GOLDEN_GOAL) {
-            if (code == KeyEvent.VK_W) {
-                game.getPlayer1().jump();
-            } else if (code == KeyEvent.VK_S) {
-                game.getPlayer1().kick();
-            } else if (code == KeyEvent.VK_Q) {
-                game.getPlayer1().usePower(game.getBall(), game.getPlayer2());
-            }
-
-            if (game.getController2() instanceof HumanController) {
-                if (code == KeyEvent.VK_UP) {
-                    game.getPlayer2().jump();
-                } else if (code == KeyEvent.VK_DOWN) {
-                    game.getPlayer2().kick();
-                } else if (code == KeyEvent.VK_CONTROL) {
-                    game.getPlayer2().usePower(game.getBall(), game.getPlayer1());
-                }
-            }
-        }
     }
 
     /**
-     * Procesa la liberacion de teclas para detener acciones.
+     * Removes released keys from active tracking.
+     * 
+     * @param e Key event
      */
     @Override
     public void keyReleased(KeyEvent e) {
         int code = e.getKeyCode();
         activeKeys.remove(code);
-
-        if (code == KeyEvent.VK_S) {
-            if (game.getPlayer1() != null) game.getPlayer1().stopKick();
-        }
-        if (code == KeyEvent.VK_DOWN) {
-            if (game.getPlayer2() != null && game.getController2() instanceof HumanController) {
-                game.getPlayer2().stopKick();
-            }
-        }
     }
 
     /**
-     * Maneja eventos de caracteres tipados.
+     * Handles typed key events.
+     * 
+     * @param e Key event
      */
     @Override
     public void keyTyped(KeyEvent e) {
     }
 
     /**
-     * Punto de entrada principal para iniciar la interfaz grafica.
+     * Main application entry point launching the Swing graphical interface.
+     * 
+     * @param args Command line arguments
      */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {

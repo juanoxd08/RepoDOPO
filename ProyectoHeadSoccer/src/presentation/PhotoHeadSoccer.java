@@ -5,14 +5,19 @@ import javax.swing.JPanel;
 import java.awt.*;
 
 /**
- * Lienzo grafico que renderiza el juego HeadSoccer segun las clases del dominio.
+ * Graphical canvas panel rendering the HeadSoccer pitch, players, ball, and HUD elements.
+ * 
+ * @author Juan Esppitia
+ * @author Cristian Salamanca
  */
 public class PhotoHeadSoccer extends JPanel {
     private HeadSoccer game;
-    private static final double SCALE = 2.6;
+    private static final double SCALE = 4.8;
 
     /**
-     * Construye el panel visual configurando dimensiones escaladas y color de fondo.
+     * Constructs the visual panel configuring scaled dimensions and background color.
+     * 
+     * @param game HeadSoccer game facade instance
      */
     public PhotoHeadSoccer(HeadSoccer game) {
         this.game = game;
@@ -23,7 +28,9 @@ public class PhotoHeadSoccer extends JPanel {
     }
 
     /**
-     * Pinta todos los componentes visuales del partido.
+     * Renders all visual match components using anti-aliased graphics.
+     * 
+     * @param g Graphics painting context
      */
     @Override
     public void paintComponent(Graphics g) {
@@ -31,8 +38,12 @@ public class PhotoHeadSoccer extends JPanel {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+        double scaleX = (double) getWidth() / Field.WIDTH;
+        double scaleY = (double) getHeight() / Field.HEIGHT;
+        double currentScale = Math.min(scaleX, scaleY);
+
         Graphics2D gField = (Graphics2D) g2d.create();
-        gField.scale(SCALE, SCALE);
+        gField.scale(currentScale, currentScale);
 
         drawField(gField);
 
@@ -45,14 +56,16 @@ public class PhotoHeadSoccer extends JPanel {
         drawScoreboard(g2d);
 
         if (game.getState() == GameStatus.PAUSED) {
-            drawOverlay(g2d, "PAUSA", "Presiona 'P' para continuar", new Color(0, 0, 0, 160));
+            drawOverlay(g2d, "PAUSE", "Press 'P' to continue", new Color(0, 0, 0, 160));
         } else if (!game.getMessage().isEmpty() && game.getState() != GameStatus.PLAYING) {
-            drawOverlay(g2d, game.getMessage(), "Presiona 'R' para reiniciar", new Color(20, 100, 20, 180));
+            drawOverlay(g2d, game.getMessage(), "Press 'R' to restart", new Color(20, 100, 20, 180));
         }
     }
 
     /**
-     * Dibuja el campo de juego y las porterias.
+     * Draws the pitch field, markings, and goal structures.
+     * 
+     * @param g Graphics context
      */
     public void drawField(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
@@ -88,7 +101,7 @@ public class PhotoHeadSoccer extends JPanel {
     }
 
     /*
-     * Dibuja una porteria incluyendo su red y poste travesaño.
+     * Draws a goal structure including net meshes and crossbar rectangle.
      */
     private void drawGoal(Graphics2D g2d, Goal goal) {
         if (goal == null) return;
@@ -120,22 +133,16 @@ public class PhotoHeadSoccer extends JPanel {
     }
 
     /**
-     * Dibuja al jugador con su cabeza, cuerpo, pie y accesorios segun pais.
+     * Draws a player including head, body, foot, stun indicator, and power bar.
+     * 
+     * @param g Graphics context
+     * @param p Player instance to render
      */
     public void drawPlayer(Graphics g, Player p) {
         if (p == null || p.getHead() == null) return;
         Graphics2D g2d = (Graphics2D) g;
 
         Color countryColor = getColorByCountry(p.getCountry());
-
-        if (p.getHead().isStunned()) {
-            g2d.setColor(new Color(173, 216, 230, 190));
-            Circle hc = p.getHead().getCircle();
-            g2d.fillRoundRect((int) hc.getX() - 20, (int) hc.getY() - 20, 40, 50, 10, 10);
-            g2d.setColor(Color.CYAN);
-            g2d.setFont(new Font("Arial", Font.BOLD, 6));
-            g2d.drawString("*STUN*", (int) hc.getX() - 10, (int) hc.getY() - 22);
-        }
 
         if (p.getBody() != null && p.getBody().getRectangle() != null) {
             domain.Rectangle br = p.getBody().getRectangle();
@@ -177,19 +184,31 @@ public class PhotoHeadSoccer extends JPanel {
             g2d.drawOval(fx - fr, fy - fr, fr * 2, fr * 2);
         }
 
+        if (p.getHead().isStunned()) {
+            g2d.setColor(new Color(150, 220, 255, 170));
+            g2d.fillRoundRect(hx - 22, hy - 22, 44, 58, 12, 12);
+            g2d.setColor(new Color(0, 200, 255));
+            g2d.setStroke(new BasicStroke(1.5f));
+            g2d.drawRoundRect(hx - 22, hy - 22, 44, 58, 12, 12);
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 7));
+            g2d.drawString("*FROZEN*", hx - 18, hy - 24);
+        }
+
         if (p.getPower() != null) {
             int barW = 24;
             int barH = 3;
             g2d.setColor(Color.BLACK);
             g2d.fillRect(hx - barW / 2 - 1, hy - hr - 7, barW + 2, barH + 2);
             g2d.setColor(p.getPower().isReady() ? Color.YELLOW : Color.ORANGE);
-            int fill = (int) (barW * (p.getPower().getCharge() / 100.0));
+            int percent = Math.max(0, Math.min(100, p.getPower().getCharge()));
+            int fill = (int) (barW * (percent / 100.0));
             g2d.fillRect(hx - barW / 2, hy - hr - 6, fill, barH);
         }
     }
 
     /*
-     * Obtiene el color representativo de acuerdo al pais del jugador.
+     * Resolves representative kit colors according to player nationality.
      */
     private Color getColorByCountry(Country c) {
         if (c == null) return Color.RED;
@@ -205,7 +224,9 @@ public class PhotoHeadSoccer extends JPanel {
     }
 
     /**
-     * Dibuja el balon de futbol.
+     * Draws the soccer ball with aura effects when special power shot is active.
+     * 
+     * @param g Graphics context
      */
     public void drawBall(Graphics g) {
         Ball ball = game.getBall();
@@ -217,17 +238,29 @@ public class PhotoHeadSoccer extends JPanel {
         int by = (int) bc.getY();
         int r = (int) bc.getRadius();
 
-        g2d.setColor(Color.WHITE);
+        boolean isPowerShot = (game.getPlayer1() != null && game.getPlayer1().getPower() != null && game.getPlayer1().getPower().isActive()) ||
+                              (game.getPlayer2() != null && game.getPlayer2().getPower() != null && game.getPlayer2().getPower().isActive());
+
+        if (isPowerShot) {
+            g2d.setColor(new Color(0, 220, 255, 120));
+            g2d.fillOval(bx - r - 6, by - r - 6, (r + 6) * 2, (r + 6) * 2);
+            g2d.setColor(new Color(100, 240, 255, 200));
+            g2d.fillOval(bx - r - 3, by - r - 3, (r + 3) * 2, (r + 3) * 2);
+        }
+
+        g2d.setColor(isPowerShot ? new Color(200, 245, 255) : Color.WHITE);
         g2d.fillOval(bx - r, by - r, r * 2, r * 2);
-        g2d.setColor(Color.BLACK);
-        g2d.setStroke(new BasicStroke(1.2f));
+        g2d.setColor(isPowerShot ? new Color(0, 150, 220) : Color.BLACK);
+        g2d.setStroke(new BasicStroke(isPowerShot ? 1.8f : 1.2f));
         g2d.drawOval(bx - r, by - r, r * 2, r * 2);
         g2d.drawLine(bx - r + 2, by, bx + r - 2, by);
         g2d.drawLine(bx, by - r + 2, bx, by + r - 2);
     }
 
     /**
-     * Dibuja el marcador y el temporizador en la parte superior.
+     * Draws the upper scoreboard panel displaying player scores and remaining match time.
+     * 
+     * @param g Graphics context
      */
     public void drawScoreboard(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
@@ -263,7 +296,7 @@ public class PhotoHeadSoccer extends JPanel {
     }
 
     /*
-     * Dibuja un mensaje superpuesto sobre la pantalla con fondo translucido.
+     * Draws a semi-transparent overlay screen with header and subtitle text.
      */
     private void drawOverlay(Graphics2D g2d, String title, String subtitle, Color bg) {
         int w = getWidth();
