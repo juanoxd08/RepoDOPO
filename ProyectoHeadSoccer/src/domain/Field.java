@@ -8,6 +8,11 @@ public class Field {
 	public static final int WIDTH = 350;
 	public static final int HEIGHT = 200;
 
+	public Field() {
+		leftGoal = new Goal(Side.LEFT);
+		rightGoal = new Goal(Side.RIGHT);
+	}
+
 	public Goal getLeftGoal() {
 		return leftGoal;
 	}
@@ -22,5 +27,9 @@ public class Field {
 
 	public void setRightGoal(Goal rightGoal) {
 		this.rightGoal = rightGoal;
+	}
+
+	public Goal getGoal(Side side) {
+		return (side == Side.LEFT) ? leftGoal : rightGoal;
 	}
 }

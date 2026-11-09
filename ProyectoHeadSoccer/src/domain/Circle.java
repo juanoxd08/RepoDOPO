@@ -1,22 +1,31 @@
 package domain;
 
-public class Circle extends Figure{
-	private int radious;
+public class Circle extends Figure {
+	private double radius;
 
-	public int getRadious() {
-		return radious;
+	public Circle() {
+		super();
 	}
 
-	public void setRadious(int radious) {
-		this.radious = radious;
+	public Circle(double x, double y, double radius) {
+		super(x, y);
+		this.radius = radius;
+	}
+
+	public double getRadius() {
+		return radius;
+	}
+
+	public void setRadius(double radius) {
+		this.radius = radius;
 	}
 
 	@Override
 	public boolean detectCollisionWithCircle(Circle circle) {
-		int dx = this.x - circle.x;
-		int dy = this.y - circle.y;
-		int radiousSum = this.radious + circle.radious;
-		return (dx * dx) + (dy * dy) <= (radiousSum * radiousSum);
+		double dx = this.getX() - circle.getX();
+		double dy = this.getY() - circle.getY();
+		double radiusSum = this.radius + circle.radius;
+		return (dx * dx) + (dy * dy) <= (radiusSum * radiusSum);
 	}
 
 	@Override

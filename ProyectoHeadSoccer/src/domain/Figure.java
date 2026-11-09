@@ -1,27 +1,38 @@
 package domain;
 
 public abstract class Figure {
-	protected int x;
-	protected int y;
+	private double x;
+	private double y;
 	
-	public int getX() {
+	public Figure() {
+	}
+
+	public Figure(double x, double y) {
+		this.x = x;
+		this.y = y;
+	}
+	
+	public double getX() {
 		return x;
 	}
-	public void setX(int x) {
+	
+	public void setX(double x) {
 		this.x = x;
 	}
-	public int getY() {
+	
+	public double getY() {
 		return y;
 	}
-	public void setY(int y) {
+	
+	public void setY(double y) {
 		this.y = y;
+	}
+	
+	public void translate(double dx, double dy) {
+		this.x += dx;
+		this.y += dy;
 	}
 	
 	public abstract boolean detectCollisionWithCircle(Circle circle);
 	public abstract boolean detectCollisionWithRectangle(Rectangle rectangle);
-	
-	
-	
-	
-	
 }

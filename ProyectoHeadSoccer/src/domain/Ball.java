@@ -4,10 +4,15 @@ public class Ball implements Collidable {
 	private Circle circle;
 	private double verticalSpeed;
 	private double horizontalSpeed;
-	public static final int GRAVITY = 2;
-	public static final double FRICCION = 0.6;
 	
-	
+	public Ball() {
+		this.circle = new Circle(0, 0, 10);
+	}
+
+	public Ball(double x, double y, double radius) {
+		this.circle = new Circle(x, y, radius);
+	}
+
 	public double getVerticalSpeed() {
 		return verticalSpeed;
 	}
@@ -24,70 +29,108 @@ public class Ball implements Collidable {
 		this.horizontalSpeed = horizontalSpeed;
 	}
 	
-	
-	
 	public Circle getCircle() {
 		return circle;
 	}
 
-
+	public void setCircle(Circle circle) {
+		this.circle = circle;
+	}
 
 	@Override
 	public void collideWithFoot(Foot foot) {
-		double dx = this.circle.x - foot.getCircle().x;
-		double dy = this.circle.y - foot.getCircle().y;
+		double dx = this.circle.getX() - foot.getCircle().getX();
+		double dy = this.circle.getY() - foot.getCircle().getY();
 		double distance = Math.hypot(dx, dy);
+		if (distance == 0) {
+			dx = 1;
+			dy = -1;
+			distance = Math.hypot(dx, dy);
+		}
 		int powerKick = foot.getPowerKicking();
 		setHorizontalSpeed((dx / distance) * powerKick);
 		setVerticalSpeed((dy / distance) * powerKick);
 	}
 	
 	public void collideWithGB(Rectangle r) {
-		if(circle.x >= r.x && circle.x <= r.x + r.getWidth()) {
-			setVerticalSpeed(-verticalSpeed * 0.78);
-		} else if(circle.y >= r.y && circle.y <= r.y + r.getHeight()) {
-			setHorizontalSpeed(-horizontalSpeed * 0.78);
+		if (circle.getX() >= r.left() && circle.getX() <= r.right()) {
+			setVerticalSpeed(-verticalSpeed * Physics.RESTITUTION);
+		} else if (circle.getY() >= r.top() && circle.getY() <= r.bottom()) {
+			setHorizontalSpeed(-horizontalSpeed * Physics.RESTITUTION);
 		} else {
-			int cornerX = (circle.x < r.x) ? r.x : r.x + r.getWidth();
-			int cornerY = (circle.y < r.y) ? r.y : r.y + r.getHeight();
-			double dx = circle.x - cornerX;
-			double dy = circle.y - cornerY;
+			double cornerX = (circle.getX() < r.left()) ? r.left() : r.right();
+			double cornerY = (circle.getY() < r.top()) ? r.top() : r.bottom();
+			double dx = circle.getX() - cornerX;
+			double dy = circle.getY() - cornerY;
 			double distance = Math.hypot(dx, dy);
-			double speed = Math.hypot(horizontalSpeed, verticalSpeed) * 0.94;
+			if (distance == 0) {
+				dx = 0;
+				dy = -1;
+				distance = 1;
+			}
+			double speed = Math.hypot(horizontalSpeed, verticalSpeed) * Physics.CORNER_RESTITUTION;
 			setHorizontalSpeed((dx / distance) * speed);
 			setVerticalSpeed((dy / distance) * speed);
 		}
 	}
 	
 	public void collideWithHead(Head head) {
-		double dx = this.circle.x - head.getCircle().x;
-		double dy = this.circle.y - head.getCircle().y;
+		double dx = this.circle.getX() - head.getCircle().getX();
+		double dy = this.circle.getY() - head.getCircle().getY();
 		double distance = Math.hypot(dx, dy);
+		if (distance == 0) {
+			dx = 0;
+			dy = -1;
+			distance = 1;
+		}
 		setHorizontalSpeed((dx / distance) * 50);
 		setVerticalSpeed((dy / distance) * 50);	
 	}
 	
-	public void collideWithEdges(){
-		if(this.circle.x - this.circle.getRadious() <= 0) setHorizontalSpeed(-horizontalSpeed * 0.78);
-		if(this.circle.x + this.circle.getRadious() >= Field.WIDTH) setHorizontalSpeed(-horizontalSpeed * 0.78);
-		if(this.circle.y - this.circle.getRadious() <= 0) setVerticalSpeed(-verticalSpeed * 0.78);
-		if(this.circle.y + this.circle.getRadious() >= Field.HEIGHT) setVerticalSpeed(-verticalSpeed * 0.78);
-	}
-	
-	public void move(){
-		circle.setY(circle.y + (int)verticalSpeed);
-		circle.setX(circle.x + (int)horizontalSpeed);
-		
-		if(this.circle.y + this.circle.getRadious() < Field.HEIGHT) { 
-			verticalSpeed+=GRAVITY;
-		}else {
-			horizontalSpeed = (int)horizontalSpeed*FRICCION;
+	public void collideWithEdges() {
+		if (this.circle.getX() - this.circle.getRadius() <= 0) {
+			this.circle.setX(this.circle.getRadius());
+			setHorizontalSpeed(Math.abs(horizontalSpeed) * Physics.RESTITUTION);
 		}
-		
-		
-		
-		
+		if (this.circle.getX() + this.circle.getRadius() >= Field.WIDTH) {
+			this.circle.setX(Field.WIDTH - this.circle.getRadius());
+			setHorizontalSpeed(-Math.abs(horizontalSpeed) * Physics.RESTITUTION);
+		}
+		if (this.circle.getY() - this.circle.getRadius() <= 0) {
+			this.circle.setY(this.circle.getRadius());
+			setVerticalSpeed(Math.abs(verticalSpeed) * Physics.RESTITUTION);
+		}
+		if (this.circle.getY() + this.circle.getRadius() >= Field.HEIGHT) {
+			this.circle.setY(Field.HEIGHT - this.circle.getRadius());
+			setVerticalSpeed(-Math.abs(verticalSpeed) * Physics.RESTITUTION);
+		}
 	}
 	
+	public void tick() {
+		circle.translate(horizontalSpeed, verticalSpeed);
+		
+		if (this.circle.getY() + this.circle.getRadius() < Field.HEIGHT) { 
+			verticalSpeed += Physics.GRAVITY;
+		} else {
+			this.circle.setY(Field.HEIGHT - this.circle.getRadius());
+			horizontalSpeed = horizontalSpeed * Physics.FRICTION;
+			if (Math.abs(horizontalSpeed) < 0.05) {
+				horizontalSpeed = 0;
+			}
+		}
+	}
 
+	public void reset(double x, double y) {
+		getCircle().setX(x);
+		getCircle().setY(y);
+		setHorizontalSpeed(0);
+		setVerticalSpeed(0);
+	}
+
+	public Ball copy() {
+		Ball copy = new Ball(this.circle.getX(), this.circle.getY(), this.circle.getRadius());
+		copy.setHorizontalSpeed(horizontalSpeed);
+		copy.setVerticalSpeed(verticalSpeed);
+		return copy;
+	}
 }
