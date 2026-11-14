@@ -7,6 +7,9 @@ package domain;
  * @author Cristian Salamanca
  */
 public final class Physics {
+
+    
+    
     /*
      * Private constructor for utility class.
      */
@@ -18,6 +21,7 @@ public final class Physics {
     public static final double RESTITUTION = 0.78;
     public static final double CORNER_RESTITUTION = 0.94;
     public static final double FRICTION = 0.6;
+    public static final int TICK_MS = 1000/FPS;
 
     /**
      * Converts a duration in seconds to equivalent frame ticks.

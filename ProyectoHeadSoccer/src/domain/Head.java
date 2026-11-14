@@ -98,61 +98,45 @@ public class Head implements Collidable {
 		if (isStunned && this.kickTicks <= 0) {
 			this.kickTicks = (int) (Physics.seconds(3));
 		}
-	}	
-	
-	/**
-	 * Resolves collision reaction when kicked by another player's foot.
-	 * 
-	 * @param foot Foot entity collided with
-	 */
+	}
+
 	@Override
 	public void collideWithFoot(Foot foot) {
 		if (foot == null || foot.getCircle() == null) return;
 		boolean kicking = foot.isKicking();
-		if (kicking && this.circle.detectCollisionWithCircle(foot.getCircle())) {
+		if (kicking && circle.detectCollisionWithCircle(foot.getCircle())) {
 			if (!struck) {
 				struck = true;
-				kicksRecieved += 1;
+				kicksRecieved++;
 				isStruck(foot);
 			}
 			if (kicksRecieved >= 5) {
 				kicksRecieved = 0;
-				kickTicks = (int) (Physics.seconds(3));
+				kickTicks = Physics.seconds(3.0);
 				isStunned = true;
 			}
 		}
 	}
-	
-	/*
-	 * Applies visual neck recoil displacement when struck by a foot.
-	 */
+
 	private void isStruck(Foot foot) {
-		if (this.getCircle().getX() > foot.getCircle().getX()) {
-			this.getCircle().translate(8, -10);
+		if (getCircle().getX() > foot.getCircle().getX()) {
+			getCircle().translate(8.0, -10.0);
 		} else {
-			this.getCircle().translate(-8, -10);
+			getCircle().translate(-8.0, -10.0);
 		}
 	}
-	
-	/**
-	 * Restores the head position after impact recoil.
-	 * 
-	 * @param foot Foot entity that struck the head
-	 */
+
 	public void isNotStruck(Foot foot) {
 		if (struck) {
-			if (this.getCircle().getX() > foot.getCircle().getX()) {
-				this.getCircle().translate(-8, 10);
+			if (getCircle().getX() > foot.getCircle().getX()) {
+				getCircle().translate(-8.0, 10.0);
 			} else {
-				this.getCircle().translate(8, 10);
+				getCircle().translate(8.0, 10.0);
 			}
 			struck = false;
-		}	
+		}
 	}
 
-	/**
-	 * Updates the stun countdown timer on each frame.
-	 */
 	public void tick() {
 		if (isStunned) {
 			kickTicks--;

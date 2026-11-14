@@ -1,9 +1,57 @@
 # DOPOSoccer 2026-2 — Hoja de ruta
 
-Punto de partida: commit `fix1` (`86b5ffa`).
-Enunciado vigente: `DOPOSoccer_2026-2.pdf` (reemplaza al de POOBSoccer).
+Enunciado vigente: `DOPOSoccer_2026-2.pdf`.
+Código actual: **combinación** del trabajo de Cristian y de Juan sobre `fix1` (ver la sección "Estado actual").
 
-Esta hoja reemplaza a `PLAN_DOMINIO.md` y `HOJA_DE_RUTA_DOMINIO.md`, que quedaron obsoletos con el enunciado nuevo.
+---
+
+## Estado actual (después de combinar)
+
+### Qué se combinó y de dónde salió cada cosa
+
+| Origen | Qué aporta | Dónde quedó |
+|---|---|---|
+| **Cristian** (base) | Reglas del PDF funcionando: vida, daño por patada, aturdido 3 s, stats 1-10 con fórmulas del Anexo 2, 4 poderes con aura y barra de 10 s, +¼ al recibir gol, tiempo con muerte súbita y goles, puntos 100/25, 4 perfiles de máquina, resoluciones, GUI con menú/selección/HUD, **26 pruebas** | `src/` (todo lo que ya existía) |
+| **Juan** (paso 1.1 y parte del 1.2) | `DOPOSoccerException`, `Modality`, `StatType`, `MatchListener`, `BallView`, `PlayerView`, `MatchView`, `MatchRule`, `MatchConfig` (Builder), `Side` con `dir()`/`startX()`/`opposite()`, `Physics.TICK_MS` | `src/domain/` |
+| **Juan** (necesitan el `Match` nuevo) | `DOPOSoccer` (fachada), `GoalRule`, `ScoreBoard` con `EnumMap` | **`pendiente_paso_1_2/domain/`** (fuera de `src`, para que el proyecto compile) |
+| Configuración de Eclipse | `.classpath` con JUnit y `.settings` con Java 17 (de Cristian) | raíz del proyecto |
+
+### Decisiones al combinar (sin agregar funcionalidad)
+- **`MatchType`**: nombres de Juan (`TIME`, `GOALS`) + nombres para mostrar de Cristian ("Por Tiempo", "Por Goles").
+- **`Country`**: nombre de Juan `SOUTH_KOREA` (antes `KOREA`) + campos de Cristian (`displayName`, `powerName`) + `toString()` de Juan. **Se conservaron los 8 países de Cristian** (los 4 extra no están en el PDF; decidir en el paso 1.1b si se quitan).
+- **`GameStatus`**: unión de los dos. `GOAL` → `GOAL_SCORED` y `GOLDEN_GOAL` → `SUDDEN_DEATH` (nombres de Juan), se agregó `NOT_STARTED` (Juan) y se mantienen `MENU`, `SELECT_PLAYERS`, `SELECT_CAMP` y `DRAW` (Cristian), que deben salir del dominio en el paso 1.4.
+- **`Head`, `Side`, `Physics`**: versión de Juan (en `Head` solo había cambios de formato).
+- **`Player`**: versión de Cristian. Los cambios de Juan en `Player` eran solo de nombres de variables y formato, sin cambio de comportamiento.
+- **`module-info.java`**: no se incluye (Cristian lo había quitado para poder compilar las pruebas).
+- Se renombraron todas las referencias en `src` (dominio, GUI y pruebas) a los nombres nuevos.
+
+### Verificación
+- Compila sin errores.
+- **26/26 pruebas de Cristian pasan**, igual que en su versión original.
+- Los archivos de `pendiente_paso_1_2/` **no compilan todavía** a propósito: usan métodos del `Match` nuevo (`Match(MatchConfig)`, `getGoals(Side)`, `setIntention`, `pause`, `resume`, `finish`, `getStatus`, `addListener`, `removeListener`) que se crean en el paso 1.2.
+
+### Clases que conviven por ahora (se resuelven en V1)
+
+| Vieja | Nueva | Se resuelve en |
+|---|---|---|
+| `HeadSoccer` | `DOPOSoccer` (en `pendiente_paso_1_2`) | 1.2 y 1.4 |
+| `HeadSoccerException` | `DOPOSoccerException` | 1.3 |
+| `ReaderMatch` | `MatchView` | 1.2 |
+| `MatchTimer` + `if (matchType == ...)` en `Match` | `MatchRule` + `TimeRule`/`GoalRule` | 1.2 |
+| `ScoreBoard` (por jugador) | `ScoreBoard` con `EnumMap` (en `pendiente_paso_1_2`) | 1.2 |
+| `PlayerStats` | `Stats` + `StatType` | 1.3 |
+
+### Bugs encontrados en el código actual (verificados ejecutándolo)
+- **B-N1** La barra de poder **empieza llena** (`Power`: `charge = 100.0`). El PDF dice que empieza vacía.
+- **B-N2** El efecto **Inconsciente (Nigeria) saca al jugador de la cancha**: la cabeza sube de y = 145 hasta y = −575 en 3 s (cancha de 200 de alto).
+- **B-N3** El tiro de poder **solo sale al patear**; el PDF dice "cuando el personaje con poder **toca** el balón" (confirmar con el monitor).
+- **B-N4** Velocidad y salto no siguen "+10 % sobre el valor base por punto" (`3 + 0.5 × speed`, `12 + 0.8 × jump`).
+- **B-N5** `PlayerStats`: el constructor recorta en silencio los valores fuera de 1-10, pero los setters lanzan excepción.
+- **B-N6** Heredados de `fix1` (no se tocaron): KICK mantenido patea varias veces; el pie que no patea atraviesa el balón; `onTop` pisado; `resetPosition` recrea cabeza, cuerpo y pie; el empuje entre jugadores usa `getSpeed()`.
+- **B-N7** `instanceof IllusionPower` en `Match` (1) y en la GUI (2).
+
+### Siguiente paso
+**`TimeRule.java`** (paso 1.2), que es donde estaba Juan. La lógica ya existe en `Match.tick()` de Cristian (descontar tiempo, muerte súbita con empate) y en `MatchTimer`: hay que **moverla** a `TimeRule`, no escribirla de nuevo.
 
 ---
 
@@ -53,7 +101,7 @@ Esta hoja reemplaza a `PLAN_DOMINIO.md` y `HOJA_DE_RUTA_DOMINIO.md`, que quedaro
 
 ## 1. Diagnóstico de acoplamiento (por qué los regañaron)
 
-Medido en `fix1`:
+Medido en `fix1` (en el código combinado la situación es la misma: la GUI, `Match` y los poderes siguen accediendo a las partes internas del jugador):
 
 | Problema | Evidencia | Consecuencia |
 |---|---|---|
@@ -130,216 +178,159 @@ Una vez que la GUI y las pruebas solo usan la fachada, cualquier cambio interno 
 
 ---
 
+
 ## 3. V1 — PvP básico, desacoplado (hasta Do 15 nov)
 
-**Alcance:** configuración (personajes, tipo de partido y su valor, resolución), PvP completo sin poderes, vida y daño por patada, aturdido, pausa, terminar, mensaje de ganador con puntos.
-**Fuera de V1:** poderes, máquina, persistencia y mejoras de estadísticas (la barra de poder se muestra vacía o no se muestra).
+**Alcance:** configuración (personajes, tipo de partido y su valor, resolución), PvP completo, vida y daño por patada, aturdido, pausa, terminar, mensaje de ganador con puntos.
+Los poderes y la máquina **ya existen** (Cristian): se dejan funcionando, se arreglan sus dos bugs graves (B-N1, B-N2) y **no se invierte más tiempo en ellos antes de V1**.
 
-### Paso 1.0 — Repo (≈ 0.5 h) · *indispensable*
-- [ ] `.gitignore` con `bin/` y `git rm -r --cached ProyectoHeadSoccer/bin`.
-- [ ] JUnit 5 configurado y carpeta `test/domain`.
+Leyenda: ✅ hecho · 🟡 parcial · ⬜ pendiente.
 
-### Paso 1.1 — API pública primero (≈ 3 – 4 h) · *indispensable*
+### Paso 1.0 — Repo (≈ 0.25 h)
+- ⬜ `.gitignore` con `bin/` y `git rm -r --cached ProyectoHeadSoccer/bin`.
+- ✅ JUnit en el `.classpath` (de Cristian).
+- ⬜ Decidir **JUnit 4 o 5**: las 26 pruebas usan `org.junit.Test` (JUnit 4). Lo más rápido es seguir con JUnit 4 para todas.
 
-| Archivo | Tarea |
-|---|---|
-| `HeadSoccerException` → **`DOPOSoccerException`** | Renombrar; constantes de mensajes (`INVALID_MATCH_CONFIG`, `INVALID_STAT`, `INVALID_STATE`, `NOT_ENOUGH_POINTS`...) |
-| `HeadSoccer` → **`DOPOSoccer`** (Facade) | Métodos: `newMatch(MatchConfig)`, `tick()`, `setIntention(Side, Set<PlayerAction>)`, `pause()`, `resume()`, `finish()`, `getMatch()` (devuelve `MatchView`), `addListener(MatchListener)`. Borrar la configuración fija, `message`, `getTimer()`, `setState` y los getters de jugadores, balón, campo y controles |
-| **`MatchConfig`** (Builder, nuevo) | Campos: modalidad, `Country` izquierda y derecha, `MatchType` (`TIME`/`GOALS`) y su valor (minutos o goles). `build()` valida y lanza `DOPOSoccerException` |
-| **`Modality`**, **`MatchType`** (enums nuevos) | `PVP`, `PVM` · `TIME`, `GOALS` |
-| **`MatchView`**, **`PlayerView`**, **`BallView`** (interfaces nuevas) | Solo lectura. `MatchView`: estado, segundos restantes (−1 si no aplica), muerte súbita, goles por lado, `getPlayer(Side)`, `getBall()`, ganador. `PlayerView`: país, lado, vida, vida máxima, barra (0..1), aura, efecto, aturdido, pateando y **figuras para dibujar** (cabeza, cuerpo y pie como copias). `BallView`: x, y, radio, si lleva tiro de poder |
-| **`MatchListener`** (Observer, nuevo) | Métodos `default` vacíos: `onGoal(Side scorer)`, `onStunned(Side)`, `onMatchFinished(Side winner, int winnerPoints, int loserPoints)`; en V2 se agregan los de poder |
-| `Country` | Dejar exactamente los 4 del Anexo 1: `SOUTH_KOREA`, `CAMEROON`, `NIGERIA`, `USA` (con nombre para mostrar) |
+### Paso 1.1 — API pública ✅ (Juan) + ajustes (≈ 0.5 h)
+- ✅ `DOPOSoccerException`, `Modality` (`PVP`, `PVC`), `MatchType`, `StatType`, `Country`, `GameStatus`, `BallView`, `PlayerView`, `MatchView`, `MatchListener`, `MatchConfig` (Builder).
+- ✅ `DOPOSoccer` (fachada) escrita — está en `pendiente_paso_1_2/` hasta que exista el `Match` nuevo.
+- ⬜ **1.1b** Decidir si `Country` se queda con los 4 países del PDF o con los 8 de Cristian. Si se quitan los 4 extra: borrar sus `case` en `HeadSoccer.createPowerForCountry`, sus colores en `PhotoHeadSoccer` y sus entradas en los arreglos de selección; `FreezePower` queda sin uso.
+- ⬜ Mover la creación del poder a `Country` (Factory): `Country.createPower()` en vez del `switch` de `HeadSoccer.createPowerForCountry`.
 
-**Listo cuando:** existe una prueba que crea un partido PvP con el builder, llama `tick()` y lee el estado **solo** por `MatchView`.
+### Paso 1.2 — Reglas del partido y `Match` nuevo (≈ 4 – 5 h) · *el más importante*
 
-### Paso 1.2 — Reglas del partido con Strategy (≈ 2.5 – 3 h) · *indispensable*
-
-| Archivo | Tarea | Bug que cierra |
+| Tarea | Estado | Detalle |
 |---|---|---|
-| `Side` | `dir()`, `opposite()`, `startX()` | Reemplaza 13 ternarios |
-| `ScoreBoard` | `EnumMap<Side, Integer>`, `goalIn(Side goalSide)` (suma al contrario), `getGoals(Side)`, `isTie()`, `getLeader()` como `Optional<Side>`. Sin referencias a jugadores | Marcador acoplado a `Player`, `golIn` duplicado, `null` |
-| `GameStatus` | `NOT_STARTED`, `PLAYING`, `GOAL_SCORED`, `SUDDEN_DEATH`, `PAUSED`, `FINISHED` | — |
-| **`MatchRule`** (interfaz, Strategy) | `onTick(Match)`, `isOver(Match)`, `winner(Match)` | — |
-| **`TimeRule`** | Minutos configurables, en ticks. Al acabar con empate → `SUDDEN_DEATH`; el primer gol gana | Partido sin fin |
-| **`GoalRule`** | Gana quien llega a N goles | Partido sin fin |
-| `Match` | Recibe `MatchRule`. `tick()` en orden fijo: intenciones → jugadores → balón → colisiones → gol → regla. Pausa de 1 s tras el gol, luego reinicio. Notifica a los listeners. Calcula los puntos (100 y 25) al terminar | — |
-| `MatchTimer` | Borrar (lo reemplaza `TimeRule`) | — |
-| `Physics` | `TICK_MS = 1000 / FPS` (la GUI lo usa para su `Timer`) | El tiempo de la GUI no coincidía |
+| `Side` con `dir()`, `opposite()`, `startX()` | ✅ | Falta usarlo: reemplazar los ternarios `side == Side.LEFT ? … : …` (están en poderes, COM, `Player` y `Foot`) |
+| `Physics.TICK_MS` | ✅ | La GUI todavía usa `new Timer(16, …)` → cambiar a `Physics.TICK_MS` en 1.4 |
+| `MatchRule` | ✅ | |
+| `GoalRule` | 🟡 | Escrita, en `pendiente_paso_1_2/` |
+| **`TimeRule`** | ⬜ | **Siguiente archivo.** Mover aquí la lógica de `Match.tick()` (tiempo, muerte súbita) y de `MatchTimer` (minutos → ticks, `getFormattedTime` puede quedar en la GUI) |
+| `ScoreBoard` con `EnumMap` | 🟡 | Escrito, en `pendiente_paso_1_2/`. Al traerlo a `src`: quitar `goals`/`addGoal` de `Player`; en `COMController` cambiar `getScoreBoard().getPoints()[i]` por `getGoals(side)`; en la GUI leer goles desde `MatchView.getGoals(side)` |
+| **`Match` nuevo** | ⬜ | (1) Constructor `Match(MatchConfig)`: crea jugadores y controles (reutilizar el código de `HeadSoccer.startActiveMatch`, que hoy está duplicado con `createDefaultMatch`). (2) Usa `MatchRule` en vez de `if (matchType == …)`. (3) `implements MatchView` en vez de `ReaderMatch`. (4) `setIntention(Side, Set)`, `pause()`, `resume()`, `finish()`, `getStatus()`. (5) `addListener`/`removeListener` y notificar `onGoal`, `onStunned`, `onMatchFinished` **en lugar de** `winnerNotification` y `lastScorerText` (texto en el dominio) |
+| `Controller` y `COMController` | ⬜ | `decide(MatchView)` en vez de `ReaderMatch`; borrar `ReaderMatch` |
+| Mover `DOPOSoccer`, `GoalRule` y `ScoreBoard` a `src/domain` | ⬜ | Cuando el `Match` nuevo compile. Borrar la carpeta `pendiente_paso_1_2` |
+| Borrar `MatchTimer` | ⬜ | Después de `TimeRule` |
 
-### Paso 1.3 — Jugador encapsulado y bugs de PvP (≈ 5 – 6 h) · *indispensable*
+**Listo cuando:** existe una prueba que crea un partido con `MatchConfig.builder()...build()`, lo juega con `DOPOSoccer.tick()` y lee el resultado **solo** por `MatchView`.
 
-Se hace **una sola vez** y queda detrás de la API: los cambios internos posteriores no rompen nada.
+### Paso 1.3 — Jugador y física (≈ 4 – 5 h)
 
-| Archivo | Tarea | Bug que cierra |
+| Tarea | Estado | Detalle |
 |---|---|---|
-| `Player` | **Ancla única**: el jugador guarda una posición y cabeza, cuerpo y pie se calculan relativos a ella. Mover y reiniciar son una línea | `resetPosition` recreaba objetos; knockback que no volvía; partes que se desarman |
-| `Player` | Métodos que esconden las partes: `touchBall(Ball)` (rebote con cuerpo, cabeza y pie), `kickReaches(Player rival)`, `collideWith(Player rival)`, `standOn(Goal)`. **`Match` ya no llama `getHead()`, `getFoot()` ni `getBody()`** | Acoplamiento `Match` → partes |
-| `Player` | `onTop` unificado: se reinicia cada tick y solo lo ponen en `true` los soportes reales. Borrar `collideMyFootWithBall` | `onTop` pisado; "parado sobre el balón" |
-| `Player` | `applyInput` sin `switch`: aturdido primero, izquierda/derecha resuelto, patada en **flanco de subida** (guarda la intención anterior). Quitar el `stopKick()` | KICK mantenido patea muchas veces |
-| `Foot` | Arco de patada que barre adelante y poco hacia arriba (constantes), para que le pegue al balón en el piso | La patada no tocaba balones en el piso |
-| `Ball` | Separar el balón de la figura después de cada contacto | Golpes repetidos en ticks seguidos |
-| **`Stats`** + `StatType` (nuevos) | Niveles 1-10 para `SPEED`, `JUMP`, `KICK`, `SURVIVAL`. `kickMultiplier() = 1 + 0.1(k−1)`, `maxLife() = 100(1 + 0.1(s−1))`, velocidad y salto = base × (1 + 0.1(nivel−1)) | Stats del enunciado viejo |
-| **`PlayerProfile`** (nuevo) | Nombre, `Stats` y puntos. En V1 se crea con todo en 1 y 0 puntos | — |
-| `Player` | **Vida**: `receiveDamage(d)` (nunca menor que 0); en 0 → aturdido 3 s; al terminar, vida al máximo. **Daño por patada**: `10 × kickMultiplier`, una vez por patada, solo si el pie alcanza al rival; si toca el balón, solo lo impulsa | Aturdido viejo por 5 patadas |
-| `Head` | Quitar `isStunned`, el conteo de patadas y `isStruck`/`isNotStruck` | — |
-| `HumanController` | `EnumSet` y copia defensiva al recibir y al devolver | Referencia compartida |
-| Setters | Borrar los que permiten romper el estado (`setHead`, `setFoot`, `setBody`, `setCircle`, `setSide`, `setOnTop`, `setVerticalSpeed`...) | Estado modificable desde afuera |
-| Poderes | **Desconectar** `Power` y `FreezePower` del partido en V1 (no se borran todavía; se rehacen en V2) | Poder "control remoto" y jugador fantasma |
+| Vida, `takeDamage` (mínimo 0), aturdido 3 s, vida al máximo al terminar | ✅ | Cristian |
+| Daño de patada `10 × multiplicador` | ✅ | Cristian (verificado: 120 → 108 con Kick 3) |
+| Fórmulas del Anexo 2 (vida máxima, multiplicador) | ✅ | Cristian, en `PlayerStats` |
+| **B-N1** barra vacía al inicio | ⬜ | `Power`: `charge = 0.0` (revisar las pruebas que asumen barra llena) |
+| **B-N2** Inconsciente sale de la cancha | ⬜ | Limitar el tiempo que sube o poner techo para el jugador |
+| **B-N4** velocidad y salto con +10 % por punto | ⬜ | `base × (1 + 0.1 × (nivel − 1))` |
+| `Stats` + `PlayerProfile` | ⬜ | `PlayerStats` → `Stats` (con `StatType` y validación consistente, B-N5); `points` sale de `Player` a `PlayerProfile` |
+| `Player implements PlayerView`, `Ball implements BallView` | ⬜ | Las figuras que se devuelven deben ser **copias** |
+| `Player` encapsulado | ⬜ | `Match.resolveCollisions` no debe llamar `getHead()`, `getFoot()` ni `getBody()`: métodos `touchBall(Ball)`, `hitByPowerShot(Ball)`, etc. en `Player` |
+| Ancla única | ⬜ | Resuelve `resetPosition` y el knockback (B-N6). *Si no alcanza, pasa a V2: es interno* |
+| `applyInput` con flanco de subida en KICK y POWER, sin `stopKick()` | ⬜ | B-N6 |
+| `onTop` unificado, empuje con `speedPx()`, arco de patada bajo, separar balón tras contacto | ⬜ | B-N6 |
+| `HumanController` con `EnumSet` y copia defensiva | ⬜ | |
 
-### Paso 1.4 — Interfaz decente usando solo la fachada (≈ 5 – 7 h) · *indispensable*
+### Paso 1.4 — GUI solo con la fachada (≈ 3 – 4 h)
+- ✅ Pantallas de menú, selección de jugadores, selección de cancha (resolución), partido con HUD y overlays (Cristian).
+- ⬜ `HeadSoccerGUI` → `DOPOSoccerGUI`; usar `DOPOSoccer` en vez de `HeadSoccer`.
+- ⬜ Entrada: `game.setIntention(side, set)` en vez de `getController1().receive(...)`; quitar `getPlayer1().stopKick()` de `keyReleased`.
+- ⬜ Dibujo: leer **solo** `MatchView`/`PlayerView`/`BallView` (hoy hay 15 accesos del tipo `getHead()`/`getPower()` y 2 `instanceof IllusionPower`).
+- ⬜ Mensajes con `MatchListener` (gol, aturdido, ganador con puntos).
+- ⬜ Navegación de pantallas (`MENU`, `SELECT_PLAYERS`, `SELECT_CAMP`) **en la GUI**, no en `GameStatus`; la configuración elegida se arma con `MatchConfig.Builder`.
+- ⬜ `FieldResolution` a `presentation` (es de pantalla).
+- ⬜ `Timer` con `Physics.TICK_MS`.
+- Opcional: separar `PhotoHeadSoccer` (644 líneas) en paneles. Si no alcanza, V2.
 
-| Archivo | Tarea |
-|---|---|
-| `HeadSoccerGUI` → **`DOPOSoccerGUI`** | Ventana con `CardLayout`: **configuración → juego → resultado** |
-| **`ConfigPanel`** (nuevo) | Modalidad (PvM deshabilitado en V1), personaje de cada jugador, tipo de partido (tiempo o goles) con su valor, **resolución** (3 opciones). Errores con `JOptionPane` y el mensaje de la `DOPOSoccerException` |
-| `PhotoHeadSoccer` → **`FieldPanel`** | Dibuja **solo con `MatchView`**. Escala mundo → pantalla según la resolución elegida |
-| **HUD** | Siempre visible: tiempo (o meta de goles), marcador y, por jugador, país, goles, **barra de vida** y barra de poder (vacía en V1) |
-| Teclado | Traduce teclas a `Set<PlayerAction>` y llama `game.setIntention(side, set)`. Sin `instanceof` ni controles. `P` pausa y `Esc` termina (con confirmación) |
-| `Timer` | `new Timer(Physics.TICK_MS, ...)` |
-| Fin del partido | Implementa `MatchListener.onMatchFinished` y muestra el ganador y los puntos obtenidos |
+**Listo cuando:** buscar `getHead`, `getFoot`, `getBody`, `getController`, `getPower`, `instanceof` y `HeadSoccer` en `presentation` no da resultados.
 
-**Listo cuando:** buscar `getHead`, `getFoot`, `getBody`, `getController`, `Player`, `Ball` y `Match` en `presentation` no da resultados.
+### Paso 1.5 — Pruebas (≈ 2 h)
+- ✅ 26 pruebas de Cristian (fórmulas, vida, aturdido, poderes, muerte súbita, puntos, máquinas, balón y gol).
+- ⬜ Ajustarlas cuando cambie la API (constructor de `Match`, `ScoreBoard`, barra vacía).
+- ⬜ Nuevas: `MatchConfig` (valores inválidos lanzan excepción), `GoalRule`, `TimeRule`, `ScoreBoard` (autogol), ejemplo del PDF (Kick 5 contra Survival 3 → 106), flanco de KICK.
 
-### Paso 1.5 — Pruebas de unidad (≈ 3 h) · *indispensable*
-- [ ] `MatchConfigTest`: configuración válida; goles ≤ 0 o minutos ≤ 0 lanzan excepción.
-- [ ] `StatsTest`: tabla del Anexo 2 (vida máxima y multiplicador de kick para los niveles 1, 5 y 10); nivel 0 u 11 lanza excepción.
-- [ ] `PlayerTest`: salto con altura mínima; patada en flanco; daño de patada = `10 × multiplicador`; vida en 0 → aturdido 3 s → vida al máximo; aturdido ignora el input.
-- [ ] `BallTest`: balón quieto sigue quieto; no atraviesa piso, paredes ni travesaños; la patada en el piso lo mueve hacia el arco rival.
-- [ ] `MatchTest`: gol completo suma; balón sobre la línea no suma; autogol suma al rival; pausa congela; reinicio tras el gol.
-- [ ] `TimeRuleTest` y `GoalRuleTest`: fin por tiempo, muerte súbita, fin al llegar a N.
-- [ ] `DOPOSoccerTest`: ejemplo del PDF (Kick 5 contra Survival 3 → 120 − 14 = 106).
+### Paso 1.6 — Documentación (≈ 2 – 3 h)
+- ⬜ Diagrama de clases actualizado.
+- ⬜ 4 diagramas de secuencia: crear partido (GUI → `MatchConfig.Builder` → `DOPOSoccer.newMatch` → `Match`), un tick, patada que termina en gol, patada que deja al rival aturdido.
+- ⬜ Retrospectiva (incluir el feedback del monitor y cómo se respondió con patrones).
 
-### Paso 1.6 — Documentación de la entrega (≈ 2 – 3 h) · *indispensable*
-- [ ] **Diagrama de clases** actualizado (sin `MachinePlayer`, `HeadSoccer` ni `MatchTimer`).
-- [ ] **Diagramas de secuencia** (mínimo 4):
-  1. Crear un partido desde la configuración: GUI → `MatchConfig.Builder` → `DOPOSoccer.newMatch` → `Match`.
-  2. Un tick: `Timer` → `DOPOSoccer.tick` → `Match.tick` → controles → jugadores → balón → colisiones → regla.
-  3. Patada que termina en gol: → `ScoreBoard.goalIn` → `MatchListener.onGoal` → reinicio.
-  4. Patada que deja al rival en vida 0 → aturdido.
-- [ ] **Retrospectiva**: qué se hizo, qué no, el feedback recibido (COM antes de tiempo, acoplamiento) y cómo se corrigió con patrones.
+**Lo que queda de V1 ≈ 16 – 20 h** (≈ 8 – 10 h por persona).
 
-### Si alcanza en V1
-- Cancha con colisiones unificadas (`Vector2`, `Contact`, un solo `bounceOff`). Si no alcanza, va al inicio de V2: es interno y no rompe nada.
-
-**Total V1 ≈ 21 – 27 h** (≈ 11 – 14 h por persona).
+### Reparto sugerido
+- **Juan:** 1.2 completo (sigue donde iba: `TimeRule` → `Match` nuevo → traer la fachada) y después 1.3.
+- **Cristian:** 1.3 bugs B-N1, B-N2 y B-N4 (rápidos, en sus clases), y luego 1.4 (conoce la GUI) **apenas** el `Match` nuevo compile. Mientras tanto: diagramas de secuencia y retrospectiva.
+- **Contrato entre los dos:** `MatchConfig`, `MatchView`, `PlayerView`, `BallView`, `MatchListener` y `DOPOSoccer` ya están escritos. No cambiar sus firmas sin avisar.
 
 ---
 
 ## 4. V2 — Poderes, PvM y persistencia (hasta Sa 21 nov)
 
 ### Paso 2.1 — Física unificada (≈ 3 – 4 h)
-- [ ] `Vector2` y `Contact`; `Figure.contactWith(Circle)`.
-- [ ] `Ball.bounceOff(Figure, restitución, impulso)` reemplaza `collideWithFoot`, `collideWithHead` y `collideWithGB`. Borrar `Collidable`.
-- [ ] Las constantes de la cancha pasan a un objeto `Field` con medidas, en vez de `Field.WIDTH`/`HEIGHT` estáticos usados en 26 lugares.
+- ⬜ `Vector2` y `Contact`; `Figure.contactWith(Circle)`.
+- ⬜ `Ball.bounceOff(Figure, restitución, impulso)` reemplaza `collideWithFoot`, `collideWithHead` y `collideWithGB`. Borrar `Collidable`.
+- ⬜ Las medidas de la cancha en un objeto `Field` en vez de `Field.WIDTH`/`HEIGHT` estáticos.
+- ⬜ Ancla única, si no se hizo en V1.
 
-### Paso 2.2 — Poderes según el PDF (≈ 6 – 8 h)
+### Paso 2.2 — Poderes: de `enum` + `if` a Template Method y Strategy (≈ 3 – 4 h)
+Las reglas ya funcionan (Cristian). Lo que falta es **diseño** y los bugs pendientes:
+- 🟡 `Power` → **`PowerShot`** (Template Method): `final launch(...)` y cada país define cómo sale el tiro, su daño y su efecto. Hoy ya hay una subclase por país (`AuraAzulPower`, `LightningPower`, `TornadoPower`, `IllusionPower`).
+- ⬜ `PlayerEffect` (`enum` + `if` en `Player`) → clases **`Effect`** (Strategy): `speedFactor()`, `canMove()`, `canJump()`, `canKick()`, `onStart`, `onEnd`.
+- ⬜ B-N3: confirmar si el tiro sale con cualquier toque.
+- ⬜ Quitar los `instanceof IllusionPower` (B-N7): `MatchView` expone la lista de balones.
+- ⬜ `MatchListener`: `onPowerActivated(Side)`, `onPowerShotHit(Side victim)`.
 
-| Clase | Regla del PDF |
-|---|---|
-| **`PowerBar`** | Se llena en 10 s; **+¼ al recibir gol**; al usarla se vacía y empieza a recargar en el mismo instante |
-| `Player` | `activatePower()`: barra llena **y sin aura** → vacía la barra y pone el aura. **El aura no tiene límite de tiempo.** Con aura no se puede activar otro poder |
-| `Player.touchBall` | Si tiene aura: `country.powerShot().launch(ball, this)` y el aura desaparece |
-| **`PowerShot`** (Template Method) | `final launch(Ball, Player)`: marca el balón con el tiro y su dueño, y llama `shapeShot(Ball, Side)` (cómo sale). Abstractos: `baseDamage()` (40, 60, 40, 30) y `createEffect()` |
-| `Match` | Si el balón con tiro golpea al rival → daño `baseDamage × kickMultiplier` del dueño + `rival.applyEffect(...)`. Si entra al arco → gol sin daño ni efecto |
-| **`Effect`** (Strategy) | Duración en ticks; `speedFactor()`, `canMove()`, `canJump()`, `canKick()`, `onStart(Player)`, `onEnd(Player)`. **No se acumulan:** el nuevo reemplaza al anterior |
-| `BlueAuraShot` + `PushEffect` (Corea) | Tiro recto y horizontal muy rápido · el rival es lanzado hacia su arco, 1.5 s |
-| `LightningShot` + `ElectrocutedEffect` (Camerún) | Tiro recto · no puede saltar y se mueve al 50 %, 3 s |
-| `TornadoShot` + `UnconsciousEffect` (Nigeria) | Remolino a ras de suelo que rebota rápido · lanzado al aire, no puede moverse, saltar ni patear, 3 s |
-| `Country` (Factory) | Cada país crea su `PowerShot` |
-| `MatchListener` | `onPowerActivated(Side)`, `onPowerShotHit(Side victim)` |
-| Borrar | `Power`, `FreezePower` |
-
-GUI: el **aura visible** alrededor del jugador, el **efecto visible** sobre el rival y la barra de poder en el HUD (todo leído desde `PlayerView`).
-
-### Paso 2.3 — PvM (≈ 4 – 5 h)
-- [ ] **`MachineProfile`** (enum, Factory): `CLUMSY`, `OFFENSIVE`, `DEFENSIVE`, `EXPERT`, con `create(Side, Random)`.
-- [ ] **`MachineController`** abstracta (Template Method): `decide()` = percibir → elegir → armar la intención. Cada perfil implementa solo "elegir".
-- [ ] **Torpe**: acciones al azar (`Random` inyectable, para poder probarlo).
-- [ ] **Ofensiva**: ponerse detrás del balón y patear hacia el arco rival; usar el poder cuando va a tocar el balón.
-- [ ] **Defensiva**: quedarse entre el balón y su arco; despejar.
-- [ ] Experta: en V3.
-- [ ] `MatchConfig` acepta el perfil; `ConfigPanel` habilita PvM con el selector de perfil.
-- [ ] Borrar `COMController` y `COMState` (reutilizar su lógica en la ofensiva).
+### Paso 2.3 — PvM: del `switch` a Strategy (≈ 2.5 – 3.5 h)
+- ✅ 4 perfiles funcionando en `COMController` (Cristian).
+- ⬜ Una clase por perfil (Torpe, Ofensiva, Defensiva, Experta) con base `MachineController` (Template Method); `MachineProfile.create(Side, Random)` como Factory; borrar el `switch`, `COMController` y `COMState`.
+- ⬜ `Random` inyectable para probar el perfil Torpe.
+- ⬜ `MatchConfig` acepta el perfil y permite `PVC`.
 
 ### Paso 2.4 — Persistencia (≈ 4 – 5 h)
-- [ ] Dominio: interfaces **`MatchRepository`** (`save(Match, File)`, `open(File)`) y **`ProfileRepository`** (`load(name)`, `save(profile)`).
-- [ ] Paquete **`persistence`**: implementación con serialización de Java (`Serializable` en las clases del partido; los listeners son `transient`).
-- [ ] Fachada: `save(File)`, `open(File)` y perfiles al configurar.
-- [ ] GUI: menú *Guardar* y *Abrir* con `JFileChooser`.
-- [ ] Errores de archivo → `DOPOSoccerException` con un mensaje claro para el usuario.
+- ⬜ Dominio: interfaces `MatchRepository` (`save`, `open`) y `ProfileRepository`.
+- ⬜ Paquete `persistence` con serialización de Java (listeners `transient`).
+- ⬜ Fachada: `save(File)`, `open(File)`; GUI con `JFileChooser`.
 
 ### Paso 2.5 — Log de errores (≈ 1 h)
-- [ ] Clase **`Log`** con `java.util.logging` que escribe en un archivo (`dopo-errores.log`): cada `DOPOSoccerException` y cada error inesperado queda registrado con su traza. Al usuario solo se le muestra el mensaje claro.
+- ⬜ Clase `Log` con `java.util.logging` a un archivo; al usuario solo el mensaje claro de la `DOPOSoccerException`.
 
-### Paso 2.6 — Pruebas y entrega (≈ 3 – 4 h)
-- [ ] Pruebas: barra (10 s, +¼, sin doble activación con aura), cada efecto (duración, reemplazo), daño de poder (ejemplo del PDF: 60 × 1.4 = 84), tiro que entra sin tocar al rival, guardar y abrir el mismo estado, perfiles de máquina con `Random` fijo.
-- [ ] **Planificación de las 4 versiones** (entregable de V2): objetivo y miniciclos de cada versión, y requisitos que no se incluirán.
+### Paso 2.6 — Pruebas y entrega (≈ 3 h)
+- ⬜ Pruebas de efectos como clases, perfiles con `Random` fijo, guardar y abrir.
+- ⬜ **Planificación de las 4 versiones** (entregable de V2).
 
-**Total V2 ≈ 21 – 27 h.**
+**Total V2 ≈ 16.5 – 20 h.**
 
 ---
 
 ## 5. V3 — Progreso y máquina experta (hasta Do 22 nov)
 
-- [ ] **Mejoras de estadísticas**: `PlayerProfile.upgrade(StatType)` con precio 500 × 2^(nivel − 1), máximo 10 y excepción si no alcanzan los puntos. Pantalla de mejoras antes del partido. (≈ 3 h)
-- [ ] **Puntos y progreso persistidos**: al terminar, sumar 100 o 25 y guardar el perfil. (≈ 1.5 h)
-- [ ] **`ExpertMachine`**: elige entre atacar y defender según el marcador, el tiempo, la vida propia y la del rival, y la barra de poder. (≈ 3 – 4 h)
-- [ ] **Pruebas de aceptación**: escenarios del enunciado escritos como casos (configurar y jugar PvP por goles, por tiempo con muerte súbita, guardar y abrir, comprar una mejora...). (≈ 2 h)
+- ⬜ **Mejoras de estadísticas**: `PlayerProfile.upgrade(StatType)`, precio 500 × 2^(nivel − 1), máximo 10, excepción si no alcanzan los puntos. Pantalla de mejoras. (≈ 3 h)
+- 🟡 **Puntos** (Cristian ya los suma al terminar) → guardarlos en el perfil persistido. (≈ 1 h)
+- 🟡 **Experta**: hoy ataca si va perdiendo y usa el poder cerca del balón. Ampliar con el tiempo, la vida y la barra del rival. (≈ 2 h)
+- ⬜ **Pruebas de aceptación**. (≈ 2 h)
 
-**Total V3 ≈ 9.5 – 10.5 h.**
+**Total V3 ≈ 8 h.**
 
 ## 6. V4 — Ilusión y pulido (parcial)
 
-- [ ] **`IllusionShot`** (EE. UU.): 8 balones iguales y 7 falsos que desaparecen al terminar el efecto de 2.5 s. Requiere que `MatchView` exponga una **lista** de balones. Confirmar antes las reglas (ver la sección 0). (≈ 3 – 4 h)
-- [ ] Revisión de extensión: agregar un personaje o un perfil **solo** debe requerir una clase nueva y una línea en el enum (probarlo). (≈ 1 h)
-- [ ] Javadoc, diagramas finales y retrospectiva. (≈ 2 – 3 h)
+- 🟡 **Ilusión (EE. UU.)**: `IllusionPower` ya crea 7 balones falsos que siguen al real y desaparecen a los 2.5 s. Falta confirmar las reglas con el monitor y exponerlos por `MatchView` (sin `instanceof`). (≈ 1.5 h)
+- ⬜ Prueba de extensión: agregar un personaje o un perfil con **una clase nueva y una línea en el enum**. (≈ 1 h)
+- ⬜ Javadoc, diagramas finales y retrospectiva. (≈ 2 – 3 h)
 
 ---
 
-## 7. Qué pasa con los bugs anteriores
+## 7. Resumen
 
-| Bug de `fix1` | Dónde se resuelve |
-|---|---|
-| Poder "control remoto" y barra llena al inicio | Desconectado en V1, rehecho con las reglas nuevas en 2.2 |
-| Dueño del poder atraviesa el balón | Desaparece con 2.2 |
-| La patada no le pega al balón en el piso | 1.3 |
-| KICK mantenido patea muchas veces | 1.3 |
-| `Timer` de 20 ms contra 60 FPS | 1.2 + 1.4 |
-| `HumanController` comparte la referencia | 1.3 |
-| `ReaderMatch` deja modificar el partido | 1.1 (vistas) |
-| `applyInput` sin chequeo central | 1.3 |
-| COM sin histéresis y defensa contra la pared | 2.3 (perfiles nuevos) |
-| `Match` sin modos ni fin | 1.2 |
-| `ScoreBoard` acoplado a `Player` | 1.2 |
-| Knockback, `onTop`, `resetPosition` | 1.3 (ancla única) |
-| Empuje con `getSpeed()` | 1.3 (`Stats`) |
-| `bin/` versionado | 1.0 |
-| Sin pruebas | 1.5 y en cada versión |
-| Setters de más | 1.3 |
-| `Collidable` vacía | 2.1 |
-| `HeadSoccer` con configuración fija | 1.1 |
-| Golpes repetidos del pie | 1.3 |
-
----
-
-## 8. Resumen
-
-| Versión | Horas | Fecha |
+| Versión | Lo que queda (horas) | Fecha |
 |---|---|---|
-| V1 — PvP desacoplado + GUI + pruebas + diagramas | 21 – 27 | Do 15 nov |
-| V2 — física unificada, poderes, PvM, persistencia, log | 21 – 27 | Sa 21 nov |
-| V3 — mejoras, progreso, experta, aceptación | 9.5 – 10.5 | Do 22 nov |
-| V4 — ilusión y pulido | 6 – 8 | Parcial |
-| **Total** | **≈ 58 – 73 h** | |
-
-### Reparto sugerido para V1 (2 personas, 2 días)
-- **Persona A (dominio):** 1.1 → 1.2 → 1.3 y las pruebas de dominio.
-- **Persona B (presentación y entrega):** empieza 1.4 apenas exista la fachada del paso 1.1 (pueden acordar primero las firmas y luego trabajar en paralelo), y después los diagramas de secuencia y la retrospectiva.
-- **El paso 1.1 se hace juntos y primero:** es el contrato entre los dos.
+| V1 | 16 – 20 | Do 15 nov |
+| V2 | 16.5 – 20 | Sa 21 nov |
+| V3 | ≈ 8 | Do 22 nov |
+| V4 | 4.5 – 5.5 | Parcial |
+| **Total** | **≈ 45 – 54 h** | |
 
 ### Reglas de trabajo
-1. **La API primero, el interior después.** Nunca cambiar una firma de la fachada o de las vistas sin avisar al otro.
-2. Un commit por paso; push al terminar cada paso.
-3. Cada paso termina con sus pruebas en verde.
+1. **La API primero, el interior después.** No cambiar firmas de `MatchConfig`, vistas, `MatchListener` ni `DOPOSoccer` sin avisar.
+2. **Mover, no reescribir:** casi todas las reglas ya existen en el código de Cristian; en V1 se trata de llevarlas a su clase correcta.
+3. Un commit por paso; push al terminar cada paso; las 26 pruebas deben seguir en verde.
 4. Nada de `instanceof`, ni de `getX().getY().getZ()` desde fuera de la clase dueña.

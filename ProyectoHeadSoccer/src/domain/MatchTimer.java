@@ -1,55 +1,75 @@
 package domain;
 
 /**
- * Match countdown timer managing remaining match time and expiration checks.
+ * Match countdown timer managing remaining match time in seconds and fractional frames.
+ * Supports configurable duration in minutes or seconds.
  * 
  * @author Juan Esppitia
  * @author Cristian Salamanca
  */
 public class MatchTimer {
-	public static final int INITIAL_TIME = 60;
+	private int durationSeconds;
 	private int timeRemaining;
+	private int tickCount;
 
-	/**
-	 * Constructs a match timer initialized to default match duration.
-	 */
 	public MatchTimer() {
-		this.timeRemaining = INITIAL_TIME;
+		this(60);
+	}
+
+	public MatchTimer(int durationSeconds) {
+		this.durationSeconds = durationSeconds;
+		this.timeRemaining = durationSeconds;
+		this.tickCount = 0;
 	}
 
 	/**
-	 * Decrements remaining time by one second if time is still remaining.
+	 * Updates the timer by one frame tick at 60 FPS.
 	 */
-	public void decrementTime() {
+	public void tick() {
 		if (timeRemaining > 0) {
-			timeRemaining -= 1;
+			tickCount++;
+			if (tickCount >= 60) {
+				timeRemaining--;
+				tickCount = 0;
+			}
 		}
 	}
 
-	/**
-	 * Checks whether match time has expired.
-	 * 
-	 * @return True if time is zero or negative, false otherwise
-	 */
+	public void decrementTime() {
+		if (timeRemaining > 0) {
+			timeRemaining--;
+		}
+	}
+
 	public boolean isTimeUp() {
 		return timeRemaining <= 0;
 	}
 
-	/**
-	 * Returns the remaining time in seconds.
-	 * 
-	 * @return Seconds remaining
-	 */
+	public void reset() {
+		this.timeRemaining = this.durationSeconds;
+		this.tickCount = 0;
+	}
+
 	public int getTimeRemaining() {
 		return timeRemaining;
 	}
 
-	/**
-	 * Sets the remaining time in seconds.
-	 * 
-	 * @param timeRemaining Seconds to set
-	 */
 	public void setTimeRemaining(int timeRemaining) {
 		this.timeRemaining = timeRemaining;
+	}
+
+	public int getDurationSeconds() {
+		return durationSeconds;
+	}
+
+	public void setDurationSeconds(int durationSeconds) {
+		this.durationSeconds = durationSeconds;
+		reset();
+	}
+
+	public String getFormattedTime() {
+		int m = timeRemaining / 60;
+		int s = timeRemaining % 60;
+		return String.format("%02d:%02d", m, s);
 	}
 }

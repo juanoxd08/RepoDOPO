@@ -4,15 +4,19 @@ import domain.*;
 
 import javax.swing.*;
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Main GUI window and application entry point for the POOBSoccer game.
+ * Main application window and controller coordinating the Swing event loop,
+ * mouse interactions, keyboard navigation, and field resolution resizing.
  * 
  * @author Juan Esppitia
  * @author Cristian Salamanca
@@ -23,13 +27,10 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
     private Timer gameLoop;
     private Set<Integer> activeKeys;
 
-    /**
-     * Constructs the main application window and starts the game loop timer.
-     */
     public HeadSoccerGUI() {
-        super("POOBSoccer 2026-2 - Head Soccer Arcade");
+        super("DOPOSoccer 2026-2 - Head Soccer Arcade");
         this.game = new HeadSoccer();
-        this.photo = new PhotoHeadSoccer(game);
+        this.photo = new PhotoHeadSoccer(game, this);
         this.activeKeys = new HashSet<>();
 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -42,15 +43,31 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         this.addKeyListener(this);
         this.setFocusable(true);
 
-        this.gameLoop = new Timer(20, this);
+        // Escuchador de clics del ratón para botones de interfaz
+        this.photo.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                photo.handleMouseClick(e);
+                HeadSoccerGUI.this.requestFocusInWindow();
+            }
+        });
+
+        // Bucle a 60 FPS (16 ms por frame)
+        this.gameLoop = new Timer(16, this);
         this.gameLoop.start();
     }
 
     /**
-     * Executes one game loop tick, processing continuous inputs and repainting the view.
+     * Resizes the canvas and window when selecting a different resolution.
      * 
-     * @param e Action event triggered by timer
+     * @param res Selected FieldResolution
      */
+    public void updateResolution(FieldResolution res) {
+        photo.setPreferredSize(new Dimension(res.getPixelWidth(), res.getPixelHeight()));
+        this.pack();
+        this.setLocationRelativeTo(null);
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         processContinuousKeys();
@@ -58,11 +75,8 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         photo.repaint();
     }
 
-    /*
-     * Dispatches active keyboard keys to player controllers polymorphically.
-     */
     private void processContinuousKeys() {
-        if (game.getState() != GameStatus.PLAYING && game.getState() != GameStatus.GOLDEN_GOAL) return;
+        if (game.getState() != GameStatus.PLAYING && game.getState() != GameStatus.SUDDEN_DEATH) return;
 
         Set<PlayerAction> p1Actions = new HashSet<>();
         if (activeKeys.contains(KeyEvent.VK_A)) p1Actions.add(PlayerAction.LEFT);
@@ -87,48 +101,64 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         }
     }
 
-    /**
-     * Records pressed keys and triggers global shortcuts such as pause and reset.
-     * 
-     * @param e Key event
-     */
     @Override
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
         activeKeys.add(code);
 
-        if (code == KeyEvent.VK_P) {
-            game.togglePause();
-        } else if (code == KeyEvent.VK_R) {
-            game.reset();
+        GameStatus status = game.getState();
+
+        // Navegación por teclado según el flujo de la máquina de estados
+        if (status == GameStatus.MENU) {
+            if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE) {
+                game.startNewGameFlow();
+            }
+        } else if (status == GameStatus.SELECT_PLAYERS) {
+            if (code == KeyEvent.VK_ENTER) {
+                game.confirmPlayersAndProceedToCamp();
+            }
+        } else if (status == GameStatus.SELECT_CAMP) {
+            if (code == KeyEvent.VK_ENTER) {
+                game.startActiveMatch();
+            }
+        } else if (status == GameStatus.PLAYING || status == GameStatus.SUDDEN_DEATH) {
+            if (code == KeyEvent.VK_P) {
+                game.togglePause();
+            } else if (code == KeyEvent.VK_R) {
+                game.reset();
+            } else if (code == KeyEvent.VK_M) {
+                game.returnToMenu();
+            }
+        } else if (status == GameStatus.PAUSED) {
+            if (code == KeyEvent.VK_P) {
+                game.togglePause();
+            } else if (code == KeyEvent.VK_M) {
+                game.returnToMenu();
+            }
+        } else if (status == GameStatus.FINISHED) {
+            if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_M || code == KeyEvent.VK_SPACE) {
+                game.returnToMenu();
+            }
         }
     }
 
-    /**
-     * Removes released keys from active tracking.
-     * 
-     * @param e Key event
-     */
     @Override
     public void keyReleased(KeyEvent e) {
         int code = e.getKeyCode();
         activeKeys.remove(code);
+
+        if (code == KeyEvent.VK_S && game.getPlayer1() != null) {
+            game.getPlayer1().stopKick();
+        }
+        if (code == KeyEvent.VK_DOWN && game.getPlayer2() != null) {
+            game.getPlayer2().stopKick();
+        }
     }
 
-    /**
-     * Handles typed key events.
-     * 
-     * @param e Key event
-     */
     @Override
     public void keyTyped(KeyEvent e) {
     }
 
-    /**
-     * Main application entry point launching the Swing graphical interface.
-     * 
-     * @param args Command line arguments
-     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             HeadSoccerGUI ventana = new HeadSoccerGUI();

@@ -1,7 +1,8 @@
 package domain;
 
 /**
- * Scoreboard tracking match points, goal scoring, tie status, and match victor.
+ * Scoreboard tracking match goals, tie status, and match victor.
+ * In DOPOSoccer, goals are tracked separately from player progression points.
  * 
  * @author Juan Esppitia
  * @author Cristian Salamanca
@@ -22,12 +23,14 @@ public class ScoreBoard {
 	}
 	
 	/**
-	 * Returns the points of both players in a two-element array [player1, player2].
+	 * Returns the goals of both players in a two-element array [player1Goals, player2Goals].
 	 * 
 	 * @return Array containing scores
 	 */
 	public int[] getPoints(){
-		return new int[]{player1.getPoints(), player2.getPoints()};
+		int g1 = (player1 != null) ? player1.getGoals() : 0;
+		int g2 = (player2 != null) ? player2.getGoals() : 0;
+		return new int[]{g1, g2};
 	}
 	
 	/**
@@ -36,7 +39,8 @@ public class ScoreBoard {
 	 * @return True if scores are equal, false otherwise
 	 */
 	public boolean isTie(){
-		return player1.getPoints() == player2.getPoints();
+		int[] p = getPoints();
+		return p[0] == p[1];
 	}
 	
 	/**
@@ -46,22 +50,23 @@ public class ScoreBoard {
 	 */
 	public Player getWinner(){
 		if(!isTie()) {
-			return (player1.getPoints() > player2.getPoints()) ? player1 : player2;
+			int[] p = getPoints();
+			return (p[0] > p[1]) ? player1 : player2;
 		}
 		return null;
 	}
 
 	/**
-	 * Records a goal into a specific goal net, awarding points to the opponent player.
+	 * Records a goal into a specific goal net, awarding a goal to the opponent player.
 	 * 
 	 * @param goalSide Side of the goal where the ball entered
 	 */
 	public void golIn(Side goalSide){
 		Side sidePlayer = (goalSide == Side.LEFT) ? Side.RIGHT : Side.LEFT;
 		if(player1.getSide().equals(sidePlayer)){
-			player1.setPoints(getPoints()[0] + 1);
+			player1.addGoal();
 		}else{
-			player2.setPoints(getPoints()[1] + 1);
+			player2.addGoal();
 		}
 	}
 
