@@ -3,7 +3,7 @@ package domain;
 /**
  * Represents a soccer goal consisting of a physical crossbar and an interior goal area.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class Goal {

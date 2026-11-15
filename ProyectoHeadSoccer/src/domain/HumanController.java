@@ -6,7 +6,7 @@ import java.util.Set;
 /**
  * Controller implementation that manages player actions driven by human keyboard input.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class HumanController implements Controller {

@@ -18,7 +18,7 @@ import java.util.Set;
  * Main application window and controller coordinating the Swing event loop,
  * mouse interactions, keyboard navigation, and field resolution resizing.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener {
@@ -45,7 +45,6 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         this.addKeyListener(this);
         this.setFocusable(true);
 
-        // Escuchador de clics del ratón para botones de interfaz
         this.photo.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {

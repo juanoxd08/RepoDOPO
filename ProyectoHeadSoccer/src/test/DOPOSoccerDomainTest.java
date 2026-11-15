@@ -11,10 +11,10 @@ import static org.junit.Assert.*;
  * - Stats formulas (Kick multiplier, kick damage, Survival maximum health).
  * - Health depletion, bounds clamping, and zero-health 3-second stun recovery.
  * - Powers charging, +25% on receiving goal, aura activation, and status effects.
- * - All 4 country powers from Anexo 1 (Aura Azul, Rayo, Tornado, Ilusión).
+ * - All 4 country powers from Anexo 1 (Aura Azul, Rayo, Tornado, IlusiÃ³n).
  * - Match scoring, sudden death (golden goal), and end-of-match point distribution.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class DOPOSoccerDomainTest {
@@ -32,13 +32,9 @@ public class DOPOSoccerDomainTest {
         field = new Field();
     }
 
-    // =========================================================================
-    // 1. PRUEBAS DE ESTADÍSTICAS Y FÓRMULAS MATEMÁTICAS (ANEXO 2)
-    // =========================================================================
 
     @Test
     public void testSurvivalFormula() {
-        // vidaMax = 100 * (1 + 0.10 * (Survival - 1))
         PlayerStats stats1 = new PlayerStats(1, 1, 1, 1);
         assertEquals(100.0, stats1.getVidaMax(), 0.001);
 
@@ -54,7 +50,6 @@ public class DOPOSoccerDomainTest {
 
     @Test
     public void testKickMultiplierFormula() {
-        // multiplicadorKick = 1 + 0.10 * (Kick - 1)
         PlayerStats stats1 = new PlayerStats(1, 1, 1, 1);
         assertEquals(1.0, stats1.getMultiplicadorKick(), 0.001);
 
@@ -67,7 +62,6 @@ public class DOPOSoccerDomainTest {
 
     @Test
     public void testKickDamageFormula() {
-        // danioPatada = 10 * multiplicadorKick
         PlayerStats stats1 = new PlayerStats(1, 1, 1, 1);
         assertEquals(10.0, stats1.getDanioPatada(), 0.001);
 
@@ -87,9 +81,6 @@ public class DOPOSoccerDomainTest {
         stats.setSurvival(11);
     }
 
-    // =========================================================================
-    // 2. PRUEBAS DE SALUD, DAÑO Y ATURDIMIENTO
-    // =========================================================================
 
     @Test
     public void testPlayerTakesDamage() {
@@ -116,7 +107,6 @@ public class DOPOSoccerDomainTest {
         p1.takeDamage(p1.getVidaMax());
         assertTrue(p1.isStunnedByZeroHealth());
 
-        // Simular paso de 3 segundos (180 ticks a 60 FPS)
         for (int i = 0; i < 185; i++) {
             p1.moveVertical();
         }
@@ -126,9 +116,6 @@ public class DOPOSoccerDomainTest {
         assertFalse(p1.isDisabled());
     }
 
-    // =========================================================================
-    // 3. PRUEBAS DE PODERES Y REGLAS DE RECARGA
-    // =========================================================================
 
     @Test
     public void testPowerChargesOverTime() {
@@ -164,30 +151,26 @@ public class DOPOSoccerDomainTest {
 
     @Test
     public void testKoreaAuraAzulPushesOpponent() {
-        AuraAzulPower koreaPower = new AuraAzulPower();
-        p1.setPower(koreaPower);
+        Power koreaPower = p1.getPower();
         koreaPower.setCharge(100.0);
         p1.activatePower();
 
-        // Al tocar el balón se libera el tiro
-        koreaPower.executePowerShot(ball, p1);
+        koreaPower.executePowerShot(ball, p1.getSide());
         assertTrue(koreaPower.isPowerShotActive());
 
-        // Al impactar al rival
-        koreaPower.onHitRival(p2, p1);
+        p2.receiveHit(koreaPower.onHitRival(p1.getKickMultiplier()));
         assertEquals(PlayerEffect.PUSHED, p2.getCurrentEffect());
         assertTrue(p2.getVidaActual() < p2.getVidaMax());
     }
 
     @Test
     public void testCameroonLightningElectrocutesOpponent() {
-        LightningPower lightning = new LightningPower();
-        p2.setPower(lightning);
+        Power lightning = p2.getPower();
         lightning.setCharge(100.0);
         p2.activatePower();
 
-        lightning.executePowerShot(ball, p2);
-        lightning.onHitRival(p1, p2);
+        lightning.executePowerShot(ball, p2.getSide());
+        p1.receiveHit(lightning.onHitRival(p2.getKickMultiplier()));
 
         assertEquals(PlayerEffect.ELECTROCUTED, p1.getCurrentEffect());
     }
@@ -195,12 +178,12 @@ public class DOPOSoccerDomainTest {
     @Test
     public void testNigeriaTornadoKnocksOutOpponent() {
         TornadoPower tornado = new TornadoPower();
-        p1.setPower(tornado);
+        p1 = new Player("Jugador 1", p1.getCountry(), Side.LEFT, tornado, new PlayerStats(1, 1, 1, 1));
         tornado.setCharge(100.0);
         p1.activatePower();
 
-        tornado.executePowerShot(ball, p1);
-        tornado.onHitRival(p2, p1);
+        tornado.executePowerShot(ball, p1.getSide());
+        p2.receiveHit(tornado.onHitRival(p1.getKickMultiplier()));
 
         assertEquals(PlayerEffect.KNOCKED_OUT, p2.getCurrentEffect());
         assertTrue(p2.isDisabled());
@@ -209,13 +192,12 @@ public class DOPOSoccerDomainTest {
     @Test
     public void testUSAIllusionDividesBallIntoEight() {
         IllusionPower illusion = new IllusionPower();
-        p1.setPower(illusion);
+        p1 = new Player("Jugador 1", p1.getCountry(), Side.LEFT, illusion, new PlayerStats(1, 1, 1, 1));
         illusion.setCharge(100.0);
         p1.activatePower();
 
-        illusion.executePowerShot(ball, p1);
+        illusion.executePowerShot(ball, p1.getSide());
 
-        // 7 falsos + 1 real = 8 balones
         assertEquals(7, illusion.getFakeBalls().size());
         assertTrue(illusion.hasActiveIllusion());
     }
@@ -225,14 +207,10 @@ public class DOPOSoccerDomainTest {
         p2.applyEffect(PlayerEffect.ELECTROCUTED, 3.0);
         assertEquals(PlayerEffect.ELECTROCUTED, p2.getCurrentEffect());
 
-        // Nuevo efecto reemplaza inmediatamente
         p2.applyEffect(PlayerEffect.PUSHED, 1.5);
         assertEquals(PlayerEffect.PUSHED, p2.getCurrentEffect());
     }
 
-    // =========================================================================
-    // 4. PRUEBAS DE PARTIDO, GOL DE ORO Y PUNTOS
-    // =========================================================================
 
     @Test
     public void testMatchAwardsPointsOnCompletion() throws DOPOSoccerException {
@@ -245,7 +223,6 @@ public class DOPOSoccerDomainTest {
                 .build();
         Match match = new Match(config);
 
-        // Simular gol de Player 1 (entra en arco derecho)
         match.onGoal(Side.RIGHT);
 
         assertEquals(GameStatus.FINISHED, match.getStatus());

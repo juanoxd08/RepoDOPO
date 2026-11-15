@@ -7,7 +7,7 @@ package domain;
  * 3. DEFENSIVA: prioritizes defending its goal area.
  * 4. EXPERTA: selects actions dynamically based on match context and score difference.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public enum MachineProfile {

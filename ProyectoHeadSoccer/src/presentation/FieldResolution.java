@@ -6,11 +6,11 @@ import domain.Field;
  * Enumerates field resolution scale factors available in DOPOSoccer:
  * SMALL (840x480), MEDIUM (1050x600), LARGE (1260x720).
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public enum FieldResolution {
-    SMALL("Pequeña (840 x 480)", 2.4),
+    SMALL("PequeÃ±a (840 x 480)", 2.4),
     MEDIUM("Mediana (1050 x 600)", 3.0),
     LARGE("Grande (1260 x 720)", 3.6);
 

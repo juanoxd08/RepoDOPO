@@ -3,7 +3,7 @@ package domain;
 /**
  * Enumerates temporary status effects applied to players by power shots or exhaustion.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public enum PlayerEffect {

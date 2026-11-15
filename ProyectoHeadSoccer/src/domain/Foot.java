@@ -3,14 +3,19 @@ package domain;
 /**
  * Represents the player's foot entity for kicking and ball collisions.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class Foot implements Collidable {
+    public static final double KICK_REACH_X = 20.0;
+    public static final double KICK_LIFT_Y = 6.0;
+    public static final int KICK_SWEEP_TICKS = 4;
+    public static final int KICK_HOLD_TICKS = 8;
+
     private Circle circle;
     private boolean isKicking;
     private int powerKicking;
-    private int kickTicks;
+    private int kickElapsedTicks;
 
     /**
      * Default constructor for foot.
@@ -112,9 +117,7 @@ public class Foot implements Collidable {
     public void kicking(Side side) {
         if (!isKicking) {
             setKicking(true);
-            kickTicks = (int) (Physics.seconds(0.2));
-            double dx = (side == Side.LEFT) ? 25 : -25;
-            circle.translate(dx, -25);
+            kickElapsedTicks = 1;
         }
     }
 
@@ -126,9 +129,7 @@ public class Foot implements Collidable {
     public void stopKicking(Side side) {
         if (isKicking) {
             setKicking(false);
-            kickTicks = 0;
-            double dx = (side == Side.LEFT) ? -25 : 25;
-            circle.translate(dx, 25);
+            kickElapsedTicks = 0;
         }
     }
 
@@ -139,10 +140,39 @@ public class Foot implements Collidable {
      */
     public void tick(Side side) {
         if (isKicking) {
-            kickTicks--;
-            if (kickTicks <= 0) {
+            kickElapsedTicks++;
+            if (kickElapsedTicks > KICK_SWEEP_TICKS + KICK_HOLD_TICKS) {
                 stopKicking(side);
             }
         }
+    }
+
+    /**
+     * Returns normalized sweep progress in [0.0, 1.0].
+     * 
+     * @return Current kick sweep ratio
+     */
+    public double getSweepRatio() {
+        if (!isKicking || kickElapsedTicks <= 0) return 0.0;
+        return Math.min(1.0, (double) kickElapsedTicks / KICK_SWEEP_TICKS);
+    }
+
+    /**
+     * Returns horizontal kick offset relative to resting foot position.
+     * 
+     * @param side Player field side
+     * @return Horizontal offset in pixels
+     */
+    public double getKickOffsetX(Side side) {
+        return side.dir() * KICK_REACH_X * getSweepRatio();
+    }
+
+    /**
+     * Returns vertical kick offset relative to resting foot position.
+     * 
+     * @return Vertical offset in pixels
+     */
+    public double getKickOffsetY() {
+        return -KICK_LIFT_Y * getSweepRatio();
     }
 }

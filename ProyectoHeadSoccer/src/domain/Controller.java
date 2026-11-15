@@ -5,7 +5,7 @@ import java.util.Set;
 /**
  * Common interface for player input controllers, decoupled from presentation.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public interface Controller {

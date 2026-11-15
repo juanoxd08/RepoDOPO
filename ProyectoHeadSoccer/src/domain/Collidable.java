@@ -3,7 +3,7 @@ package domain;
 /**
  * Interface defining default callback reactions for physical collisions between game entities.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public interface Collidable {

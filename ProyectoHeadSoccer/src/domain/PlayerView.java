@@ -2,12 +2,14 @@ package domain;
 
 /**
  * Read-only view of a player's state and defensive shape copies for rendering.
+ * 
+ * @author Juan Espitia
+ * @author Cristian Salamanca
  */
 public interface PlayerView {
     String getName();
     Country getCountry();
     Side getSide();
-    int getGoals();
     double getLife();
     double getMaxLife();
     double getPowerProgress();

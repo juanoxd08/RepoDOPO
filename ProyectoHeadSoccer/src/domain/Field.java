@@ -3,7 +3,7 @@ package domain;
 /**
  * Represents the 2D soccer field containing boundaries and goal areas.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class Field {

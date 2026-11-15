@@ -3,7 +3,7 @@ package domain;
 /**
  * Represents the rectangular torso/body of a player.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class Body implements Collidable {

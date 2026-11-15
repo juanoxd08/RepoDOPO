@@ -1,7 +1,10 @@
 package domain;
 
 /**
- * Tipos de partido: por tiempo o por goles.
+ * Match termination rule types (by time or by goals).
+ * 
+ * @author Juan Espitia
+ * @author Cristian Salamanca
  */
 public enum MatchType {
     TIME("Por Tiempo"),
@@ -13,6 +16,11 @@ public enum MatchType {
         this.displayName = displayName;
     }
 
+    /**
+     * Returns the localized display label for this match type.
+     * 
+     * @return Display name
+     */
     public String getDisplayName() {
         return displayName;
     }

@@ -5,7 +5,7 @@ import java.util.Optional;
 /**
  * Geometric circle figure defined by center coordinates and a radius.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class Circle extends Figure {

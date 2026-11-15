@@ -5,7 +5,7 @@ import java.util.Optional;
 /**
  * Axis-aligned rectangular geometric shape supporting bounding box collision and containment tests.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class Rectangle extends Figure {
@@ -161,7 +161,6 @@ public class Rectangle extends Figure {
 			return Optional.of(new Contact(delta.normalized(), radius - dist));
 		}
 
-		// Ball center is inside the rectangle: push out toward the nearest edge.
 		double dLeft = Math.abs(ball.getX() - left());
 		double dRight = Math.abs(right() - ball.getX());
 		double dTop = Math.abs(ball.getY() - top());

@@ -3,7 +3,7 @@ package domain;
 /**
  * Represents the player's head entity for heading the ball and managing stun effects.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class Head implements Collidable {

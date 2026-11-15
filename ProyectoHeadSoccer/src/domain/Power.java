@@ -6,14 +6,14 @@ package domain;
  * 2. Gains 25% charge instantly upon receiving a goal.
  * 3. Activating power gives the player an enduring visible aura and immediately begins recharging.
  * 4. Hitting the ball releases the power shot, which vanishes the aura and accelerates the ball.
- * 5. Hitting the opponent applies damage: DañoPoder = DañoTiro * multiplicadorKick, and applies the specific status effect.
+ * 5. Hitting the opponent applies damage: DaÃ±oPoder = DaÃ±oTiro * multiplicadorKick, and applies the specific status effect.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public abstract class Power {
     protected String name;
-    protected double charge; // 0.0 to 100.0
+    protected double charge;
     protected boolean auraActive;
     protected boolean powerShotActive;
     protected double baseDamage;
@@ -24,7 +24,7 @@ public abstract class Power {
      * Constructs a special power with specific attributes.
      * 
      * @param name Name of the power shot
-     * @param baseDamage Base power damage (DañoTiro from Table 1)
+     * @param baseDamage Base power damage (DaÃ±oTiro from Table 1)
      * @param effectDurationSeconds Duration in seconds of status effect
      * @param effectType Status effect applied to opponent upon impact
      */
@@ -71,7 +71,7 @@ public abstract class Power {
     public boolean activateAura() {
         if (isReady() && !auraActive && !powerShotActive) {
             this.auraActive = true;
-            this.charge = 0.0; // La barra se vacía y en ese mismo instante empieza a recargarse
+            this.charge = 0.0;
             return true;
         }
         return false;
@@ -79,34 +79,31 @@ public abstract class Power {
 
     /**
      * Executes the power shot when the player with active aura contacts the soccer ball.
-     * 
+     *
      * @param ball Soccer ball in play
-     * @param owner Shooting player
+     * @param side Side of the shooting player
      */
-    public void executePowerShot(Ball ball, Player owner) {
+    public void executePowerShot(Ball ball, Side side) {
         if (auraActive && ball != null) {
             this.auraActive = false;
             this.powerShotActive = true;
             ball.setPowerShot(true);
-            affectBall(ball, owner.getSide());
+            affectBall(ball, side);
         }
     }
 
     /**
-     * Applies damage and status effect when power shot hits the opponent player:
-     * DañoPoder = DañoTiro * multiplicadorKick
-     * 
-     * @param rival Opponent player receiving the hit
-     * @param owner Shooting player who executed the power shot
+     * Computes the damage and status effect payload when a power shot hits the opponent:
+     * PowerDamage = BaseDamage * kickMultiplier.
+     *
+     * @param kickMultiplier Shooter's kick damage multiplier
+     * @return PowerHit payload, or null if no power shot is active
      */
-    public void onHitRival(Player rival, Player owner) {
-        if (powerShotActive && rival != null && owner != null) {
-            double multiplier = (owner.getStats() != null) ? owner.getStats().getMultiplicadorKick() : 1.0;
-            double finalDamage = this.baseDamage * multiplier;
-            rival.takeDamage(finalDamage);
-            rival.applyEffect(this.effectType, this.effectDurationSeconds);
-            this.powerShotActive = false;
-        }
+    public PowerHit onHitRival(double kickMultiplier) {
+        if(!powerShotActive) return null;
+        this.powerShotActive = false;
+            return new PowerHit(kickMultiplier * baseDamage, effectType, effectDurationSeconds);
+        
     }
 
     /**
@@ -143,16 +140,6 @@ public abstract class Power {
     public double getBaseDamage() { return baseDamage; }
     public double getEffectDurationSeconds() { return effectDurationSeconds; }
     public PlayerEffect getEffectType() { return effectType; }
-
-    // Compatibilidad con código previo
-    public boolean isActive() { return powerShotActive || auraActive; }
-    public void setActive(boolean active) { this.powerShotActive = active; }
-    public void applyPower(Ball ball, Player rival) {
-        if (rival != null) rival.applyEffect(effectType, effectDurationSeconds);
-    }
-    public void stopPower(Player rival) {
-        if (rival != null) rival.clearEffect();
-    }
 
     /**
      * Imparts characteristic velocity and trajectory onto the ball according to the country's power.

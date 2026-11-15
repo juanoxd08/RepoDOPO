@@ -4,7 +4,7 @@ package domain;
  * Performance statistics governing speed, jump, kick damage multiplier, and maximum health (survival).
  * All stats scale from 1 to 10 according to the DOPOSoccer specification.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class PlayerStats {

@@ -7,7 +7,7 @@ import java.util.Optional;
 /**
  * Represents the soccer ball with physics simulation including gravity, bouncing, and collision detection.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class Ball implements Collidable, BallView {

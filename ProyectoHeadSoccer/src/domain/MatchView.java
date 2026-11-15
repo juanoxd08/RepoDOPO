@@ -4,6 +4,9 @@ import java.util.Optional;
 
 /**
  * Read-only view of the match state for presentation and AI controllers.
+ * 
+ * @author Juan Espitia
+ * @author Cristian Salamanca
  */
 public interface MatchView {
     GameStatus getStatus();

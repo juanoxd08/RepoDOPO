@@ -8,17 +8,14 @@ import java.util.Optional;
 /**
  * Scoreboard tracking match points, goal scoring, tie status, and match victor.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class ScoreBoard {
     private final EnumMap<Side, Integer> goals;
 
 	/**
-	 * Constructs a scoreboard linked to the two participating players.
-	 * 
-	 * @param player1 First player instance
-	 * @param player2 Second player instance
+	 * Constructs an empty scoreboard initialized to 0-0.
 	 */
 	public ScoreBoard(){
 	  this.goals = new EnumMap<>(Side.class);

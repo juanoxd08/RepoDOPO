@@ -3,7 +3,7 @@ package domain;
 /**
  * Enumeration of available player actions and inputs during a match.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public enum PlayerAction {

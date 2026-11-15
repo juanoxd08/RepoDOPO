@@ -3,8 +3,10 @@ package domain;
 import java.util.function.Supplier;
 
 /**
- * Personajes disponibles. Cada pais tiene un nombre para mostrar y el nombre de su tiro de poder.
- * Los cuatro primeros son los del Anexo 1 del enunciado.
+ * Available playable countries, each providing a display name, power name, and power factory.
+ *
+ * @author Juan Espitia
+ * @author Cristian Salamanca
  */
 public enum Country {
 	SOUTH_KOREA("Corea del Sur", "Aura Azul", AuraAzulPower::new ),
@@ -22,18 +24,38 @@ public enum Country {
 		this.powerFactory = powerFactory;
 	}
 
+	/**
+	 * Returns the localized display name of the country.
+	 *
+	 * @return Country display name
+	 */
 	public String getDisplayName() {
 		return displayName;
 	}
 
+	/**
+	 * Returns the display name of the country's special power.
+	 *
+	 * @return Power name
+	 */
 	public String getPowerName() {
 		return powerName;
 	}
 
+	/**
+	 * Instantiates a fresh special power instance for this country.
+	 *
+	 * @return New Power instance
+	 */
 	public Power getPower(){
 		return powerFactory.get();
 	}
 
+	/**
+	 * Returns the country display name.
+	 *
+	 * @return Country display name
+	 */
 	@Override
 	public String toString() {
 		return displayName;

@@ -9,12 +9,14 @@ import java.awt.event.MouseEvent;
 /**
  * Graphical canvas rendering all screens and match entities using only
  * DOPOSoccer, MatchView, PlayerView, BallView, and MatchListener.
+ *
+ * @author Juan Espitia
+ * @author Cristian Salamanca
  */
 public class PhotoHeadSoccer extends JPanel implements MatchListener {
     private DOPOSoccer game;
     private HeadSoccerGUI parentFrame;
 
-    // Pre-match configuration owned by presentation
     private Modality modality = Modality.PVP;
     private Country leftCountry = Country.SOUTH_KOREA;
     private Country rightCountry = Country.CAMEROON;
@@ -24,17 +26,14 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
     private FieldResolution resolution = FieldResolution.MEDIUM;
     private MachineProfile machineProfile = MachineProfile.EXPERTA;
 
-    // Event messages received via MatchListener
     private String lastScorerText = "¡Anotación!";
     private String winnerNotification = "Fin del juego";
 
-    // Interactive button bounds for mouse clicks
     public final java.awt.Rectangle btnNewGame = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnContinue = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnStart = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnMenu = new java.awt.Rectangle(0, 0, 0, 0);
 
-    // Option toggle buttons
     public final java.awt.Rectangle btnModePvP = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnModePvM = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnTypeTime = new java.awt.Rectangle(0, 0, 0, 0);
@@ -131,14 +130,11 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         int w = getWidth();
         int h = getHeight();
 
-        // Fondo de campo decorativo
         drawBackgroundField(g2d);
 
-        // Capa oscura translúcida
         g2d.setColor(new Color(0, 0, 0, 140));
         g2d.fillRect(0, 0, w, h);
 
-        // Banner del título
         g2d.setColor(new Color(255, 60, 60));
         g2d.fillRoundRect(w / 2 - 260, h / 6 - 45, 520, 80, 40, 40);
         g2d.setColor(Color.WHITE);
@@ -156,11 +152,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         String sub = "DOPOSoccer 2026-2  •  Proyecto Final POOB";
         g2d.drawString(sub, w / 2 - g2d.getFontMetrics().stringWidth(sub) / 2, h / 6 + 65);
 
-        // Botón "NEW GAME"
         btnNewGame.setBounds(w / 2 - 130, h / 2 - 25, 260, 56);
         drawGlossyButton(g2d, btnNewGame, "NEW GAME", new Color(245, 175, 25), Color.BLACK, 24);
 
-        // Información de controles y bienvenida
         g2d.setColor(new Color(0, 0, 0, 160));
         g2d.fillRoundRect(w / 2 - 280, h / 2 + 65, 560, 120, 18, 18);
         g2d.setColor(Color.YELLOW);
@@ -190,13 +184,11 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         g2d.setColor(new Color(0, 0, 0, 160));
         g2d.fillRect(0, 0, w, h);
 
-        // Título "SELECT PLAYERS"
         g2d.setFont(new Font("Impact", Font.BOLD, 42));
         g2d.setColor(Color.YELLOW);
         String title = "SELECT PLAYERS";
         g2d.drawString(title, w / 2 - g2d.getFontMetrics().stringWidth(title) / 2, 55);
 
-        // Panel de configuración
         int panelW = Math.min(760, w - 40);
         int panelH = h - 160;
         int px = w / 2 - panelW / 2;
@@ -208,7 +200,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         g2d.setStroke(new BasicStroke(2));
         g2d.drawRoundRect(px, py, panelW, panelH, 20, 20);
 
-        // 1. Selector de Modalidad (PvP vs PvM)
         g2d.setFont(new Font("Arial", Font.BOLD, 16));
         g2d.setColor(Color.WHITE);
         g2d.drawString("Modalidad:", px + 30, py + 40);
@@ -220,7 +211,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         btnModePvM.setBounds(px + 320, py + 18, 160, 34);
         drawToggleOption(g2d, btnModePvM, "Jugador vs Máquina", vsMachine);
 
-        // Si es vs Máquina, selector de perfil
         if (vsMachine) {
             g2d.setColor(Color.LIGHT_GRAY);
             g2d.drawString("Perfil IA:", px + 500, py + 40);
@@ -228,10 +218,8 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
             drawToggleOption(g2d, btnNextProfile, machineProfile.getDisplayName() + " ↻", true);
         }
 
-        // 2. Selector de Personajes / Países
         int colW = panelW / 2 - 40;
 
-        // Jugador 1
         int p1X = px + 30;
         int p1Y = py + 75;
         g2d.setColor(new Color(40, 45, 60));
@@ -250,7 +238,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         btnNextP1Country.setBounds(p1X + 15, p1Y + 115, colW - 30, 32);
         drawGlossyButton(g2d, btnNextP1Country, "Cambiar Personaje ↻", new Color(70, 130, 180), Color.WHITE, 14);
 
-        // Jugador 2
         int p2X = px + panelW / 2 + 10;
         int p2Y = py + 75;
         g2d.setColor(new Color(40, 45, 60));
@@ -269,7 +256,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         btnNextP2Country.setBounds(p2X + 15, p2Y + 115, colW - 30, 32);
         drawGlossyButton(g2d, btnNextP2Country, "Cambiar Personaje ↻", new Color(70, 130, 180), Color.WHITE, 14);
 
-        // 3. Tipo de Partido
         int ty = py + 255;
         g2d.setFont(new Font("Arial", Font.BOLD, 16));
         g2d.setColor(Color.WHITE);
@@ -281,7 +267,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         btnTypeGoals.setBounds(px + 390, ty + 5, 200, 34);
         drawToggleOption(g2d, btnTypeGoals, "Por Goles (" + targetGoals + " goles) ↻", matchType == MatchType.GOALS);
 
-        // Botón "CONTINUE"
         btnContinue.setBounds(w / 2 - 120, h - 70, 240, 48);
         drawGlossyButton(g2d, btnContinue, "CONTINUE ➔", new Color(245, 175, 25), Color.BLACK, 20);
     }
@@ -327,7 +312,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         btnResLarge.setBounds(px + 50, py + 180, 500, 42);
         drawToggleOption(g2d, btnResLarge, FieldResolution.LARGE.getLabel(), resolution == FieldResolution.LARGE);
 
-        // Botón "START"
         btnStart.setBounds(w / 2 - 130, h - 85, 260, 54);
         drawGlossyButton(g2d, btnStart, "⚽ START ⚽", new Color(40, 180, 40), Color.WHITE, 24);
     }
@@ -343,7 +327,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         double scaleY = (double) getHeight() / fieldH;
         double currentScale = Math.min(scaleX, scaleY);
 
-        // Renderizado del campo y entidades a escala matemática
         Graphics2D gField = (Graphics2D) g2d.create();
         gField.scale(currentScale, currentScale);
 
@@ -357,16 +340,14 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
 
         gField.dispose();
 
-        // Renderizado del HUD superior en resolución completa
         drawHUD(g2d, match);
 
-        // Overlays según máquina de estados
         GameStatus status = match.getStatus();
         if (status == GameStatus.PAUSED) {
             drawPauseOverlay(g2d);
         } else if (status == GameStatus.GOAL_SCORED) {
             drawGoalOverlay(g2d);
-        } else if (status == GameStatus.DRAW || status == GameStatus.SUDDEN_DEATH) {
+        } else if (status == GameStatus.SUDDEN_DEATH) {
             drawDrawOverlay(g2d);
         } else if (status == GameStatus.FINISHED) {
             drawFinishedOverlay(g2d);
@@ -376,13 +357,10 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
     private void drawBackgroundField(Graphics2D g2d) {
         int w = getWidth();
         int h = getHeight();
-        // Cielo
         g2d.setColor(new Color(135, 206, 235));
         g2d.fillRect(0, 0, w, h);
-        // Gradas
         g2d.setColor(new Color(90, 110, 130));
         g2d.fillRect(0, h / 3, w, h / 3);
-        // Césped
         g2d.setColor(new Color(46, 139, 87));
         g2d.fillRect(0, (int) (h * 0.65), w, (int) (h * 0.35));
     }
@@ -455,7 +433,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
 
         Color baseColor = getColorByCountry(p.getCountry());
 
-        // 1. Aura resplandeciente si tiene poder activado
         if (p.hasAura()) {
             g2d.setColor(new Color(255, 220, 50, 90));
             g2d.fillOval(hx - hr - 10, hy - hr - 10, (hr + 10) * 2, (hr + 10) * 2);
@@ -464,7 +441,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
             g2d.drawOval(hx - hr - 6, hy - hr - 6, (hr + 6) * 2, (hr + 6) * 2);
         }
 
-        // 2. Efecto de Aturdimiento / Vida en Cero o Efectos de poder
         String effectName = p.getActiveEffectName();
         if (p.isStunned() || (effectName != null && !effectName.isEmpty())) {
             g2d.setColor(new Color(255, 255, 255, 180));
@@ -473,7 +449,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
             g2d.drawString("★ " + tag + " ★", hx - 14, hy - hr - 8);
         }
 
-        // 3. Cuerpo
         domain.Rectangle br = p.getBodyShape();
         if (br != null) {
             g2d.setColor(baseColor.darker());
@@ -483,21 +458,18 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
             g2d.drawRoundRect((int) br.getX(), (int) br.getY(), (int) br.getWidth(), (int) br.getHeight(), 5, 5);
         }
 
-        // 4. Cabeza
         g2d.setColor(baseColor);
         g2d.fillOval(hx - hr, hy - hr, hr * 2, hr * 2);
         g2d.setColor(Color.BLACK);
         g2d.setStroke(new BasicStroke(1.2f));
         g2d.drawOval(hx - hr, hy - hr, hr * 2, hr * 2);
 
-        // Ojo
         g2d.setColor(Color.WHITE);
         int eyeX = (p.getSide() == Side.LEFT) ? hx + hr / 3 : hx - hr / 3;
         g2d.fillOval(eyeX - 3, hy - 3, 6, 7);
         g2d.setColor(Color.BLACK);
         g2d.fillOval(eyeX - (p.getSide() == Side.LEFT ? 1 : 2), hy - 2, 3, 4);
 
-        // 5. Pie
         Circle fc = p.getFootShape();
         if (fc != null) {
             int fx = (int) fc.getX();
@@ -552,7 +524,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
     public void drawHUD(Graphics2D g2d, MatchView match) {
         int w = getWidth();
 
-        // 1. Marcador central
         g2d.setColor(new Color(15, 20, 25, 230));
         g2d.fillRoundRect(w / 2 - 160, 10, 320, 65, 14, 14);
         g2d.setColor(new Color(245, 195, 35));
@@ -567,7 +538,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         FontMetrics fm = g2d.getFontMetrics();
         g2d.drawString(scoreText, w / 2 - fm.stringWidth(scoreText) / 2, 48);
 
-        // Timer o Meta de goles
         g2d.setFont(new Font("Monospaced", Font.BOLD, 14));
         g2d.setColor(Color.GREEN);
         String centerInfo;
@@ -582,13 +552,11 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         }
         g2d.drawString(centerInfo, w / 2 - g2d.getFontMetrics().stringWidth(centerInfo) / 2, 68);
 
-        // 2. HUD Jugador 1 (Izquierda)
         PlayerView p1 = match.getPlayer(Side.LEFT);
         if (p1 != null) {
             drawPlayerHUD(g2d, p1, 25, 14, 220);
         }
 
-        // 3. HUD Jugador 2 (Derecha)
         PlayerView p2 = match.getPlayer(Side.RIGHT);
         if (p2 != null) {
             drawPlayerHUD(g2d, p2, w - 245, 14, 220);
@@ -601,7 +569,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         String name = p.getName() + " (" + p.getCountry().getDisplayName() + ")";
         g2d.drawString(name, x, y + 12);
 
-        // Barra de Vida
         int hpY = y + 18;
         g2d.setColor(Color.BLACK);
         g2d.fillRect(x, hpY, barW, 14);
@@ -617,7 +584,6 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         String hpText = (int) p.getLife() + "/" + (int) p.getMaxLife() + " HP";
         g2d.drawString(hpText, x + barW / 2 - g2d.getFontMetrics().stringWidth(hpText) / 2, hpY + 11);
 
-        // Barra de Poder
         int powY = hpY + 16;
         g2d.setColor(Color.BLACK);
         g2d.fillRect(x, powY, barW, 10);

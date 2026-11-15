@@ -8,7 +8,7 @@ import java.util.Set;
  * Autonomous artificial intelligence controller that implements the 4 machine profiles:
  * Torpe, Ofensiva, Defensiva, and Experta.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class COMController implements Controller {
@@ -130,12 +130,10 @@ public class COMController implements Controller {
 
         double homeX = (side == Side.RIGHT) ? Field.WIDTH - 70 : 70;
 
-        // Se mantiene cerca de su arco si el balón está lejos
         if (Math.abs(bx - homeX) > 130) {
             if (myX > homeX + 10) actions.add(PlayerAction.LEFT);
             else if (myX < homeX - 10) actions.add(PlayerAction.RIGHT);
         } else {
-            // El balón se acerca peligrosamente: interceptar y despejar
             if (myX > bx + 12) actions.add(PlayerAction.LEFT);
             else if (myX < bx - 12) actions.add(PlayerAction.RIGHT);
 
@@ -154,15 +152,12 @@ public class COMController implements Controller {
         int myScore = match.getGoals(side);
         int rivalScore = match.getGoals(side.opposite());
 
-        // Si va perdiendo, adopta postura ofensiva agresiva
         if (myScore < rivalScore) {
             return decideOfensiva(me, ball, rival);
         }
 
-        // Táctica balanceada con timing de poder
         Set<PlayerAction> actions = decideOfensiva(me, ball, rival);
 
-        // Uso estratégico del poder solo cuando el balón está cerca y en línea de tiro
         if (me.getPowerProgress() >= 100.0) {
             double distBall = Math.hypot(me.getHeadShape().getX() - ball.getX(), 
                                          me.getHeadShape().getY() - ball.getY());

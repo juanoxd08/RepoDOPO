@@ -12,29 +12,25 @@ import static org.junit.Assert.*;
 /**
  * Static and Dynamic verification test suite for DOPOSoccer.
  * 
- * 1. PRUEBAS ESTÁTICAS:
- *    - Verificación estructural de contratos, interfaces (Collidable, Controller, ReaderMatch).
- *    - Validación de firmas de métodos, modificadores y paquetes.
+ * 1. PRUEBAS ESTÃTICAS:
+ *    - VerificaciÃ³n estructural de contratos, interfaces (Collidable, Controller, ReaderMatch).
+ *    - ValidaciÃ³n de firmas de mÃ©todos, modificadores y paquetes.
  *    - Cobertura e invariantes de enumeraciones (Country, Side, GameStatus, MachineProfile, PlayerEffect, MatchType, FieldResolution).
  * 
- * 2. PRUEBAS DINÁMICAS:
- *    - Simulación en tiempo de ejecución del ciclo de juego (game loop).
- *    - Simulación de un partido PvP con movimiento, patadas, rebotes e interacción física continua.
- *    - Simulación de un partido PvM con reacción autónoma de los perfiles de máquina (Torpe, Ofensiva, Defensiva, Experta).
- *    - Simulación del flujo de estados (Menu -> Select Players -> Select Camp -> Playing -> Goal -> Finished).
+ * 2. PRUEBAS DINÃMICAS:
+ *    - SimulaciÃ³n en tiempo de ejecuciÃ³n del ciclo de juego (game loop).
+ *    - SimulaciÃ³n de un partido PvP con movimiento, patadas, rebotes e interacciÃ³n fÃ­sica continua.
+ *    - SimulaciÃ³n de un partido PvM con reacciÃ³n autÃ³noma de los perfiles de mÃ¡quina (Torpe, Ofensiva, Defensiva, Experta).
+ *    - SimulaciÃ³n del flujo de estados (Menu -> Select Players -> Select Camp -> Playing -> Goal -> Finished).
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class DOPOSoccerStaticDynamicTest {
 
-    // =========================================================================
-    // PARTE 1: PRUEBAS ESTÁTICAS (Static Testing / Verificación de Diseño)
-    // =========================================================================
 
     @Test
     public void testStaticInterfaceContracts() {
-        // Verificar que las interfaces clave existen y son abstractas/interfaces
         assertTrue(MatchView.class.isInterface());
         assertTrue(PlayerView.class.isInterface());
         assertTrue(BallView.class.isInterface());
@@ -47,7 +43,6 @@ public class DOPOSoccerStaticDynamicTest {
 
     @Test
     public void testStaticMethodSignatures() throws NoSuchMethodException {
-        // Verificar que Match implementa MatchView y DOPOSoccer expone los métodos requeridos
         Method getPlayer = Match.class.getMethod("getPlayer", Side.class);
         assertEquals(PlayerView.class, getPlayer.getReturnType());
 
@@ -69,23 +64,19 @@ public class DOPOSoccerStaticDynamicTest {
 
     @Test
     public void testStaticEnumerationsIntegrity() {
-        // Validación de constantes de Country requeridas por Anexo 1
         assertNotNull(Country.valueOf("SOUTH_KOREA"));
         assertNotNull(Country.valueOf("CAMEROON"));
         assertNotNull(Country.valueOf("NIGERIA"));
         assertNotNull(Country.valueOf("USA"));
 
-        // Validación de perfiles de máquina requeridos
         assertNotNull(MachineProfile.valueOf("TORPE"));
         assertNotNull(MachineProfile.valueOf("OFENSIVA"));
         assertNotNull(MachineProfile.valueOf("DEFENSIVA"));
         assertNotNull(MachineProfile.valueOf("EXPERTA"));
 
-        // Validación de tipos de partido
         assertNotNull(MatchType.valueOf("TIME"));
         assertNotNull(MatchType.valueOf("GOALS"));
 
-        // Validación de resoluciones
         assertNotNull(FieldResolution.valueOf("SMALL"));
         assertNotNull(FieldResolution.valueOf("MEDIUM"));
         assertNotNull(FieldResolution.valueOf("LARGE"));
@@ -99,9 +90,6 @@ public class DOPOSoccerStaticDynamicTest {
         assertTrue(Physics.FPS > 0);
     }
 
-    // =========================================================================
-    // PARTE 2: PRUEBAS DINÁMICAS (Dynamic Testing / Simulación de Comportamiento)
-    // =========================================================================
 
     @Test
     public void testDynamicGameFlowSimulation() throws DOPOSoccerException {
@@ -120,14 +108,12 @@ public class DOPOSoccerStaticDynamicTest {
         assertNotNull(game.getMatch());
         assertEquals(GameStatus.PLAYING, game.getMatch().getStatus());
 
-        // Simular ejecución activa de 30 fotogramas
         for (int i = 0; i < 30; i++) {
             game.tick();
         }
 
         assertEquals(GameStatus.PLAYING, game.getMatch().getStatus());
 
-        // Simular pausa y reanudación
         game.togglePause();
         assertEquals(GameStatus.PAUSED, game.getMatch().getStatus());
         game.togglePause();
@@ -148,10 +134,9 @@ public class DOPOSoccerStaticDynamicTest {
 
             Match match = new Match(config);
 
-            // Simular interacción durante 50 ticks
             for (int t = 0; t < 50; t++) {
                 Set<PlayerAction> actions = com.decide(match);
-                assertNotNull("El controlador " + profile + " debe retornar decisiones válidas", actions);
+                assertNotNull("El controlador " + profile + " debe retornar decisiones vÃ¡lidas", actions);
                 match.tick();
             }
         }
@@ -170,25 +155,21 @@ public class DOPOSoccerStaticDynamicTest {
 
         double startY = match.getBall().getY();
 
-        // Dejar caer el balón con gravedad durante 10 frames
         for (int i = 0; i < 10; i++) {
             match.tick();
         }
-        assertTrue("El balón debe descender debido a la gravedad", match.getBall().getY() > startY);
+        assertTrue("El balÃ³n debe descender debido a la gravedad", match.getBall().getY() > startY);
 
-        // Forzar gol directo en arco izquierdo (anota Jugador 2 / RIGHT)
         match.onGoal(Side.LEFT);
         assertEquals(GameStatus.GOAL_SCORED, match.getStatus());
         assertEquals(1, match.getGoals(Side.RIGHT));
 
-        // Simular cuenta regresiva de celebración para que vuelva a PLAYING
         int delay = match.getGoalCelebrationTicks();
         for (int i = 0; i <= delay + 5; i++) {
             match.tick();
         }
         assertEquals(GameStatus.PLAYING, match.getStatus());
 
-        // Forzar segundo gol para alcanzar la meta de 2 goles
         match.onGoal(Side.LEFT);
         assertEquals(GameStatus.FINISHED, match.getStatus());
         assertEquals(Optional.of(Side.RIGHT), match.getWinner());

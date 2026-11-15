@@ -9,7 +9,7 @@ import java.util.Set;
  * Represents a soccer match session managing participants, field elements, physics resolution, game loop,
  * goal celebrations, timer, and win conditions according to DOPOSoccer.
  * 
- * @author Juan Esppitia
+ * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public class Match implements MatchView {
@@ -30,17 +30,11 @@ public class Match implements MatchView {
     protected boolean pointsAwarded = false;
 
     /**
-     * Constructs a soccer match binding players, controllers, match type, and durations.
-     * 
-     * @param player1 First player instance
-     * @param player2 Second player instance
-     * @param controller1 Controller managing player 1
-     * @param controller2 Controller managing player 2
-     * @param matchType Scoring type (TIME or GOALS)
-
+     * Constructs a soccer match from a validated MatchConfig.
+     *
+     * @param config Validated match configuration
+     * @throws DOPOSoccerException if configuration or rule initialization fails
      */
-
-
     public Match(MatchConfig config) throws DOPOSoccerException{
         this.ball = new Ball();
         this.field = new Field();
@@ -84,7 +78,6 @@ public class Match implements MatchView {
      * Executes one frame tick of the match cycle.
      */
     public void tick() {
-        // Manejo de celebración de gol
         if (state == GameStatus.GOAL_SCORED) {
             goalCelebrationTicks--;
             if (goalCelebrationTicks <= 0) {
@@ -142,6 +135,9 @@ public class Match implements MatchView {
      * Resolves all physical collisions between entities, pitch boundaries, and goals.
      */
     public void resolveCollisions() {
+        player1.clearSupport();
+        player2.clearSupport();
+
         ball.collideWithEdges();
         ball.bounceOff(field.getLeftGoal().getCrossBar(), Physics.RESTITUTION, 0.0);
         ball.bounceOff(field.getRightGoal().getCrossBar(), Physics.RESTITUTION, 0.0);
@@ -160,13 +156,12 @@ public class Match implements MatchView {
         player1.collideWithPlayer(player2);
         player2.collideWithPlayer(player1);
 
-        // Interacción de tiros de poder activos con el oponente
         if (player1.getPower() != null && player1.getPower().isPowerShotActive() && player2.isHitByBall(ball)) {
-            player1.getPower().onHitRival(player2, player1);
+            player2.receiveHit(player1.getPower().onHitRival(player1.getKickMultiplier()));
         }
 
         if (player2.getPower() != null && player2.getPower().isPowerShotActive() && player1.isHitByBall(ball)) {
-            player2.getPower().onHitRival(player1, player2);
+            player1.receiveHit(player2.getPower().onHitRival(player2.getKickMultiplier()));
         }
     }
 
@@ -275,7 +270,6 @@ public class Match implements MatchView {
 
 
 
-    // --- MatchView contract ---
 
     @Override
     public GameStatus getStatus() {
@@ -334,7 +328,6 @@ public class Match implements MatchView {
         return new Rectangle(bar.getX(), bar.getY(), bar.getWidth(), bar.getHeight());
     }
 
-    // --- Internal helpers ---
 
     public ScoreBoard getScoreBoard() { return scoreBoard; }
     public void setState(GameStatus state) { this.state = state; }
