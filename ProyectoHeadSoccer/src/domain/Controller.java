@@ -16,7 +16,7 @@ public interface Controller {
      * @param match Read-only match state for decision making
      * @return Set of decided actions
      */
-    Set<PlayerAction> decide(ReaderMatch match);
+    Set<PlayerAction> decide(MatchView match);
 
     /**
      * Polymorphically receives raw input intentions from the user interface.

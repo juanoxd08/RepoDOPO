@@ -1,4 +1,6 @@
-package domain;
+package presentation;
+
+import domain.Field;
 
 /**
  * Enumerates field resolution scale factors available in DOPOSoccer:

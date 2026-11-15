@@ -33,7 +33,7 @@ public abstract class Power {
         this.baseDamage = baseDamage;
         this.effectDurationSeconds = effectDurationSeconds;
         this.effectType = effectType;
-        this.charge = 100.0; // Inicia llena para pruebas iniciales o puede resetearse
+        this.charge = 0.0;
         this.auraActive = false;
         this.powerShotActive = false;
     }
@@ -87,6 +87,7 @@ public abstract class Power {
         if (auraActive && ball != null) {
             this.auraActive = false;
             this.powerShotActive = true;
+            ball.setPowerShot(true);
             affectBall(ball, owner.getSide());
         }
     }
@@ -113,6 +114,14 @@ public abstract class Power {
      */
     public void finishPowerShot() {
         this.powerShotActive = false;
+    }
+
+    /**
+     * Optional per-frame update while a power shot is active (e.g., illusion clones).
+     *
+     * @param ball Main ball in play
+     */
+    public void updateShot(Ball ball) {
     }
 
     /**

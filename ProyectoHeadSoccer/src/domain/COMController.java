@@ -46,15 +46,15 @@ public class COMController implements Controller {
     }
 
     @Override
-    public Set<PlayerAction> decide(ReaderMatch match) {
+    public Set<PlayerAction> decide(MatchView match) {
         Set<PlayerAction> actions = new HashSet<>();
         if (match == null || match.getBall() == null) return actions;
 
-        Player me = (match.getPlayer1() != null && match.getPlayer1().getSide() == this.side) ? match.getPlayer1() : match.getPlayer2();
-        if (me == null || me.getHead() == null || me.getFoot() == null) return actions;
+        PlayerView me = match.getPlayer(this.side);
+        if (me == null || me.getHeadShape() == null || me.getFootShape() == null) return actions;
 
-        Player rival = (me == match.getPlayer1()) ? match.getPlayer2() : match.getPlayer1();
-        Ball ball = match.getBall();
+        PlayerView rival = match.getPlayer(this.side.opposite());
+        BallView ball = match.getBall();
 
         switch (profile) {
             case TORPE:
@@ -69,7 +69,7 @@ public class COMController implements Controller {
         }
     }
 
-    private Set<PlayerAction> decideTorpe(Player me, Ball ball) {
+    private Set<PlayerAction> decideTorpe(PlayerView me, BallView ball) {
         if (randomActionTimer > 0) {
             randomActionTimer--;
             return bufferedRandomActions;
@@ -88,18 +88,18 @@ public class COMController implements Controller {
             bufferedRandomActions.add(PlayerAction.KICK);
         }
 
-        if (me.getPower() != null && me.getPower().isReady() && random.nextInt(10) == 0) {
+        if (me.getPowerProgress() >= 100.0 && random.nextInt(10) == 0) {
             bufferedRandomActions.add(PlayerAction.POWER);
         }
 
         return bufferedRandomActions;
     }
 
-    private Set<PlayerAction> decideOfensiva(Player me, Ball ball, Player rival) {
+    private Set<PlayerAction> decideOfensiva(PlayerView me, BallView ball, PlayerView rival) {
         Set<PlayerAction> actions = new HashSet<>();
-        double myX = me.getHead().getCircle().getX();
-        double bx = ball.getCircle().getX();
-        double by = ball.getCircle().getY();
+        double myX = me.getHeadShape().getX();
+        double bx = ball.getX();
+        double by = ball.getY();
 
         double attackOffset = (side == Side.RIGHT) ? 18.0 : -18.0;
         double targetX = bx + attackOffset;
@@ -107,26 +107,26 @@ public class COMController implements Controller {
         if (myX > targetX + 4) actions.add(PlayerAction.LEFT);
         else if (myX < targetX - 4) actions.add(PlayerAction.RIGHT);
 
-        if (Math.abs(myX - bx) < 32 && by < me.getHead().getCircle().getY() + 15) {
+        if (Math.abs(myX - bx) < 32 && by < me.getHeadShape().getY() + 15) {
             actions.add(PlayerAction.JUMP);
         }
 
-        if (Math.abs(me.getFoot().getCircle().getX() - bx) < 26 && by > Field.HEIGHT - 70) {
+        if (Math.abs(me.getFootShape().getX() - bx) < 26 && by > Field.HEIGHT - 70) {
             actions.add(PlayerAction.KICK);
         }
 
-        if (me.getPower() != null && me.getPower().isReady()) {
+        if (me.getPowerProgress() >= 100.0) {
             actions.add(PlayerAction.POWER);
         }
 
         return actions;
     }
 
-    private Set<PlayerAction> decideDefensiva(Player me, Ball ball, Player rival) {
+    private Set<PlayerAction> decideDefensiva(PlayerView me, BallView ball, PlayerView rival) {
         Set<PlayerAction> actions = new HashSet<>();
-        double myX = me.getHead().getCircle().getX();
-        double bx = ball.getCircle().getX();
-        double by = ball.getCircle().getY();
+        double myX = me.getHeadShape().getX();
+        double bx = ball.getX();
+        double by = ball.getY();
 
         double homeX = (side == Side.RIGHT) ? Field.WIDTH - 70 : 70;
 
@@ -139,10 +139,10 @@ public class COMController implements Controller {
             if (myX > bx + 12) actions.add(PlayerAction.LEFT);
             else if (myX < bx - 12) actions.add(PlayerAction.RIGHT);
 
-            if (Math.abs(myX - bx) < 30 && by < me.getHead().getCircle().getY() + 10) {
+            if (Math.abs(myX - bx) < 30 && by < me.getHeadShape().getY() + 10) {
                 actions.add(PlayerAction.JUMP);
             }
-            if (Math.abs(me.getFoot().getCircle().getX() - bx) < 28) {
+            if (Math.abs(me.getFootShape().getX() - bx) < 28) {
                 actions.add(PlayerAction.KICK);
             }
         }
@@ -150,9 +150,9 @@ public class COMController implements Controller {
         return actions;
     }
 
-    private Set<PlayerAction> decideExperta(ReaderMatch match, Player me, Ball ball, Player rival) {
-        int myScore = (side == Side.LEFT) ? match.getScoreBoard().getPoints()[0] : match.getScoreBoard().getPoints()[1];
-        int rivalScore = (side == Side.LEFT) ? match.getScoreBoard().getPoints()[1] : match.getScoreBoard().getPoints()[0];
+    private Set<PlayerAction> decideExperta(MatchView match, PlayerView me, BallView ball, PlayerView rival) {
+        int myScore = match.getGoals(side);
+        int rivalScore = match.getGoals(side.opposite());
 
         // Si va perdiendo, adopta postura ofensiva agresiva
         if (myScore < rivalScore) {
@@ -163,9 +163,9 @@ public class COMController implements Controller {
         Set<PlayerAction> actions = decideOfensiva(me, ball, rival);
 
         // Uso estratégico del poder solo cuando el balón está cerca y en línea de tiro
-        if (me.getPower() != null && me.getPower().isReady()) {
-            double distBall = Math.hypot(me.getHead().getCircle().getX() - ball.getCircle().getX(), 
-                                         me.getHead().getCircle().getY() - ball.getCircle().getY());
+        if (me.getPowerProgress() >= 100.0) {
+            double distBall = Math.hypot(me.getHeadShape().getX() - ball.getX(), 
+                                         me.getHeadShape().getY() - ball.getY());
             if (distBall < 45) {
                 actions.add(PlayerAction.POWER);
             }

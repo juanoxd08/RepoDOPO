@@ -22,14 +22,16 @@ import java.util.Set;
  * @author Cristian Salamanca
  */
 public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener {
-    private HeadSoccer game;
+    private DOPOSoccer game;
     private PhotoHeadSoccer photo;
     private Timer gameLoop;
     private Set<Integer> activeKeys;
+    private Screen currentScreen;
 
     public HeadSoccerGUI() {
         super("DOPOSoccer 2026-2 - Head Soccer Arcade");
-        this.game = new HeadSoccer();
+        this.game = new DOPOSoccer();
+        this.currentScreen = Screen.MENU;
         this.photo = new PhotoHeadSoccer(game, this);
         this.activeKeys = new HashSet<>();
 
@@ -52,9 +54,16 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
             }
         });
 
-        // Bucle a 60 FPS (16 ms por frame)
-        this.gameLoop = new Timer(16, this);
+        this.gameLoop = new Timer(Physics.TICK_MS, this);
         this.gameLoop.start();
+    }
+
+    public Screen getCurrentScreen() {
+        return currentScreen;
+    }
+
+    public void setCurrentScreen(Screen screen) {
+        this.currentScreen = screen;
     }
 
     /**
@@ -70,13 +79,18 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        processContinuousKeys();
-        game.tick();
+        if (currentScreen == Screen.MATCH) {
+            processContinuousKeys();
+            game.tick();
+        }
         photo.repaint();
     }
 
     private void processContinuousKeys() {
-        if (game.getState() != GameStatus.PLAYING && game.getState() != GameStatus.SUDDEN_DEATH) return;
+        MatchView match = game.getMatch();
+        if (match == null) return;
+        GameStatus status = match.getStatus();
+        if (status != GameStatus.PLAYING && status != GameStatus.SUDDEN_DEATH) return;
 
         Set<PlayerAction> p1Actions = new HashSet<>();
         if (activeKeys.contains(KeyEvent.VK_A)) p1Actions.add(PlayerAction.LEFT);
@@ -84,10 +98,7 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         if (activeKeys.contains(KeyEvent.VK_W)) p1Actions.add(PlayerAction.JUMP);
         if (activeKeys.contains(KeyEvent.VK_S)) p1Actions.add(PlayerAction.KICK);
         if (activeKeys.contains(KeyEvent.VK_Q)) p1Actions.add(PlayerAction.POWER);
-
-        if (game.getController1() != null) {
-            game.getController1().receive(p1Actions);
-        }
+        game.setIntention(Side.LEFT, p1Actions);
 
         Set<PlayerAction> p2Actions = new HashSet<>();
         if (activeKeys.contains(KeyEvent.VK_LEFT)) p2Actions.add(PlayerAction.LEFT);
@@ -95,10 +106,7 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         if (activeKeys.contains(KeyEvent.VK_UP)) p2Actions.add(PlayerAction.JUMP);
         if (activeKeys.contains(KeyEvent.VK_DOWN)) p2Actions.add(PlayerAction.KICK);
         if (activeKeys.contains(KeyEvent.VK_CONTROL)) p2Actions.add(PlayerAction.POWER);
-
-        if (game.getController2() != null) {
-            game.getController2().receive(p2Actions);
-        }
+        game.setIntention(Side.RIGHT, p2Actions);
     }
 
     @Override
@@ -106,53 +114,55 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         int code = e.getKeyCode();
         activeKeys.add(code);
 
-        GameStatus status = game.getState();
-
-        // Navegación por teclado según el flujo de la máquina de estados
-        if (status == GameStatus.MENU) {
+        if (currentScreen == Screen.MENU) {
             if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE) {
-                game.startNewGameFlow();
+                currentScreen = Screen.SELECT_PLAYERS;
             }
-        } else if (status == GameStatus.SELECT_PLAYERS) {
+            return;
+        }
+        if (currentScreen == Screen.SELECT_PLAYERS) {
             if (code == KeyEvent.VK_ENTER) {
-                game.confirmPlayersAndProceedToCamp();
+                currentScreen = Screen.SELECT_CAMP;
             }
-        } else if (status == GameStatus.SELECT_CAMP) {
+            return;
+        }
+        if (currentScreen == Screen.SELECT_CAMP) {
             if (code == KeyEvent.VK_ENTER) {
-                game.startActiveMatch();
+                photo.startConfiguredMatch();
             }
-        } else if (status == GameStatus.PLAYING || status == GameStatus.SUDDEN_DEATH) {
+            return;
+        }
+
+        MatchView match = game.getMatch();
+        if (match == null) return;
+        GameStatus status = match.getStatus();
+
+        if (status == GameStatus.PLAYING || status == GameStatus.SUDDEN_DEATH) {
             if (code == KeyEvent.VK_P) {
                 game.togglePause();
             } else if (code == KeyEvent.VK_R) {
-                game.reset();
+                photo.startConfiguredMatch();
             } else if (code == KeyEvent.VK_M) {
-                game.returnToMenu();
+                game.finish();
+                currentScreen = Screen.MENU;
             }
         } else if (status == GameStatus.PAUSED) {
             if (code == KeyEvent.VK_P) {
                 game.togglePause();
             } else if (code == KeyEvent.VK_M) {
-                game.returnToMenu();
+                game.finish();
+                currentScreen = Screen.MENU;
             }
         } else if (status == GameStatus.FINISHED) {
             if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_M || code == KeyEvent.VK_SPACE) {
-                game.returnToMenu();
+                currentScreen = Screen.MENU;
             }
         }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-        int code = e.getKeyCode();
-        activeKeys.remove(code);
-
-        if (code == KeyEvent.VK_S && game.getPlayer1() != null) {
-            game.getPlayer1().stopKick();
-        }
-        if (code == KeyEvent.VK_DOWN && game.getPlayer2() != null) {
-            game.getPlayer2().stopKick();
-        }
+        activeKeys.remove(e.getKeyCode());
     }
 
     @Override

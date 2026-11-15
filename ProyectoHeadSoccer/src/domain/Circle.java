@@ -1,5 +1,7 @@
 package domain;
 
+import java.util.Optional;
+
 /**
  * Geometric circle figure defined by center coordinates and a radius.
  * 
@@ -69,5 +71,18 @@ public class Circle extends Figure {
 	@Override
 	public boolean detectCollisionWithRectangle(Rectangle rectangle) {
 		return rectangle.detectCollisionWithCircle(this);
+	}
+
+	@Override 
+	public Optional<Contact> contactWith(Circle ball){
+		if (ball == null) return Optional.empty();
+		Vector2 delta = new Vector2(ball.getX() - this.getX(), ball.getY() - this.getY());
+		double dist = delta.length();
+		double sumRad = ball.getRadius() + this.getRadius();
+		if (dist >= sumRad) return Optional.empty();
+		if (dist == 0) {
+			return Optional.of(new Contact(new Vector2(0, -1), sumRad));
+		}
+		return Optional.of(new Contact(delta.normalized(), sumRad - dist));
 	}
 }

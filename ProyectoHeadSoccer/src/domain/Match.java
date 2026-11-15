@@ -1,5 +1,8 @@
 package domain;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -9,7 +12,7 @@ import java.util.Set;
  * @author Juan Esppitia
  * @author Cristian Salamanca
  */
-public class Match implements ReaderMatch {
+public class Match implements MatchView {
     protected Player player1;
     protected Player player2;
     protected Controller controller1;
@@ -18,13 +21,12 @@ public class Match implements ReaderMatch {
     protected Ball ball;
     protected ScoreBoard scoreBoard;
     protected GameStatus state;
-    protected MatchTimer timer;
-    protected MatchType matchType;
-    protected int targetGoals;
+    private GameStatus stateBeforePause;
+    protected MatchRule rule;
+    protected List<MatchListener>  listeners = new ArrayList<>();
+  
 
     protected int goalCelebrationTicks;
-    protected String lastScorerText = "";
-    protected String winnerNotification = "";
     protected boolean pointsAwarded = false;
 
     /**
@@ -35,35 +37,26 @@ public class Match implements ReaderMatch {
      * @param controller1 Controller managing player 1
      * @param controller2 Controller managing player 2
      * @param matchType Scoring type (TIME or GOALS)
-     * @param durationSeconds Match duration in seconds (for TIME)
-     * @param targetGoals Goal limit to win (for GOALS)
-     */
-    public Match(Player player1, Player player2, Controller controller1, Controller controller2, 
-                 MatchType matchType, int durationSeconds, int targetGoals) {
-        this.player1 = player1;
-        this.player2 = player2;
-        this.controller1 = controller1;
-        this.controller2 = controller2;
-        this.matchType = (matchType != null) ? matchType : MatchType.TIME;
-        this.targetGoals = (targetGoals > 0) ? targetGoals : 3;
-        this.timer = new MatchTimer(durationSeconds > 0 ? durationSeconds : 60);
 
+     */
+
+
+    public Match(MatchConfig config) throws DOPOSoccerException{
+        this.ball = new Ball();
         this.field = new Field();
-        this.ball = new Ball(Field.WIDTH / 2.0, 40.0, 10);
-        this.scoreBoard = new ScoreBoard(player1, player2);
+        this.scoreBoard = new ScoreBoard();
+        this.player1 = new Player("jugador 1",config.getLeftCountry(), Side.LEFT, config.getLeftCountry().getPower(), new PlayerStats());
+        this.player2 =  new Player("jugador 2",config.getRightCountry(), Side.RIGHT, config.getRightCountry().getPower(), new PlayerStats());
+        this.controller1 = new HumanController();
+        this.controller2 = (config.getModality() == Modality.PVC) ? new COMController(Side.RIGHT) : new HumanController();
+        this.rule = (config.getMatchType() == MatchType.GOALS) ? new GoalRule(config.getTargetValue()) : new TimeRule(config.getTargetValue());
         this.state = GameStatus.PLAYING;
+        this.stateBeforePause = GameStatus.NOT_STARTED;
         this.goalCelebrationTicks = 0;
         this.pointsAwarded = false;
-
         resetPositions();
     }
 
-    /**
-     * Legacy constructor defaulting to standard 60-second timed match.
-     */
-    public Match(Player player1, Player player2, Controller controller1, Controller controller2) {
-        this(player1, player2, controller1, controller2, MatchType.TIME, 60, 3);
-    }
 
     /**
      * Resets player and ball positions back to kickoff spots, with ball dropping from center.
@@ -71,6 +64,7 @@ public class Match implements ReaderMatch {
     public void resetPositions() {
         if (ball != null) {
             ball.reset(Field.WIDTH / 2.0, 40.0);
+            ball.setPowerShot(false);
         }
         if (player1 != null) {
             player1.resetPosition();
@@ -101,23 +95,13 @@ public class Match implements ReaderMatch {
         }
 
         if (state != GameStatus.PLAYING && state != GameStatus.SUDDEN_DEATH) return;
-
-        // Cuenta regresiva del temporizador si el partido es por tiempo
-        if (matchType == MatchType.TIME && state == GameStatus.PLAYING) {
-            timer.tick();
-            if (timer.isTimeUp()) {
-                if (scoreBoard.isTie()) {
-                    // Empate: Muerte súbita / Gol de oro según el enunciado
-                    state = GameStatus.SUDDEN_DEATH;
-                    lastScorerText = "¡GOL DE ORO! MUERTE SÚBITA";
-                } else {
-                    finishMatch();
-                    return;
-                }
-            }
+        rule.onTick(this);
+        if (rule.isOver(this)) {
+            finishMatch();
+            return;
         }
 
-        // Consultar decisiones de los controladores
+       
         if (controller1 != null) {
             Set<PlayerAction> a1 = controller1.decide(this);
             player1.applyInput(a1, ball, player2);
@@ -127,22 +111,26 @@ public class Match implements ReaderMatch {
             player2.applyInput(a2, ball, player1);
         }
 
-        // Avanzar estado de entidades
+        
         player1.tick();
         player2.tick();
         ball.tick();
+        
+        if (player1.getPower() != null) player1.getPower().updateShot(ball);
+        if (player2.getPower() != null) player2.getPower().updateShot(ball);
 
-        // Actualizar clones si hay poder de Ilusión activo
-        if (player1.getPower() instanceof IllusionPower) {
-            ((IllusionPower) player1.getPower()).updateClones(ball);
-        }
-        if (player2.getPower() instanceof IllusionPower) {
-            ((IllusionPower) player2.getPower()).updateClones(ball);
-        }
+        boolean wasStunned1 = player1.isStunned();
+        boolean wasStunned2 = player2.isStunned();
 
         resolveCollisions();
 
-        // Detección de goles
+        if (!wasStunned1 && player1.isStunned()) {
+            for (MatchListener listener : listeners) listener.onStunned(Side.LEFT);
+        }
+        if (!wasStunned2 && player2.isStunned()) {
+            for (MatchListener listener : listeners) listener.onStunned(Side.RIGHT);
+        }
+
         if (field.getLeftGoal().detectGoal(ball)) {
             onGoal(Side.LEFT);
         } else if (field.getRightGoal().detectGoal(ball)) {
@@ -155,18 +143,11 @@ public class Match implements ReaderMatch {
      */
     public void resolveCollisions() {
         ball.collideWithEdges();
-        ball.collideWithGB(field.getLeftGoal().getCrossBar());
-        ball.collideWithGB(field.getRightGoal().getCrossBar());
+        ball.bounceOff(field.getLeftGoal().getCrossBar(), Physics.RESTITUTION, 0.0);
+        ball.bounceOff(field.getRightGoal().getCrossBar(), Physics.RESTITUTION, 0.0);
 
-        // Colisión del balón con cuerpo, cabeza y pie de Jugador 1
-        ball.collideWithGB(player1.getBody().getRectangle());
-        ball.collideWithHead(player1.getHead());
-        player1.collideMyFootWithBall(ball);
-
-        // Colisión del balón con cuerpo, cabeza y pie de Jugador 2
-        ball.collideWithGB(player2.getBody().getRectangle());
-        ball.collideWithHead(player2.getHead());
-        player2.collideMyFootWithBall(ball);
+        player1.collideWithBall(ball);
+        player2.collideWithBall(ball);
 
         player1.collideWithEdges();
         player2.collideWithEdges();
@@ -180,20 +161,12 @@ public class Match implements ReaderMatch {
         player2.collideWithPlayer(player1);
 
         // Interacción de tiros de poder activos con el oponente
-        if (player1.getPower() != null && player1.getPower().isPowerShotActive()) {
-            if (ball.getCircle().detectCollisionWithCircle(player2.getHead().getCircle()) ||
-                ball.getCircle().detectCollisionWithRectangle(player2.getBody().getRectangle()) ||
-                ball.getCircle().detectCollisionWithCircle(player2.getFoot().getCircle())) {
-                player1.getPower().onHitRival(player2, player1);
-            }
+        if (player1.getPower() != null && player1.getPower().isPowerShotActive() && player2.isHitByBall(ball)) {
+            player1.getPower().onHitRival(player2, player1);
         }
 
-        if (player2.getPower() != null && player2.getPower().isPowerShotActive()) {
-            if (ball.getCircle().detectCollisionWithCircle(player1.getHead().getCircle()) ||
-                ball.getCircle().detectCollisionWithRectangle(player1.getBody().getRectangle()) ||
-                ball.getCircle().detectCollisionWithCircle(player1.getFoot().getCircle())) {
-                player2.getPower().onHitRival(player1, player2);
-            }
+        if (player2.getPower() != null && player2.getPower().isPowerShotActive() && player1.isHitByBall(ball)) {
+            player2.getPower().onHitRival(player1, player2);
         }
     }
 
@@ -205,85 +178,169 @@ public class Match implements ReaderMatch {
     public void onGoal(Side goalSide) {
         scoreBoard.goalIn(goalSide);
 
-        // Regla: Cuando un jugador recibe un gol, su barra aumenta de inmediato un cuarto (1/4)
         if (goalSide == Side.LEFT) {
-            // Gol para Player 2 (arco izquierdo defendido por Player 1)
             player1.onGoalReceived();
-            lastScorerText = "¡GOL DE " + player2.getName().toUpperCase() + "!";
+            for(MatchListener listener: listeners) listener.onGoal(goalSide.opposite());
         } else {
-            // Gol para Player 1 (arco derecho defendido por Player 2)
+
             player2.onGoalReceived();
-            lastScorerText = "¡GOL DE " + player1.getName().toUpperCase() + "!";
+            for(MatchListener listener: listeners) listener.onGoal(goalSide.opposite());
         }
 
-        // Si era Gol de Oro (muerte súbita), el partido termina de inmediato
+        
         if (state == GameStatus.SUDDEN_DEATH) {
             finishMatch();
             return;
         }
 
-        // Si el partido es por goles y se alcanzó la meta
-        if (matchType == MatchType.GOALS) {
-            int p1Score = scoreBoard.getPoints()[0];
-            int p2Score = scoreBoard.getPoints()[1];
-            if (p1Score >= targetGoals || p2Score >= targetGoals) {
-                finishMatch();
-                return;
-            }
+        
+
+        if (rule.isOver(this)) {
+            finishMatch();
+            return;
         }
 
-        // Transición a estado de celebración GOAL
         this.state = GameStatus.GOAL_SCORED;
-        this.goalCelebrationTicks = 85; // ~1.4 segundos de animación visual
+        this.goalCelebrationTicks = 85; 
     }
 
     private void finishMatch() {
-        this.state = GameStatus.FINISHED;
-        awardMatchEndPoints();
-
-        Player winner = scoreBoard.getWinner();
-        if (winner != null) {
-            this.winnerNotification = "¡GANADOR: " + winner.getName().toUpperCase() + "! (+100 PUNTOS)";
-        } else {
-            this.winnerNotification = "¡EMPATE TÉCNICO!";
-        }
-    }
-
-    /**
-     * Awards 100 points to winner and 25 points to loser according to rules.
-     */
-    private void awardMatchEndPoints() {
         if (pointsAwarded) return;
         pointsAwarded = true;
+        Side winSide;
+        this.state = GameStatus.FINISHED;
+        
 
-        Player winner = scoreBoard.getWinner();
-        if (winner == player1) {
-            player1.addPoints(100);
-            player2.addPoints(25);
-        } else if (winner == player2) {
-            player2.addPoints(100);
+        Optional<Side> winner = scoreBoard.getLeader();
+        if(winner.isPresent()){
+            winSide = winner.get();
+            Side loseSide = winSide.opposite();
+            if(player1.getSide() == winSide)  {
+                player1.addPoints(100);
+                player2.addPoints(25);
+            }
+             else {
+                player2.addPoints(100);
+                player1.addPoints(25);
+            }
+            for(MatchListener listener: listeners) listener.onMatchFinished(winSide, 100, 25);
+        }else{
             player1.addPoints(25);
-        } else {
-            player1.addPoints(25);
             player2.addPoints(25);
+            for(MatchListener listener: listeners) listener.onMatchFinished(null, 25, 25);
+        }
+
+        
+        
+    }
+
+    public void pause(){
+        if(state != GameStatus.NOT_STARTED &&
+        state != GameStatus.PAUSED &&
+        state != GameStatus.FINISHED
+        ){
+            stateBeforePause = state;
+            state = GameStatus.PAUSED;
         }
     }
 
-    @Override public Player getPlayer1() { return player1; }
-    @Override public Player getPlayer2() { return player2; }
+    public void resume(){
+        if(state == GameStatus.PAUSED){
+            state = (stateBeforePause != null) ? stateBeforePause : GameStatus.PLAYING;
+            stateBeforePause = null;
+        }
+    }
+
+    public void finish(){
+        finishMatch();
+    }
+
+    public void setIntention(Side side, Set<PlayerAction> actions) {
+        if (side == Side.LEFT && controller1 != null) {
+            controller1.receive(actions);
+        } else if (side == Side.RIGHT && controller2 != null) {
+            controller2.receive(actions);
+        }
+    }
+
+    public void addListener(MatchListener listener) {
+        if (listener != null && !listeners.contains(listener)) {
+            listeners.add(listener);
+        }
+    }
+
+    public void removeListener(MatchListener listener) {
+        listeners.remove(listener);
+    }
+
+
+
+    // --- MatchView contract ---
+
+    @Override
+    public GameStatus getStatus() {
+        return state;
+    }
+
+    @Override
+    public int getRemainingSeconds() {
+        return rule.remainingSeconds(this);
+    }
+
+    @Override
+    public boolean isSuddenDeath() {
+        return state == GameStatus.SUDDEN_DEATH;
+    }
+
+    @Override
+    public int getGoals(Side side) {
+        return scoreBoard.getGoals(side);
+    }
+
+    @Override
+    public PlayerView getPlayer(Side side) {
+        return (side == Side.LEFT) ? player1 : player2;
+    }
+
+    @Override
+    public BallView getBall() {
+        return ball;
+    }
+
+    @Override
+    public Optional<Side> getWinner() {
+        return rule.winner(this);
+    }
+
+    @Override
+    public int getFieldWidth() {
+        return Field.WIDTH;
+    }
+
+    @Override
+    public int getFieldHeight() {
+        return Field.HEIGHT;
+    }
+
+    @Override
+    public Rectangle getGoalArea(Side side) {
+        Rectangle area = field.getGoal(side).getGoalArea();
+        return new Rectangle(area.getX(), area.getY(), area.getWidth(), area.getHeight());
+    }
+
+    @Override
+    public Rectangle getCrossBar(Side side) {
+        Rectangle bar = field.getGoal(side).getCrossBar();
+        return new Rectangle(bar.getX(), bar.getY(), bar.getWidth(), bar.getHeight());
+    }
+
+    // --- Internal helpers ---
+
+    public ScoreBoard getScoreBoard() { return scoreBoard; }
+    public void setState(GameStatus state) { this.state = state; }
+    public int getGoalCelebrationTicks() { return goalCelebrationTicks; }
     public Controller getController1() { return controller1; }
     public void setController1(Controller controller1) { this.controller1 = controller1; }
     public Controller getController2() { return controller2; }
     public void setController2(Controller controller2) { this.controller2 = controller2; }
-    @Override public Field getField() { return field; }
-    @Override public Ball getBall() { return ball; }
-    @Override public ScoreBoard getScoreBoard() { return scoreBoard; }
-    @Override public GameStatus getState() { return state; }
-    public void setState(GameStatus state) { this.state = state; }
-    @Override public MatchTimer getTimer() { return timer; }
-    @Override public MatchType getMatchType() { return matchType; }
-    @Override public int getTargetGoals() { return targetGoals; }
-    public String getLastScorerText() { return lastScorerText; }
-    public String getWinnerNotification() { return winnerNotification; }
-    public int getGoalCelebrationTicks() { return goalCelebrationTicks; }
 }

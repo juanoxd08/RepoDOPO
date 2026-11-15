@@ -75,14 +75,14 @@ public class DOPOSoccerDomainTest {
         assertEquals(14.0, stats5.getDanioPatada(), 0.001);
     }
 
-    @Test(expected = HeadSoccerException.class)
-    public void testStatsBoundsValidationBelowMin() throws HeadSoccerException {
+    @Test(expected = IllegalArgumentException.class)
+    public void testStatsBoundsValidationBelowMin() {
         PlayerStats stats = new PlayerStats();
         stats.setKick(0);
     }
 
-    @Test(expected = HeadSoccerException.class)
-    public void testStatsBoundsValidationAboveMax() throws HeadSoccerException {
+    @Test(expected = IllegalArgumentException.class)
+    public void testStatsBoundsValidationAboveMax() {
         PlayerStats stats = new PlayerStats();
         stats.setSurvival(11);
     }
@@ -235,24 +235,40 @@ public class DOPOSoccerDomainTest {
     // =========================================================================
 
     @Test
-    public void testMatchAwardsPointsOnCompletion() {
-        Match match = new Match(p1, p2, new HumanController(), new HumanController(), MatchType.GOALS, 60, 1);
-        
-        // Simular gol de Player 1
+    public void testMatchAwardsPointsOnCompletion() throws DOPOSoccerException {
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftCountry(Country.SOUTH_KOREA)
+                .rightCountry(Country.CAMEROON)
+                .matchType(MatchType.GOALS)
+                .targetValue(1)
+                .build();
+        Match match = new Match(config);
+
+        // Simular gol de Player 1 (entra en arco derecho)
         match.onGoal(Side.RIGHT);
 
-        assertEquals(GameStatus.FINISHED, match.getState());
-        assertEquals(100, p1.getPoints());
-        assertEquals(25, p2.getPoints());
+        assertEquals(GameStatus.FINISHED, match.getStatus());
+        assertEquals(100, match.getPlayer(Side.LEFT).getPoints());
+        assertEquals(25, match.getPlayer(Side.RIGHT).getPoints());
     }
 
     @Test
-    public void testSuddenDeathActivatesOnTimeTie() {
-        Match match = new Match(p1, p2, new HumanController(), new HumanController(), MatchType.TIME, 1, 3);
-        match.getTimer().setTimeRemaining(0);
+    public void testSuddenDeathActivatesOnTimeTie() throws DOPOSoccerException {
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftCountry(Country.SOUTH_KOREA)
+                .rightCountry(Country.CAMEROON)
+                .matchType(MatchType.TIME)
+                .targetValue(1)
+                .build();
+        Match match = new Match(config);
 
-        match.tick();
+        int totalTicks = 60 * Physics.FPS + 1;
+        for (int i = 0; i < totalTicks; i++) {
+            match.tick();
+        }
 
-        assertEquals(GameStatus.SUDDEN_DEATH, match.getState());
+        assertEquals(GameStatus.SUDDEN_DEATH, match.getStatus());
     }
 }

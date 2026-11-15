@@ -1,5 +1,7 @@
 package domain;
 
+import java.util.Optional;
+
 /**
  * Axis-aligned rectangular geometric shape supporting bounding box collision and containment tests.
  * 
@@ -143,5 +145,35 @@ public class Rectangle extends Figure {
 				&& circle.getX() + circle.getRadius() <= right()
 				&& circle.getY() - circle.getRadius() >= top()
 				&& circle.getY() + circle.getRadius() <= bottom();
+	}
+
+	@Override
+	public Optional<Contact> contactWith(Circle ball) {
+		if (ball == null) return Optional.empty();
+		double closestX = Math.max(left(), Math.min(ball.getX(), right()));
+		double closestY = Math.max(top(), Math.min(ball.getY(), bottom()));
+		Vector2 delta = new Vector2(ball.getX() - closestX, ball.getY() - closestY);
+		double dist = delta.length();
+		double radius = ball.getRadius();
+
+		if (dist >= radius) return Optional.empty();
+		if (dist > 0) {
+			return Optional.of(new Contact(delta.normalized(), radius - dist));
+		}
+
+		// Ball center is inside the rectangle: push out toward the nearest edge.
+		double dLeft = Math.abs(ball.getX() - left());
+		double dRight = Math.abs(right() - ball.getX());
+		double dTop = Math.abs(ball.getY() - top());
+		double dBottom = Math.abs(bottom() - ball.getY());
+		double min = Math.min(Math.min(dLeft, dRight), Math.min(dTop, dBottom));
+
+		Vector2 normal;
+		if (min == dTop) normal = new Vector2(0, -1);
+		else if (min == dBottom) normal = new Vector2(0, 1);
+		else if (min == dLeft) normal = new Vector2(-1, 0);
+		else normal = new Vector2(1, 0);
+
+		return Optional.of(new Contact(normal, min + radius));
 	}
 }

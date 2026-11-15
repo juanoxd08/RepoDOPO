@@ -1,9 +1,11 @@
 package test;
 
 import domain.*;
+import presentation.FieldResolution;
 import org.junit.Test;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Optional;
 import java.util.Set;
 import static org.junit.Assert.*;
 
@@ -33,27 +35,36 @@ public class DOPOSoccerStaticDynamicTest {
     @Test
     public void testStaticInterfaceContracts() {
         // Verificar que las interfaces clave existen y son abstractas/interfaces
-        assertTrue(Collidable.class.isInterface());
+        assertTrue(MatchView.class.isInterface());
+        assertTrue(PlayerView.class.isInterface());
+        assertTrue(BallView.class.isInterface());
+        assertTrue(MatchRule.class.isInterface());
+        assertTrue(MatchListener.class.isInterface());
         assertTrue(Controller.class.isInterface());
-        assertTrue(ReaderMatch.class.isInterface());
         assertTrue(Modifier.isAbstract(Power.class.getModifiers()));
         assertTrue(Modifier.isAbstract(Figure.class.getModifiers()));
     }
 
     @Test
     public void testStaticMethodSignatures() throws NoSuchMethodException {
-        // Verificar que Match implementa ReaderMatch y contiene los métodos requeridos
-        Method getPlayer1 = Match.class.getMethod("getPlayer1");
-        assertEquals(Player.class, getPlayer1.getReturnType());
+        // Verificar que Match implementa MatchView y DOPOSoccer expone los métodos requeridos
+        Method getPlayer = Match.class.getMethod("getPlayer", Side.class);
+        assertEquals(PlayerView.class, getPlayer.getReturnType());
 
         Method getBall = Match.class.getMethod("getBall");
-        assertEquals(Ball.class, getBall.getReturnType());
+        assertEquals(BallView.class, getBall.getReturnType());
 
-        Method getScoreBoard = Match.class.getMethod("getScoreBoard");
-        assertEquals(ScoreBoard.class, getScoreBoard.getReturnType());
+        Method getStatus = Match.class.getMethod("getStatus");
+        assertEquals(GameStatus.class, getStatus.getReturnType());
 
         Method tick = Match.class.getMethod("tick");
         assertEquals(void.class, tick.getReturnType());
+
+        Method newMatch = DOPOSoccer.class.getMethod("newMatch", MatchConfig.class);
+        assertEquals(void.class, newMatch.getReturnType());
+
+        Method getMatch = DOPOSoccer.class.getMethod("getMatch");
+        assertEquals(MatchView.class, getMatch.getReturnType());
     }
 
     @Test
@@ -93,56 +104,49 @@ public class DOPOSoccerStaticDynamicTest {
     // =========================================================================
 
     @Test
-    public void testDynamicGameFlowSimulation() {
-        HeadSoccer game = new HeadSoccer();
-        assertEquals(GameStatus.MENU, game.getState());
+    public void testDynamicGameFlowSimulation() throws DOPOSoccerException {
+        DOPOSoccer game = new DOPOSoccer();
+        assertNull(game.getMatch());
 
-        // Transición 1: Iniciar configuración
-        game.startNewGameFlow();
-        assertEquals(GameStatus.SELECT_PLAYERS, game.getState());
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftCountry(Country.SOUTH_KOREA)
+                .rightCountry(Country.USA)
+                .matchType(MatchType.GOALS)
+                .targetValue(2)
+                .build();
 
-        // Configuración de partido
-        game.setVsMachine(true);
-        game.setMachineProfile(MachineProfile.OFENSIVA);
-        game.setPlayer1Country(Country.SOUTH_KOREA);
-        game.setPlayer2Country(Country.USA);
-        game.setMatchType(MatchType.GOALS);
-        game.setTargetGoals(2);
-
-        // Transición 2: Continuar a selección de campo
-        game.confirmPlayersAndProceedToCamp();
-        assertEquals(GameStatus.SELECT_CAMP, game.getState());
-
-        // Selección de resolución
-        game.setResolution(FieldResolution.MEDIUM);
-
-        // Transición 3: Iniciar partido activo
-        game.startActiveMatch();
-        assertEquals(GameStatus.PLAYING, game.getState());
-        assertNotNull(game.getCurrentMatch());
+        game.newMatch(config);
+        assertNotNull(game.getMatch());
+        assertEquals(GameStatus.PLAYING, game.getMatch().getStatus());
 
         // Simular ejecución activa de 30 fotogramas
         for (int i = 0; i < 30; i++) {
             game.tick();
         }
 
-        assertEquals(GameStatus.PLAYING, game.getState());
+        assertEquals(GameStatus.PLAYING, game.getMatch().getStatus());
 
         // Simular pausa y reanudación
         game.togglePause();
-        assertEquals(GameStatus.PAUSED, game.getState());
+        assertEquals(GameStatus.PAUSED, game.getMatch().getStatus());
         game.togglePause();
-        assertEquals(GameStatus.PLAYING, game.getState());
+        assertEquals(GameStatus.PLAYING, game.getMatch().getStatus());
     }
 
     @Test
-    public void testDynamicMachineControllersReaction() {
+    public void testDynamicMachineControllersReaction() throws DOPOSoccerException {
         for (MachineProfile profile : MachineProfile.values()) {
-            Player p1 = new Player("Humano", Country.SOUTH_KOREA, Side.LEFT, new AuraAzulPower(), new PlayerStats());
-            Player p2 = new Player("Bot", Country.CAMEROON, Side.RIGHT, new LightningPower(), new PlayerStats());
             COMController com = new COMController(Side.RIGHT, profile);
+            MatchConfig config = MatchConfig.builder()
+                    .modality(Modality.PVP)
+                    .leftCountry(Country.SOUTH_KOREA)
+                    .rightCountry(Country.CAMEROON)
+                    .matchType(MatchType.TIME)
+                    .targetValue(1)
+                    .build();
 
-            Match match = new Match(p1, p2, new HumanController(), com, MatchType.TIME, 60, 3);
+            Match match = new Match(config);
 
             // Simular interacción durante 50 ticks
             for (int t = 0; t < 50; t++) {
@@ -154,35 +158,39 @@ public class DOPOSoccerStaticDynamicTest {
     }
 
     @Test
-    public void testDynamicBallPhysicsAndGoalSequence() {
-        Player p1 = new Player("Jugador 1", Country.SOUTH_KOREA, Side.LEFT, new AuraAzulPower(), new PlayerStats());
-        Player p2 = new Player("Jugador 2", Country.CAMEROON, Side.RIGHT, new LightningPower(), new PlayerStats());
-        Match match = new Match(p1, p2, new HumanController(), new HumanController(), MatchType.GOALS, 60, 2);
+    public void testDynamicBallPhysicsAndGoalSequence() throws DOPOSoccerException {
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftCountry(Country.SOUTH_KOREA)
+                .rightCountry(Country.CAMEROON)
+                .matchType(MatchType.GOALS)
+                .targetValue(2)
+                .build();
+        Match match = new Match(config);
 
-        Ball ball = match.getBall();
-        double startY = ball.getCircle().getY();
+        double startY = match.getBall().getY();
 
         // Dejar caer el balón con gravedad durante 10 frames
         for (int i = 0; i < 10; i++) {
-            ball.tick();
+            match.tick();
         }
-        assertTrue("El balón debe descender debido a la gravedad", ball.getCircle().getY() > startY);
+        assertTrue("El balón debe descender debido a la gravedad", match.getBall().getY() > startY);
 
-        // Forzar gol directo en arco izquierdo (anota Jugador 2)
+        // Forzar gol directo en arco izquierdo (anota Jugador 2 / RIGHT)
         match.onGoal(Side.LEFT);
-        assertEquals(GameStatus.GOAL_SCORED, match.getState());
-        assertEquals(1, match.getScoreBoard().getPoints()[1]);
+        assertEquals(GameStatus.GOAL_SCORED, match.getStatus());
+        assertEquals(1, match.getGoals(Side.RIGHT));
 
         // Simular cuenta regresiva de celebración para que vuelva a PLAYING
         int delay = match.getGoalCelebrationTicks();
         for (int i = 0; i <= delay + 5; i++) {
             match.tick();
         }
-        assertEquals(GameStatus.PLAYING, match.getState());
+        assertEquals(GameStatus.PLAYING, match.getStatus());
 
         // Forzar segundo gol para alcanzar la meta de 2 goles
         match.onGoal(Side.LEFT);
-        assertEquals(GameStatus.FINISHED, match.getState());
-        assertEquals(p2, match.getScoreBoard().getWinner());
+        assertEquals(GameStatus.FINISHED, match.getStatus());
+        assertEquals(Optional.of(Side.RIGHT), match.getWinner());
     }
 }

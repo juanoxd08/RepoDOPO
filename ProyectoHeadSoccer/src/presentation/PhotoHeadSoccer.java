@@ -1,28 +1,32 @@
 package presentation;
 
 import domain.*;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.util.List;
 
 /**
- * Graphical canvas rendering all screens and match entities according to the state machine:
- * - MENU
- * - SELECT_PLAYERS
- * - SELECT_CAMP
- * - PLAYING
- * - PAUSED
- * - GOAL
- * - DRAW / SUDDEN_DEATH
- * - FINISHED
- * 
- * @author Juan Esppitia
- * @author Cristian Salamanca
+ * Graphical canvas rendering all screens and match entities using only
+ * DOPOSoccer, MatchView, PlayerView, BallView, and MatchListener.
  */
-public class PhotoHeadSoccer extends JPanel {
-    private HeadSoccer game;
+public class PhotoHeadSoccer extends JPanel implements MatchListener {
+    private DOPOSoccer game;
     private HeadSoccerGUI parentFrame;
+
+    // Pre-match configuration owned by presentation
+    private Modality modality = Modality.PVP;
+    private Country leftCountry = Country.SOUTH_KOREA;
+    private Country rightCountry = Country.CAMEROON;
+    private MatchType matchType = MatchType.TIME;
+    private int matchDurationMinutes = 2;
+    private int targetGoals = 3;
+    private FieldResolution resolution = FieldResolution.MEDIUM;
+    private MachineProfile machineProfile = MachineProfile.EXPERTA;
+
+    // Event messages received via MatchListener
+    private String lastScorerText = "¡Anotación!";
+    private String winnerNotification = "Fin del juego";
 
     // Interactive button bounds for mouse clicks
     public final java.awt.Rectangle btnNewGame = new java.awt.Rectangle(0, 0, 0, 0);
@@ -42,13 +46,61 @@ public class PhotoHeadSoccer extends JPanel {
     public final java.awt.Rectangle btnResMed = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnResLarge = new java.awt.Rectangle(0, 0, 0, 0);
 
-    public PhotoHeadSoccer(HeadSoccer game, HeadSoccerGUI parentFrame) {
+    public PhotoHeadSoccer(DOPOSoccer game, HeadSoccerGUI parentFrame) {
         this.game = game;
         this.parentFrame = parentFrame;
-        int screenW = game.getResolution().getPixelWidth();
-        int screenH = game.getResolution().getPixelHeight();
+        this.game.addListener(this);
+        int screenW = resolution.getPixelWidth();
+        int screenH = resolution.getPixelHeight();
         this.setPreferredSize(new Dimension(screenW, screenH));
         this.setBackground(new Color(135, 206, 235));
+    }
+
+    public void startConfiguredMatch() {
+        int target = (matchType == MatchType.TIME) ? matchDurationMinutes : targetGoals;
+        try {
+            MatchConfig config = MatchConfig.builder()
+                    .modality(modality)
+                    .leftCountry(leftCountry)
+                    .rightCountry(rightCountry)
+                    .matchType(matchType)
+                    .targetValue(target)
+                    .build();
+            this.lastScorerText = "¡Anotación!";
+            this.winnerNotification = "Fin del juego";
+            game.newMatch(config);
+            parentFrame.setCurrentScreen(Screen.MATCH);
+        } catch (DOPOSoccerException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Error de configuración", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    @Override
+    public void onGoal(Side scorer) {
+        MatchView match = game.getMatch();
+        if (match != null && match.getPlayer(scorer) != null) {
+            lastScorerText = "¡GOL DE " + match.getPlayer(scorer).getName().toUpperCase() + "!";
+        } else {
+            lastScorerText = "¡GOL!";
+        }
+    }
+
+    @Override
+    public void onStunned(Side victim) {
+        lastScorerText = "¡JUGADOR ATURDIDO!";
+    }
+
+    @Override
+    public void onMatchFinished(Side winner, int winnerPoints, int loserPoints) {
+        if (winner == null) {
+            winnerNotification = "¡EMPATE TÉCNICO! (+" + winnerPoints + " PUNTOS)";
+            return;
+        }
+        MatchView match = game.getMatch();
+        String name = (match != null && match.getPlayer(winner) != null)
+                ? match.getPlayer(winner).getName().toUpperCase()
+                : winner.name();
+        winnerNotification = "¡GANADOR: " + name + "! (+" + winnerPoints + " PUNTOS)";
     }
 
     @Override
@@ -57,26 +109,18 @@ public class PhotoHeadSoccer extends JPanel {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        GameStatus status = game.getState();
-
-        switch (status) {
-            case MENU:
-                drawMenuScreen(g2d);
-                break;
-            case SELECT_PLAYERS:
-                drawSelectPlayersScreen(g2d);
-                break;
-            case SELECT_CAMP:
-                drawSelectCampScreen(g2d);
-                break;
-            case PLAYING:
-            case PAUSED:
-            case GOAL_SCORED:
-            case DRAW:
-            case SUDDEN_DEATH:
-            case FINISHED:
-                drawMatchScreen(g2d, status);
-                break;
+        Screen screen = parentFrame.getCurrentScreen();
+        if (screen == Screen.MENU) {
+            drawMenuScreen(g2d);
+        } else if (screen == Screen.SELECT_PLAYERS) {
+            drawSelectPlayersScreen(g2d);
+        } else if (screen == Screen.SELECT_CAMP) {
+            drawSelectCampScreen(g2d);
+        } else {
+            MatchView match = game.getMatch();
+            if (match != null) {
+                drawMatchScreen(g2d, match);
+            }
         }
     }
 
@@ -169,18 +213,19 @@ public class PhotoHeadSoccer extends JPanel {
         g2d.setColor(Color.WHITE);
         g2d.drawString("Modalidad:", px + 30, py + 40);
 
+        boolean vsMachine = (modality == Modality.PVC);
         btnModePvP.setBounds(px + 140, py + 18, 160, 34);
-        drawToggleOption(g2d, btnModePvP, "Jugador vs Jugador", !game.isVsMachine());
+        drawToggleOption(g2d, btnModePvP, "Jugador vs Jugador", !vsMachine);
 
         btnModePvM.setBounds(px + 320, py + 18, 160, 34);
-        drawToggleOption(g2d, btnModePvM, "Jugador vs Máquina", game.isVsMachine());
+        drawToggleOption(g2d, btnModePvM, "Jugador vs Máquina", vsMachine);
 
         // Si es vs Máquina, selector de perfil
-        if (game.isVsMachine()) {
+        if (vsMachine) {
             g2d.setColor(Color.LIGHT_GRAY);
             g2d.drawString("Perfil IA:", px + 500, py + 40);
             btnNextProfile.setBounds(px + 580, py + 18, 140, 34);
-            drawToggleOption(g2d, btnNextProfile, game.getMachineProfile().getDisplayName() + " ↻", true);
+            drawToggleOption(g2d, btnNextProfile, machineProfile.getDisplayName() + " ↻", true);
         }
 
         // 2. Selector de Personajes / Países
@@ -199,8 +244,8 @@ public class PhotoHeadSoccer extends JPanel {
         g2d.drawString("JUGADOR 1 (Izquierda)", p1X + 15, p1Y + 30);
 
         g2d.setFont(new Font("Arial", Font.PLAIN, 15));
-        g2d.drawString("País: " + game.getPlayer1Country().getDisplayName(), p1X + 15, p1Y + 65);
-        g2d.drawString("Poder: " + game.getPlayer1Country().getPowerName(), p1X + 15, p1Y + 95);
+        g2d.drawString("País: " + leftCountry.getDisplayName(), p1X + 15, p1Y + 65);
+        g2d.drawString("Poder: " + leftCountry.getPowerName(), p1X + 15, p1Y + 95);
 
         btnNextP1Country.setBounds(p1X + 15, p1Y + 115, colW - 30, 32);
         drawGlossyButton(g2d, btnNextP1Country, "Cambiar Personaje ↻", new Color(70, 130, 180), Color.WHITE, 14);
@@ -215,11 +260,11 @@ public class PhotoHeadSoccer extends JPanel {
 
         g2d.setFont(new Font("Arial", Font.BOLD, 17));
         g2d.setColor(Color.WHITE);
-        g2d.drawString(game.isVsMachine() ? "MÁQUINA (Derecha)" : "JUGADOR 2 (Derecha)", p2X + 15, p2Y + 30);
+        g2d.drawString(vsMachine ? "MÁQUINA (Derecha)" : "JUGADOR 2 (Derecha)", p2X + 15, p2Y + 30);
 
         g2d.setFont(new Font("Arial", Font.PLAIN, 15));
-        g2d.drawString("País: " + game.getPlayer2Country().getDisplayName(), p2X + 15, p2Y + 65);
-        g2d.drawString("Poder: " + game.getPlayer2Country().getPowerName(), p2X + 15, p2Y + 95);
+        g2d.drawString("País: " + rightCountry.getDisplayName(), p2X + 15, p2Y + 65);
+        g2d.drawString("Poder: " + rightCountry.getPowerName(), p2X + 15, p2Y + 95);
 
         btnNextP2Country.setBounds(p2X + 15, p2Y + 115, colW - 30, 32);
         drawGlossyButton(g2d, btnNextP2Country, "Cambiar Personaje ↻", new Color(70, 130, 180), Color.WHITE, 14);
@@ -231,10 +276,10 @@ public class PhotoHeadSoccer extends JPanel {
         g2d.drawString("Tipo de Partido:", px + 30, ty + 25);
 
         btnTypeTime.setBounds(px + 170, ty + 5, 200, 34);
-        drawToggleOption(g2d, btnTypeTime, "Por Tiempo (" + game.getMatchDurationMinutes() + " min) ↻", game.getMatchType() == MatchType.TIME);
+        drawToggleOption(g2d, btnTypeTime, "Por Tiempo (" + matchDurationMinutes + " min) ↻", matchType == MatchType.TIME);
 
         btnTypeGoals.setBounds(px + 390, ty + 5, 200, 34);
-        drawToggleOption(g2d, btnTypeGoals, "Por Goles (" + game.getTargetGoals() + " goles) ↻", game.getMatchType() == MatchType.GOALS);
+        drawToggleOption(g2d, btnTypeGoals, "Por Goles (" + targetGoals + " goles) ↻", matchType == MatchType.GOALS);
 
         // Botón "CONTINUE"
         btnContinue.setBounds(w / 2 - 120, h - 70, 240, 48);
@@ -274,13 +319,13 @@ public class PhotoHeadSoccer extends JPanel {
         g2d.drawString("Selecciona la Resolución de Cancha:", px + 40, py + 40);
 
         btnResSmall.setBounds(px + 50, py + 70, 500, 42);
-        drawToggleOption(g2d, btnResSmall, FieldResolution.SMALL.getLabel(), game.getResolution() == FieldResolution.SMALL);
+        drawToggleOption(g2d, btnResSmall, FieldResolution.SMALL.getLabel(), resolution == FieldResolution.SMALL);
 
         btnResMed.setBounds(px + 50, py + 125, 500, 42);
-        drawToggleOption(g2d, btnResMed, FieldResolution.MEDIUM.getLabel(), game.getResolution() == FieldResolution.MEDIUM);
+        drawToggleOption(g2d, btnResMed, FieldResolution.MEDIUM.getLabel(), resolution == FieldResolution.MEDIUM);
 
         btnResLarge.setBounds(px + 50, py + 180, 500, 42);
-        drawToggleOption(g2d, btnResLarge, FieldResolution.LARGE.getLabel(), game.getResolution() == FieldResolution.LARGE);
+        drawToggleOption(g2d, btnResLarge, FieldResolution.LARGE.getLabel(), resolution == FieldResolution.LARGE);
 
         // Botón "START"
         btnStart.setBounds(w / 2 - 130, h - 85, 260, 54);
@@ -290,27 +335,33 @@ public class PhotoHeadSoccer extends JPanel {
     /* =========================================================================
      *  PANTALLA 4: PARTIDO EN JUEGO (STATE PLAYING, PAUSE, GOAL, DRAW, FINISHED)
      * ========================================================================= */
-    private void drawMatchScreen(Graphics2D g2d, GameStatus status) {
-        double scaleX = (double) getWidth() / Field.WIDTH;
-        double scaleY = (double) getHeight() / Field.HEIGHT;
+    private void drawMatchScreen(Graphics2D g2d, MatchView match) {
+        if (match == null) return;
+        int fieldW = match.getFieldWidth();
+        int fieldH = match.getFieldHeight();
+        double scaleX = (double) getWidth() / fieldW;
+        double scaleY = (double) getHeight() / fieldH;
         double currentScale = Math.min(scaleX, scaleY);
 
         // Renderizado del campo y entidades a escala matemática
         Graphics2D gField = (Graphics2D) g2d.create();
         gField.scale(currentScale, currentScale);
 
-        drawField(gField);
+        drawField(gField, match);
 
-        if (game.getPlayer1() != null) drawPlayer(gField, game.getPlayer1());
-        if (game.getPlayer2() != null) drawPlayer(gField, game.getPlayer2());
-        drawBall(gField);
+        PlayerView left = match.getPlayer(Side.LEFT);
+        PlayerView right = match.getPlayer(Side.RIGHT);
+        if (left != null) drawPlayer(gField, left);
+        if (right != null) drawPlayer(gField, right);
+        drawBall(gField, match);
 
         gField.dispose();
 
         // Renderizado del HUD superior en resolución completa
-        drawHUD(g2d);
+        drawHUD(g2d, match);
 
         // Overlays según máquina de estados
+        GameStatus status = match.getStatus();
         if (status == GameStatus.PAUSED) {
             drawPauseOverlay(g2d);
         } else if (status == GameStatus.GOAL_SCORED) {
@@ -336,42 +387,41 @@ public class PhotoHeadSoccer extends JPanel {
         g2d.fillRect(0, (int) (h * 0.65), w, (int) (h * 0.35));
     }
 
-    public void drawField(Graphics g) {
+    public void drawField(Graphics g, MatchView match) {
         Graphics2D g2d = (Graphics2D) g;
+        int fieldW = match.getFieldWidth();
+        int fieldH = match.getFieldHeight();
 
         g2d.setColor(new Color(95, 115, 135));
-        g2d.fillRect(0, 0, Field.WIDTH, 68);
+        g2d.fillRect(0, 0, fieldW, 68);
 
         g2d.setColor(new Color(35, 35, 35));
-        g2d.fillRect(0, 68, Field.WIDTH, 14);
+        g2d.fillRect(0, 68, fieldW, 14);
         g2d.setColor(Color.WHITE);
         g2d.setFont(new Font("Arial", Font.BOLD, 7));
         g2d.drawString("DOPOSoccer 2026-2  •  HEAD SOCCER", 15, 78);
         g2d.drawString("ESCUELA COLOMBIANA DE INGENIERÍA", 190, 78);
 
         g2d.setColor(new Color(46, 139, 87));
-        g2d.fillRect(0, 82, Field.WIDTH, Field.HEIGHT - 82);
+        g2d.fillRect(0, 82, fieldW, fieldH - 82);
 
         g2d.setColor(new Color(56, 155, 98));
-        for (int i = 0; i < Field.WIDTH; i += 30) {
-            g2d.fillRect(i, 82, 15, Field.HEIGHT - 82);
+        for (int i = 0; i < fieldW; i += 30) {
+            g2d.fillRect(i, 82, 15, fieldH - 82);
         }
 
         g2d.setColor(Color.WHITE);
         g2d.setStroke(new BasicStroke(1.2f));
-        g2d.drawLine(0, Field.HEIGHT - 1, Field.WIDTH, Field.HEIGHT - 1);
-        g2d.drawLine(Field.WIDTH / 2, 82, Field.WIDTH / 2, Field.HEIGHT);
-        g2d.drawOval(Field.WIDTH / 2 - 25, 120, 50, 40);
+        g2d.drawLine(0, fieldH - 1, fieldW, fieldH - 1);
+        g2d.drawLine(fieldW / 2, 82, fieldW / 2, fieldH);
+        g2d.drawOval(fieldW / 2 - 25, 120, 50, 40);
 
-        if (game.getField() != null) {
-            drawGoal(g2d, game.getField().getLeftGoal());
-            drawGoal(g2d, game.getField().getRightGoal());
-        }
+        drawGoal(g2d, match, Side.LEFT);
+        drawGoal(g2d, match, Side.RIGHT);
     }
 
-    private void drawGoal(Graphics2D g2d, Goal goal) {
-        if (goal == null) return;
-        domain.Rectangle area = goal.getGoalArea();
+    private void drawGoal(Graphics2D g2d, MatchView match, Side side) {
+        domain.Rectangle area = match.getGoalArea(side);
         if (area != null) {
             int rx = (int) area.getX();
             int ry = (int) area.getY();
@@ -386,7 +436,7 @@ public class PhotoHeadSoccer extends JPanel {
             for (int y = ry; y <= ry + rh; y += 5) g2d.drawLine(rx, y, rx + rw, y);
         }
 
-        domain.Rectangle bar = goal.getCrossBar();
+        domain.Rectangle bar = match.getCrossBar(side);
         if (bar != null) {
             g2d.setColor(Color.WHITE);
             g2d.setStroke(new BasicStroke(2f));
@@ -394,11 +444,11 @@ public class PhotoHeadSoccer extends JPanel {
         }
     }
 
-    public void drawPlayer(Graphics g, Player p) {
-        if (p == null || p.getHead() == null) return;
+    public void drawPlayer(Graphics g, PlayerView p) {
+        if (p == null || p.getHeadShape() == null) return;
         Graphics2D g2d = (Graphics2D) g;
 
-        Circle hc = p.getHead().getCircle();
+        Circle hc = p.getHeadShape();
         int hx = (int) hc.getX();
         int hy = (int) hc.getY();
         int hr = (int) hc.getRadius();
@@ -406,7 +456,7 @@ public class PhotoHeadSoccer extends JPanel {
         Color baseColor = getColorByCountry(p.getCountry());
 
         // 1. Aura resplandeciente si tiene poder activado
-        if (p.getPower() != null && p.getPower().isAuraActive()) {
+        if (p.hasAura()) {
             g2d.setColor(new Color(255, 220, 50, 90));
             g2d.fillOval(hx - hr - 10, hy - hr - 10, (hr + 10) * 2, (hr + 10) * 2);
             g2d.setColor(new Color(255, 160, 0, 140));
@@ -415,16 +465,17 @@ public class PhotoHeadSoccer extends JPanel {
         }
 
         // 2. Efecto de Aturdimiento / Vida en Cero o Efectos de poder
-        if (p.isDisabled()) {
+        String effectName = p.getActiveEffectName();
+        if (p.isStunned() || (effectName != null && !effectName.isEmpty())) {
             g2d.setColor(new Color(255, 255, 255, 180));
             g2d.setFont(new Font("Arial", Font.BOLD, 7));
-            String tag = (p.getCurrentEffect() != PlayerEffect.NONE) ? p.getCurrentEffect().name() : "STUN";
+            String tag = (effectName != null && !effectName.isEmpty()) ? effectName : "STUN";
             g2d.drawString("★ " + tag + " ★", hx - 14, hy - hr - 8);
         }
 
         // 3. Cuerpo
-        if (p.getBody() != null && p.getBody().getRectangle() != null) {
-            domain.Rectangle br = p.getBody().getRectangle();
+        domain.Rectangle br = p.getBodyShape();
+        if (br != null) {
             g2d.setColor(baseColor.darker());
             g2d.fillRoundRect((int) br.getX(), (int) br.getY(), (int) br.getWidth(), (int) br.getHeight(), 5, 5);
             g2d.setColor(Color.BLACK);
@@ -447,8 +498,8 @@ public class PhotoHeadSoccer extends JPanel {
         g2d.fillOval(eyeX - (p.getSide() == Side.LEFT ? 1 : 2), hy - 2, 3, 4);
 
         // 5. Pie
-        if (p.getFoot() != null && p.getFoot().getCircle() != null) {
-            Circle fc = p.getFoot().getCircle();
+        Circle fc = p.getFootShape();
+        if (fc != null) {
             int fx = (int) fc.getX();
             int fy = (int) fc.getY();
             int fr = (int) fc.getRadius();
@@ -466,34 +517,20 @@ public class PhotoHeadSoccer extends JPanel {
             case CAMEROON: return new Color(30, 160, 80);
             case NIGERIA: return new Color(20, 130, 60);
             case USA: return new Color(60, 100, 220);
-            case COLOMBIA: return new Color(245, 205, 30);
-            case CANADA: return new Color(220, 40, 40);
-            case BRAZIL: return new Color(40, 170, 70);
-            case ARGENTINA: return new Color(110, 180, 240);
             default: return Color.ORANGE;
         }
     }
 
-    public void drawBall(Graphics g) {
-        Ball ball = game.getBall();
-        if (ball == null || ball.getCircle() == null) return;
+    public void drawBall(Graphics g, MatchView match) {
+        BallView ball = match.getBall();
+        if (ball == null) return;
         Graphics2D g2d = (Graphics2D) g;
 
-        // Si hay poder de Ilusión activo, dibujar clones
-        if (game.getPlayer1() != null && game.getPlayer1().getPower() instanceof IllusionPower) {
-            drawIllusionClones(g2d, (IllusionPower) game.getPlayer1().getPower());
-        }
-        if (game.getPlayer2() != null && game.getPlayer2().getPower() instanceof IllusionPower) {
-            drawIllusionClones(g2d, (IllusionPower) game.getPlayer2().getPower());
-        }
+        int bx = (int) ball.getX();
+        int by = (int) ball.getY();
+        int r = (int) ball.getRadius();
 
-        Circle bc = ball.getCircle();
-        int bx = (int) bc.getX();
-        int by = (int) bc.getY();
-        int r = (int) bc.getRadius();
-
-        boolean isPower = (game.getPlayer1() != null && game.getPlayer1().getPower() != null && game.getPlayer1().getPower().isPowerShotActive()) ||
-                          (game.getPlayer2() != null && game.getPlayer2().getPower() != null && game.getPlayer2().getPower().isPowerShotActive());
+        boolean isPower = ball.hasPowerShot();
 
         if (isPower) {
             g2d.setColor(new Color(255, 200, 0, 120));
@@ -509,27 +546,10 @@ public class PhotoHeadSoccer extends JPanel {
         g2d.drawLine(bx, by - r + 2, bx, by + r - 2);
     }
 
-    private void drawIllusionClones(Graphics2D g2d, IllusionPower illusion) {
-        if (!illusion.hasActiveIllusion()) return;
-        List<Circle> clones = illusion.getFakeBalls();
-        for (Circle c : clones) {
-            int bx = (int) c.getX();
-            int by = (int) c.getY();
-            int r = (int) c.getRadius();
-            g2d.setColor(new Color(255, 255, 255, 210));
-            g2d.fillOval(bx - r, by - r, r * 2, r * 2);
-            g2d.setColor(new Color(0, 0, 0, 180));
-            g2d.setStroke(new BasicStroke(1.2f));
-            g2d.drawOval(bx - r, by - r, r * 2, r * 2);
-            g2d.drawLine(bx - r + 2, by, bx + r - 2, by);
-            g2d.drawLine(bx, by - r + 2, bx, by + r - 2);
-        }
-    }
-
     /* =========================================================================
      *  HUD SUPERIOR: BARRAS DE VIDA, PODER, MARCADOR Y TIMER
      * ========================================================================= */
-    public void drawHUD(Graphics2D g2d) {
+    public void drawHUD(Graphics2D g2d, MatchView match) {
         int w = getWidth();
 
         // 1. Marcador central
@@ -539,45 +559,43 @@ public class PhotoHeadSoccer extends JPanel {
         g2d.setStroke(new BasicStroke(1.5f));
         g2d.drawRoundRect(w / 2 - 160, 10, 320, 65, 14, 14);
 
-        int[] points = (game.getScoreBoard() != null) ? game.getScoreBoard().getPoints() : new int[]{0, 0};
+        int leftGoals = match.getGoals(Side.LEFT);
+        int rightGoals = match.getGoals(Side.RIGHT);
         g2d.setFont(new Font("Impact", Font.PLAIN, 36));
         g2d.setColor(Color.WHITE);
-        String scoreText = points[0] + "  -  " + points[1];
+        String scoreText = leftGoals + "  -  " + rightGoals;
         FontMetrics fm = g2d.getFontMetrics();
         g2d.drawString(scoreText, w / 2 - fm.stringWidth(scoreText) / 2, 48);
 
         // Timer o Meta de goles
         g2d.setFont(new Font("Monospaced", Font.BOLD, 14));
         g2d.setColor(Color.GREEN);
-        String centerInfo = "";
-        if (game.getState() == GameStatus.SUDDEN_DEATH) {
+        String centerInfo;
+        if (match.isSuddenDeath()) {
             centerInfo = "GOL DE ORO";
             g2d.setColor(Color.YELLOW);
-        } else if (game.getCurrentMatch() != null && game.getCurrentMatch().getMatchType() == MatchType.GOALS) {
-            centerInfo = "META: " + game.getCurrentMatch().getTargetGoals() + " GOLES";
-        } else if (game.getTimer() != null) {
-            centerInfo = game.getTimer().getFormattedTime();
+        } else if (match.getRemainingSeconds() < 0) {
+            centerInfo = "META: " + targetGoals + " GOLES";
+        } else {
+            int sec = match.getRemainingSeconds();
+            centerInfo = String.format("%02d:%02d", sec / 60, sec % 60);
         }
         g2d.drawString(centerInfo, w / 2 - g2d.getFontMetrics().stringWidth(centerInfo) / 2, 68);
 
         // 2. HUD Jugador 1 (Izquierda)
-        Player p1 = game.getPlayer1();
+        PlayerView p1 = match.getPlayer(Side.LEFT);
         if (p1 != null) {
-            int p1X = 25;
-            int p1Y = 14;
-            drawPlayerHUD(g2d, p1, p1X, p1Y, 220, true);
+            drawPlayerHUD(g2d, p1, 25, 14, 220);
         }
 
         // 3. HUD Jugador 2 (Derecha)
-        Player p2 = game.getPlayer2();
+        PlayerView p2 = match.getPlayer(Side.RIGHT);
         if (p2 != null) {
-            int p2X = w - 245;
-            int p2Y = 14;
-            drawPlayerHUD(g2d, p2, p2X, p2Y, 220, false);
+            drawPlayerHUD(g2d, p2, w - 245, 14, 220);
         }
     }
 
-    private void drawPlayerHUD(Graphics2D g2d, Player p, int x, int y, int barW, boolean leftSide) {
+    private void drawPlayerHUD(Graphics2D g2d, PlayerView p, int x, int y, int barW) {
         g2d.setFont(new Font("Arial", Font.BOLD, 13));
         g2d.setColor(Color.WHITE);
         String name = p.getName() + " (" + p.getCountry().getDisplayName() + ")";
@@ -588,7 +606,7 @@ public class PhotoHeadSoccer extends JPanel {
         g2d.setColor(Color.BLACK);
         g2d.fillRect(x, hpY, barW, 14);
 
-        double hpRatio = Math.max(0.0, Math.min(1.0, p.getVidaActual() / p.getVidaMax()));
+        double hpRatio = Math.max(0.0, Math.min(1.0, p.getLife() / p.getMaxLife()));
         Color hpColor = (hpRatio > 0.5) ? new Color(40, 200, 40) : (hpRatio > 0.25 ? Color.ORANGE : Color.RED);
         g2d.setColor(hpColor);
         g2d.fillRect(x + 1, hpY + 1, (int) ((barW - 2) * hpRatio), 12);
@@ -596,7 +614,7 @@ public class PhotoHeadSoccer extends JPanel {
         g2d.drawRect(x, hpY, barW, 14);
 
         g2d.setFont(new Font("Arial", Font.BOLD, 10));
-        String hpText = (int) p.getVidaActual() + "/" + (int) p.getVidaMax() + " HP";
+        String hpText = (int) p.getLife() + "/" + (int) p.getMaxLife() + " HP";
         g2d.drawString(hpText, x + barW / 2 - g2d.getFontMetrics().stringWidth(hpText) / 2, hpY + 11);
 
         // Barra de Poder
@@ -604,14 +622,13 @@ public class PhotoHeadSoccer extends JPanel {
         g2d.setColor(Color.BLACK);
         g2d.fillRect(x, powY, barW, 10);
 
-        double powRatio = (p.getPower() != null) ? (p.getPower().getCharge() / 100.0) : 0.0;
-        powRatio = Math.max(0.0, Math.min(1.0, powRatio));
+        double powRatio = Math.max(0.0, Math.min(1.0, p.getPowerProgress() / 100.0));
         g2d.setColor(powRatio >= 1.0 ? Color.YELLOW : new Color(240, 140, 0));
         g2d.fillRect(x + 1, powY + 1, (int) ((barW - 2) * powRatio), 8);
         g2d.setColor(Color.GRAY);
         g2d.drawRect(x, powY, barW, 10);
 
-        if (p.getPower() != null && p.getPower().isAuraActive()) {
+        if (p.hasAura()) {
             g2d.setFont(new Font("Arial", Font.BOLD, 9));
             g2d.setColor(Color.YELLOW);
             g2d.drawString("⚡ AURA ACTIVA ⚡", x + barW / 2 - 40, powY + 9);
@@ -653,7 +670,7 @@ public class PhotoHeadSoccer extends JPanel {
 
         g2d.setFont(new Font("Arial", Font.BOLD, 22));
         g2d.setColor(Color.WHITE);
-        String desc = (game.getCurrentMatch() != null) ? game.getCurrentMatch().getLastScorerText() : "¡Anotación!";
+        String desc = (lastScorerText != null && !lastScorerText.isEmpty()) ? lastScorerText : "¡Anotación!";
         g2d.drawString(desc, w / 2 - g2d.getFontMetrics().stringWidth(desc) / 2, h / 2 + 40);
     }
 
@@ -687,7 +704,7 @@ public class PhotoHeadSoccer extends JPanel {
 
         g2d.setFont(new Font("Arial", Font.BOLD, 24));
         g2d.setColor(new Color(100, 255, 100));
-        String winner = (game.getCurrentMatch() != null) ? game.getCurrentMatch().getWinnerNotification() : "Fin del juego";
+        String winner = (winnerNotification != null && !winnerNotification.isEmpty()) ? winnerNotification : "Fin del juego";
         g2d.drawString(winner, w / 2 - g2d.getFontMetrics().stringWidth(winner) / 2, h / 2 - 10);
 
         g2d.setFont(new Font("Arial", Font.PLAIN, 16));
@@ -736,77 +753,74 @@ public class PhotoHeadSoccer extends JPanel {
 
     public void handleMouseClick(MouseEvent e) {
         Point p = e.getPoint();
-        GameStatus status = game.getState();
+        Screen screen = parentFrame.getCurrentScreen();
 
-        if (status == GameStatus.MENU) {
+        if (screen == Screen.MENU) {
             if (btnNewGame.contains(p)) {
-                game.startNewGameFlow();
+                parentFrame.setCurrentScreen(Screen.SELECT_PLAYERS);
                 repaint();
             }
-        } else if (status == GameStatus.SELECT_PLAYERS) {
+        } else if (screen == Screen.SELECT_PLAYERS) {
             if (btnModePvP.contains(p)) {
-                game.setVsMachine(false);
+                modality = Modality.PVP;
                 repaint();
             } else if (btnModePvM.contains(p)) {
-                game.setVsMachine(true);
+                modality = Modality.PVC;
                 repaint();
-            } else if (btnNextProfile.contains(p) && game.isVsMachine()) {
+            } else if (btnNextProfile.contains(p) && modality == Modality.PVC) {
                 MachineProfile[] profiles = MachineProfile.values();
-                int nextIdx = (game.getMachineProfile().ordinal() + 1) % profiles.length;
-                game.setMachineProfile(profiles[nextIdx]);
+                int nextIdx = (machineProfile.ordinal() + 1) % profiles.length;
+                machineProfile = profiles[nextIdx];
                 repaint();
             } else if (btnNextP1Country.contains(p)) {
-                Country[] countries = {Country.SOUTH_KOREA, Country.CAMEROON, Country.NIGERIA, Country.USA, Country.COLOMBIA, Country.CANADA};
+                Country[] countries = Country.values();
                 int idx = 0;
                 for (int i = 0; i < countries.length; i++) {
-                    if (countries[i] == game.getPlayer1Country()) idx = (i + 1) % countries.length;
+                    if (countries[i] == leftCountry) idx = (i + 1) % countries.length;
                 }
-                game.setPlayer1Country(countries[idx]);
+                leftCountry = countries[idx];
                 repaint();
             } else if (btnNextP2Country.contains(p)) {
-                Country[] countries = {Country.CAMEROON, Country.NIGERIA, Country.USA, Country.SOUTH_KOREA, Country.COLOMBIA, Country.CANADA};
+                Country[] countries = {Country.CAMEROON, Country.NIGERIA, Country.USA, Country.SOUTH_KOREA};
                 int idx = 0;
                 for (int i = 0; i < countries.length; i++) {
-                    if (countries[i] == game.getPlayer2Country()) idx = (i + 1) % countries.length;
+                    if (countries[i] == rightCountry) idx = (i + 1) % countries.length;
                 }
-                game.setPlayer2Country(countries[idx]);
+                rightCountry = countries[idx];
                 repaint();
             } else if (btnTypeTime.contains(p)) {
-                game.setMatchType(MatchType.TIME);
-                int[] durations = {1, 2, 3};
-                int nextM = (game.getMatchDurationMinutes() % 3) + 1;
-                game.setMatchDurationMinutes(nextM);
+                matchType = MatchType.TIME;
+                matchDurationMinutes = (matchDurationMinutes % 3) + 1;
                 repaint();
             } else if (btnTypeGoals.contains(p)) {
-                game.setMatchType(MatchType.GOALS);
-                int[] goals = {3, 5, 7};
-                int nextG = (game.getTargetGoals() == 3) ? 5 : (game.getTargetGoals() == 5 ? 7 : 3);
-                game.setTargetGoals(nextG);
+                matchType = MatchType.GOALS;
+                targetGoals = (targetGoals == 3) ? 5 : (targetGoals == 5 ? 7 : 3);
                 repaint();
             } else if (btnContinue.contains(p)) {
-                game.confirmPlayersAndProceedToCamp();
+                parentFrame.setCurrentScreen(Screen.SELECT_CAMP);
                 repaint();
             }
-        } else if (status == GameStatus.SELECT_CAMP) {
+        } else if (screen == Screen.SELECT_CAMP) {
             if (btnResSmall.contains(p)) {
-                game.setResolution(FieldResolution.SMALL);
+                resolution = FieldResolution.SMALL;
                 parentFrame.updateResolution(FieldResolution.SMALL);
                 repaint();
             } else if (btnResMed.contains(p)) {
-                game.setResolution(FieldResolution.MEDIUM);
+                resolution = FieldResolution.MEDIUM;
                 parentFrame.updateResolution(FieldResolution.MEDIUM);
                 repaint();
             } else if (btnResLarge.contains(p)) {
-                game.setResolution(FieldResolution.LARGE);
+                resolution = FieldResolution.LARGE;
                 parentFrame.updateResolution(FieldResolution.LARGE);
                 repaint();
             } else if (btnStart.contains(p)) {
-                game.startActiveMatch();
+                startConfiguredMatch();
                 repaint();
             }
-        } else if (status == GameStatus.FINISHED) {
-            if (btnMenu.contains(p)) {
-                game.returnToMenu();
+        } else if (screen == Screen.MATCH) {
+            MatchView match = game.getMatch();
+            if (match != null && match.getStatus() == GameStatus.FINISHED && btnMenu.contains(p)) {
+                parentFrame.setCurrentScreen(Screen.MENU);
                 repaint();
             }
         }

@@ -9,7 +9,7 @@ import java.util.Set;
  * @author Juan Esppitia
  * @author Cristian Salamanca
  */
-public class Player implements Collidable {
+public class Player implements Collidable, PlayerView {
 	private String name;
 	private Country country;
 	private Side side;
@@ -30,12 +30,15 @@ public class Player implements Collidable {
 	private int effectTicksRemaining = 0;
 	private boolean isStunnedByZeroHealth = false;
 	private int stunTicksRemaining = 0;
+	private boolean wasKicking = false;
+	private boolean wasPowerPressed = false;
+	private boolean kickDealtDamage = false;
 
 	/**
 	 * Default constructor initializing default player values.
 	 */
 	public Player() {
-		this("Player", Country.COLOMBIA, Side.LEFT, new FreezePower(), new PlayerStats());
+		this("Player", Country.SOUTH_KOREA, Side.LEFT, new AuraAzulPower(), new PlayerStats());
 	}
 
 	/**
@@ -162,24 +165,6 @@ public class Player implements Collidable {
 	}
 	
 	/**
-	 * Performs a fast horizontal dash to the left.
-	 */
-	public void dashLeft() {
-		if (isDisabled()) return;
-		translate(-stats.speedPx() * 2, 0);
-		collideWithEdges();
-	}
-	
-	/**
-	 * Performs a fast horizontal dash to the right.
-	 */
-	public void dashRight() {
-		if (isDisabled()) return;
-		translate(stats.speedPx() * 2, 0);
-		collideWithEdges();
-	}
-	
-	/**
 	 * Applies an upward jump impulse if player is on the ground or atop another surface.
 	 * Electrocutado (Camerún) impide saltar.
 	 */
@@ -216,9 +201,6 @@ public class Player implements Collidable {
 				double pushDir = (side == Side.LEFT) ? -1.0 : 1.0;
 				translate(pushDir * 4.0, 0);
 				collideWithEdges();
-			} else if (currentEffect == PlayerEffect.KNOCKED_OUT) {
-				// Inconsciente en el aire (Nigeria)
-				if (verticalSpeed > -4) verticalSpeed = -4;
 			}
 
 			if (effectTicksRemaining <= 0) {
@@ -228,6 +210,13 @@ public class Player implements Collidable {
 
 		// Física vertical estándar
 		translate(0, verticalSpeed);
+		if (head != null && head.getCircle() != null) {
+			double topY = head.getCircle().getY() - head.getCircle().getRadius();
+			if (topY < 0) {
+				translate(0, -topY);
+				if (verticalSpeed < 0) verticalSpeed = 0;
+			}
+		}
 		double groundY = foot.getCircle().getY() + foot.getCircle().getRadius() + (foot.isKicking() ? 25 : 0);
 		if (groundY < Field.HEIGHT && !onTop) { 
 			verticalSpeed += Physics.GRAVITY;
@@ -245,9 +234,9 @@ public class Player implements Collidable {
 	public void tick() {
 		if (power != null) {
 			power.tickCharge();
-			if (power instanceof IllusionPower) {
-				// Actualización de clones de ilusión si aplica
-			}
+		}
+		if (foot != null) {
+			foot.tick(side);
 		}
 		moveVertical();
 	}
@@ -257,6 +246,9 @@ public class Player implements Collidable {
 	 */
 	public void kick() {
 		if (isDisabled()) return;
+		if (!foot.isKicking()) {
+			kickDealtDamage = false;
+		}
 		foot.kicking(side);
 	}
 
@@ -314,6 +306,9 @@ public class Player implements Collidable {
 		this.effectTicksRemaining = (int) (durationSeconds * 60);
 		if (effect == PlayerEffect.FROZEN && head != null) {
 			head.setStunned(true);
+		} else if (effect == PlayerEffect.KNOCKED_OUT) {
+			this.verticalSpeed = -10.0;
+			this.onTop = false;
 		}
 	}
 
@@ -337,11 +332,14 @@ public class Player implements Collidable {
 	 */
 	public void applyInput(Set<PlayerAction> actions, Ball ball, Player rival) {
 		if (actions == null) {
-			stopKick();
+			wasKicking = false;
+			wasPowerPressed = false;
 			return;
 		}
 
-		boolean isKickingAction = false;
+		boolean kickingNow = actions.contains(PlayerAction.KICK);
+		boolean powerNow = actions.contains(PlayerAction.POWER);
+
 		for (PlayerAction action : actions) {
 			switch (action) {
 				case LEFT:
@@ -354,18 +352,20 @@ public class Player implements Collidable {
 					jump();
 					break;
 				case KICK:
-					kick();
-					isKickingAction = true;
+					if (!wasKicking) {
+						kick();
+					}
 					break;
 				case POWER:
-					activatePower();
+					if (!wasPowerPressed) {
+						activatePower();
+					}
 					break;
 			}
 		}
 
-		if (!isKickingAction) {
-			stopKick();
-		}
+		wasKicking = kickingNow;
+		wasPowerPressed = powerNow;
 	}
 
 	/**
@@ -402,19 +402,20 @@ public class Player implements Collidable {
 			}
 			
 			double push = (this.head.getCircle().getX() < player.head.getCircle().getX()) 
-					? -player.stats.getSpeed() 
-					: player.stats.getSpeed();
+					? -player.stats.speedPx() 
+					: player.stats.speedPx();
 			translate(push, 0);
 			collideWithEdges();
 		} else {
 			onTop = false;
 		}
 
-		// Patada al rival dentro del alcance
-		if (this.foot.isKicking() && !isDisabled()) {
+		// Patada al rival dentro del alcance (1 golpe por patada)
+		if (this.foot.isKicking() && !kickDealtDamage && !isDisabled()) {
 			if (this.foot.getCircle().detectCollisionWithCircle(player.head.getCircle()) ||
 			    this.foot.getCircle().detectCollisionWithRectangle(player.body.getRectangle())) {
 				player.takeDamage(this.stats.getDanioPatada());
+				kickDealtDamage = true;
 			}
 		}
 	}
@@ -450,17 +451,44 @@ public class Player implements Collidable {
 	}
 
 	public void collideMyFootWithBall(Ball ball) {
-		if (ball == null) return;
-		if (this.foot != null && this.foot.isKicking()) {
-			if (this.foot.getCircle().detectCollisionWithCircle(ball.getCircle())) {
-				// Si tiene aura activa, ejecutar tiro de poder
-				if (this.power != null && this.power.isAuraActive()) {
-					this.power.executePowerShot(ball, this);
-				} else {
-					ball.collideWithFoot(this.foot);
-				}
+		if (ball == null || foot == null) return;
+		double impulse = foot.isKicking() ? foot.getPowerKicking() : 0.0;
+		if (ball.bounceOff(foot.getCircle(), Physics.RESTITUTION, impulse)) {
+			if (foot.isKicking() && this.power != null && this.power.isAuraActive()) {
+				this.power.executePowerShot(ball, this);
 			}
 		}
+	}
+
+	/**
+	 * Resolves ball collisions against this player's body, head, and foot.
+	 *
+	 * @param ball Ball in play
+	 */
+	public void collideWithBall(Ball ball) {
+		if (ball == null) return;
+		if (body != null) {
+			ball.bounceOff(body.getRectangle(), Physics.RESTITUTION, 0.0);
+		}
+		if (head != null) {
+			ball.bounceOff(head.getCircle(), Physics.RESTITUTION, 20.0);
+		}
+		collideMyFootWithBall(ball);
+	}
+
+	/**
+	 * Checks whether the ball overlaps any part of this player (head, body, or foot).
+	 *
+	 * @param ball Ball in play
+	 * @return True if any limb overlaps the ball
+	 */
+	public boolean isHitByBall(Ball ball) {
+		if (ball == null || ball.getCircle() == null) return false;
+		Circle ballCircle = ball.getCircle();
+		boolean hitHead = head != null && head.getCircle() != null && ballCircle.detectCollisionWithCircle(head.getCircle());
+		boolean hitBody = body != null && body.getRectangle() != null && ballCircle.detectCollisionWithRectangle(body.getRectangle());
+		boolean hitFoot = foot != null && foot.getCircle() != null && ballCircle.detectCollisionWithCircle(foot.getCircle());
+		return hitHead || hitBody || hitFoot;
 	}
 
 	public String getName() { return name; }
@@ -488,4 +516,74 @@ public class Player implements Collidable {
 	public PlayerEffect getCurrentEffect() { return currentEffect; }
 	public boolean isStunnedByZeroHealth() { return isStunnedByZeroHealth; }
 	public int getStunTicksRemaining() { return stunTicksRemaining; }
+
+	// --- PlayerView contract ---
+
+	@Override
+	public double getLife() {
+		return vidaActual;
+	}
+
+	@Override
+	public double getMaxLife() {
+		return vidaMax;
+	}
+
+	@Override
+	public double getPowerProgress() {
+		return (power != null) ? power.getCharge() : 0.0;
+	}
+
+	@Override
+	public boolean hasAura() {
+		return power != null && power.isAuraActive();
+	}
+
+	@Override
+	public boolean isStunned() {
+		return isStunnedByZeroHealth;
+	}
+
+	@Override
+	public boolean isKicking() {
+		return foot != null && foot.isKicking();
+	}
+
+	@Override
+	public String getActiveEffectName() {
+		return (currentEffect != null && currentEffect != PlayerEffect.NONE) ? currentEffect.name() : "";
+	}
+
+	@Override
+	public Circle getHeadShape() {
+		if (head == null || head.getCircle() == null) return null;
+		Circle c = head.getCircle();
+		return new Circle(c.getX(), c.getY(), c.getRadius());
+	}
+
+	@Override
+	public Rectangle getBodyShape() {
+		if (body == null || body.getRectangle() == null) return null;
+		Rectangle r = body.getRectangle();
+		return new Rectangle(r.getX(), r.getY(), r.getWidth(), r.getHeight());
+	}
+
+	@Override
+	public Circle getFootShape() {
+		if (foot == null || foot.getCircle() == null) return null;
+		Circle c = foot.getCircle();
+		return new Circle(c.getX(), c.getY(), c.getRadius());
+	}
+
+	@Override
+	public int getStat(StatType type) {
+		if (stats == null || type == null) return 1;
+		switch (type) {
+			case SPEED: return stats.getSpeed();
+			case JUMP: return stats.getJump();
+			case KICK: return stats.getKick();
+			case SURVIVAL: return stats.getSurvival();
+			default: return 1;
+		}
+	}
 }

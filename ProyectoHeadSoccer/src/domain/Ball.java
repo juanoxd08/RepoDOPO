@@ -1,15 +1,20 @@
 package domain;
 
+import java.util.Optional;
+
+import java.util.Optional;
+
 /**
  * Represents the soccer ball with physics simulation including gravity, bouncing, and collision detection.
  * 
  * @author Juan Esppitia
  * @author Cristian Salamanca
  */
-public class Ball implements Collidable {
+public class Ball implements Collidable, BallView {
 	private Circle circle;
 	private double verticalSpeed;
 	private double horizontalSpeed;
+	private boolean powerShot;
 	
 	/**
 	 * Default constructor initializing ball at origin with default radius.
@@ -177,6 +182,28 @@ public class Ball implements Collidable {
 			setVerticalSpeed(-Math.abs(verticalSpeed) * Physics.RESTITUTION);
 		}
 	}
+
+	public boolean bounceOff(Figure obstacule, double restitution, double impulse){
+		if(obstacule == null) return false;
+		Optional<Contact> opt = obstacule.contactWith(this.circle);
+		if(opt.isEmpty()) return false;
+		Contact c = opt.get();
+		Vector2 normal = c.getNormal();
+		this.circle.translate(normal.getX() * c.getPenetration(), normal.getY() * c.getPenetration());
+
+		Vector2 v = new Vector2(horizontalSpeed, verticalSpeed);
+		if (impulse > 0) {
+			v = normal.scale(impulse);
+		} else {
+			double vn = v.dot(normal);
+			if (vn < 0) {
+				v = v.sub(normal.scale((1.0 + restitution) * vn));
+			}
+		}
+		this.horizontalSpeed = v.getX();
+		this.verticalSpeed = v.getY();
+		return true;
+	}
 	
 	/**
 	 * Advances ball physics simulation by one frame, applying gravity and ground friction.
@@ -217,6 +244,31 @@ public class Ball implements Collidable {
 		Ball copy = new Ball(this.circle.getX(), this.circle.getY(), this.circle.getRadius());
 		copy.setHorizontalSpeed(horizontalSpeed);
 		copy.setVerticalSpeed(verticalSpeed);
+		copy.setPowerShot(powerShot);
 		return copy;
+	}
+
+	@Override
+	public double getX() {
+		return circle.getX();
+	}
+
+	@Override
+	public double getY() {
+		return circle.getY();
+	}
+
+	@Override
+	public double getRadius() {
+		return circle.getRadius();
+	}
+
+	@Override
+	public boolean hasPowerShot() {
+		return powerShot;
+	}
+
+	public void setPowerShot(boolean powerShot) {
+		this.powerShot = powerShot;
 	}
 }

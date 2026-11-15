@@ -32,32 +32,35 @@ public class PlayerStats {
 	 * @param survival Health rating (1 to 10)
 	 */
 	public PlayerStats(int speed, int jump, int kick, int survival) {
-		this.speed = clamp(speed);
-		this.jump = clamp(jump);
-		this.kick = clamp(kick);
-		this.survival = clamp(survival);
+		this.speed = validate(speed);
+		this.jump = validate(jump);
+		this.kick = validate(kick);
+		this.survival = validate(survival);
 	}
 
-	private int clamp(int val) {
-		return Math.max(1, Math.min(10, val));
+	private int validate(int val) {
+		if (val < 1 || val > 10) {
+			throw new IllegalArgumentException(DOPOSoccerException.INVALID_STAT + ": " + val);
+		}
+		return val;
 	}
 
 	/**
-	 * Returns the displacement in pixels per frame based on speed rating.
+	 * Returns the displacement in pixels per frame based on speed rating (+10% per level above 1).
 	 * 
 	 * @return Speed displacement in pixels
 	 */
 	public double speedPx() {
-		return 3.0 + (speed * 0.5);
+		return 3.5 * (1.0 + 0.10 * (speed - 1));
 	}
 
 	/**
-	 * Returns the vertical jump impulse based on jump rating.
+	 * Returns the vertical jump impulse based on jump rating (+10% per level above 1).
 	 * 
 	 * @return Jump impulse in pixels/tick
 	 */
 	public double jumpPx() {
-		return 12.0 + (jump * 0.8);
+		return 12.8 * (1.0 + 0.10 * (jump - 1));
 	}
 
 	/**
@@ -100,26 +103,22 @@ public class PlayerStats {
 	}
 
 	public int getSpeed() { return speed; }
-	public void setSpeed(int speed) throws HeadSoccerException {
-		if (speed < 1 || speed > 10) throw new HeadSoccerException(HeadSoccerException.PLAYER_STATS_OUT_OF_BOUNDS);
-		this.speed = speed;
+	public void setSpeed(int speed) {
+		this.speed = validate(speed);
 	}
 
 	public int getJump() { return jump; }
-	public void setJump(int jump) throws HeadSoccerException {
-		if (jump < 1 || jump > 10) throw new HeadSoccerException(HeadSoccerException.PLAYER_STATS_OUT_OF_BOUNDS);
-		this.jump = jump;
+	public void setJump(int jump) {
+		this.jump = validate(jump);
 	}
 
 	public int getKick() { return kick; }
-	public void setKick(int kick) throws HeadSoccerException {
-		if (kick < 1 || kick > 10) throw new HeadSoccerException(HeadSoccerException.PLAYER_STATS_OUT_OF_BOUNDS);
-		this.kick = kick;
+	public void setKick(int kick) {
+		this.kick = validate(kick);
 	}
 
 	public int getSurvival() { return survival; }
-	public void setSurvival(int survival) throws HeadSoccerException {
-		if (survival < 1 || survival > 10) throw new HeadSoccerException(HeadSoccerException.PLAYER_STATS_OUT_OF_BOUNDS);
-		this.survival = survival;
+	public void setSurvival(int survival) {
+		this.survival = validate(survival);
 	}
 }

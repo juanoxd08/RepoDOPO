@@ -73,4 +73,9 @@ public class IllusionPower extends Power {
     public boolean hasActiveIllusion() {
         return illusionTicksRemaining > 0 && !fakeBalls.isEmpty();
     }
+
+    @Override
+    public void updateShot(Ball ball){
+        updateClones(ball);
+    }
 }
