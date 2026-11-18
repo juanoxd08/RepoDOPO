@@ -120,7 +120,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-### Fase 2 — Diseño excelente (≈ 6 – 8 h)
+### Fase 2 — Diseño excelente (≈ 2 – 3 h restantes)
 
 **2.1 Cerrar el acoplamiento (A1-A5)** · ✅ hecho en `fix4`
 
@@ -191,7 +191,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-### Fase 7 — Sensación de juego (≈ 1 – 1.5 h)
+### Fase 7 — Sensación de juego (≈ 0.5 – 1 h)
 - 🟡 J1 fricción (ya en 0.95) y J2 ángulo del disparo (ya en −1.45): **ajustados en `fix4`**; revisar jugando después de la fase 1.
 - J3 pararse sobre la cabeza del rival (sigue resbalándose en unos 20 ticks): decidir.
 - Ajustar jugando, y después fijar los valores con pruebas.
