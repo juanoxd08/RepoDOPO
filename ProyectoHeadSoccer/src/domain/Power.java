@@ -16,32 +16,36 @@ public abstract class Power {
     protected double charge;
     protected boolean auraActive;
     protected boolean powerShotActive;
-    protected double baseDamage;
     protected double effectDurationSeconds;
-    protected PlayerEffect effectType;
+    public static final int TICKS_PER_POWER = 90;
+    protected int ticksPerPower;
+    protected Side shotSide;
+    protected double holdX;
+    protected  double holdY;
+
 
     /**
-     * Constructs a special power with specific attributes.
+     * Constructs a special power with its display name and effect duration.
      * 
      * @param name Name of the power shot
-     * @param baseDamage Base power damage (DaÃ±oTiro from Table 1)
      * @param effectDurationSeconds Duration in seconds of status effect
-     * @param effectType Status effect applied to opponent upon impact
      */
-    public Power(String name, double baseDamage, double effectDurationSeconds, PlayerEffect effectType) {
+    public Power(String name, double effectDurationSeconds) {
         this.name = name;
-        this.baseDamage = baseDamage;
         this.effectDurationSeconds = effectDurationSeconds;
-        this.effectType = effectType;
         this.charge = 0.0;
         this.auraActive = false;
         this.powerShotActive = false;
+        this.ticksPerPower = 0;
+        this.holdX = 0;
+        this.holdY = 0;
+        this.shotSide = null;
     }
 
     /**
      * Advances power charge per frame (fills 100% in 10 seconds = 600 ticks at 60 FPS).
      */
-    public void tickCharge() {
+    public final void tickCharge() {
         if (charge < 100.0) {
             charge = Math.min(100.0, charge + (100.0 / 600.0));
         }
@@ -50,7 +54,7 @@ public abstract class Power {
     /**
      * Increases power gauge by 25% (1/4) upon receiving an opponent goal.
      */
-    public void addQuarterOnGoalReceived() {
+    public final void addQuarterOnGoalReceived() {
         this.charge = Math.min(100.0, this.charge + 25.0);
     }
 
@@ -59,7 +63,7 @@ public abstract class Power {
      * 
      * @return True if charged to 100%
      */
-    public boolean isReady() {
+    public final boolean isReady() {
         return charge >= 100.0;
     }
 
@@ -68,7 +72,7 @@ public abstract class Power {
      * 
      * @return True if successfully activated, false otherwise
      */
-    public boolean activateAura() {
+    public final boolean activateAura() {
         if (isReady() && !auraActive && !powerShotActive) {
             this.auraActive = true;
             this.charge = 0.0;
@@ -83,12 +87,19 @@ public abstract class Power {
      * @param ball Soccer ball in play
      * @param side Side of the shooting player
      */
-    public void executePowerShot(Ball ball, Side side) {
+    public final void executePowerShot(Ball ball, Side side) {
         if (auraActive && ball != null) {
             this.auraActive = false;
             this.powerShotActive = true;
             ball.setPowerShot(true);
-            affectBall(ball, side);
+            double targetY = Math.max(ball.getRadius() + 5, ball.getY() - 30);
+            ball.getCircle().setY(targetY);
+            holdX = ball.getX();
+            holdY = targetY;
+            shotSide = side;
+            ticksPerPower = TICKS_PER_POWER;
+            ball.setHorizontalSpeed(0);
+            ball.setVerticalSpeed(0);
         }
     }
 
@@ -99,36 +110,82 @@ public abstract class Power {
      * @param kickMultiplier Shooter's kick damage multiplier
      * @return PowerHit payload, or null if no power shot is active
      */
-    public PowerHit onHitRival(double kickMultiplier) {
-        if(!powerShotActive) return null;
+    public final PowerHit onHitRival(double kickMultiplier) {
+        if (!powerShotActive || ticksPerPower > 0) return null;
         this.powerShotActive = false;
-            return new PowerHit(kickMultiplier * baseDamage, effectType, effectDurationSeconds);
-        
+        return new PowerHit(kickMultiplier * getBaseDamage(), createEffect(), effectDurationSeconds);
     }
 
     /**
      * Resets shot state if ball enters goal or effect expires without hitting rival.
      */
-    public void finishPowerShot() {
+    public final void finishPowerShot() {
         this.powerShotActive = false;
+        this.ticksPerPower = 0;
+        this.shotSide = null;
     }
 
     /**
-     * Optional per-frame update while a power shot is active (e.g., illusion clones).
+     * Advances power shot windup suspension and per-frame active shot behavior.
      *
      * @param ball Main ball in play
      */
-    public void updateShot(Ball ball) {
+    public final void updateShot(Ball ball) {
+        if (ball == null) return;
+        if (ticksPerPower > 0) {
+            ticksPerPower--;
+            ball.getCircle().setX(holdX);
+            ball.getCircle().setY(holdY);
+            ball.setHorizontalSpeed(0);
+            ball.setVerticalSpeed(0);
+            if (ticksPerPower == 0 && shotSide != null) {
+                shapeShot(ball, shotSide);
+            }
+        } else if (powerShotActive) {
+            updateActiveShot(ball);
+        }
+    }
+
+    /**
+     * Optional per-frame hook while a launched power shot is active (e.g., illusion clones).
+     *
+     * @param ball Main ball in play
+     */
+    protected void updateActiveShot(Ball ball) {
     }
 
     /**
      * Resets power to empty uncharged state.
      */
-    public void reset() {
+    public final void reset() {
         this.charge = 0.0;
         this.auraActive = false;
         this.powerShotActive = false;
+        this.ticksPerPower = 0;
+        this.shotSide = null;
     }
+
+    /**
+     * Imparts characteristic velocity and trajectory onto the ball according to the country's power.
+     *
+     * @param ball Ball in play
+     * @param side Side of the shooter
+     */
+    protected abstract void shapeShot(Ball ball, Side side);
+
+    /**
+     * Returns the base power damage before kick multiplier scaling.
+     *
+     * @return Base damage value
+     */
+    public abstract double getBaseDamage();
+
+    /**
+     * Creates the status effect strategy applied to the opponent upon impact.
+     *
+     * @return Effect strategy instance
+     */
+    public abstract Effect createEffect();
 
     public String getName() { return name; }
     public double getCharge() { return charge; }
@@ -137,15 +194,6 @@ public abstract class Power {
     public void setAuraActive(boolean auraActive) { this.auraActive = auraActive; }
     public boolean isPowerShotActive() { return powerShotActive; }
     public void setPowerShotActive(boolean active) { this.powerShotActive = active; }
-    public double getBaseDamage() { return baseDamage; }
     public double getEffectDurationSeconds() { return effectDurationSeconds; }
-    public PlayerEffect getEffectType() { return effectType; }
-
-    /**
-     * Imparts characteristic velocity and trajectory onto the ball according to the country's power.
-     * 
-     * @param ball Ball in play
-     * @param side Side of the shooter
-     */
-    public abstract void affectBall(Ball ball, Side side);
+    public PlayerEffect getEffectType() { return createEffect().getType(); }
 }

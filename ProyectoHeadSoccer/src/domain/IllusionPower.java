@@ -20,7 +20,7 @@ public class IllusionPower extends Power {
      * Constructs USA's Illusion power.
      */
     public IllusionPower() {
-        super("IlusiÃ³n", 30.0, 2.5, PlayerEffect.CONFUSED);
+        super("Ilusión", 2.5);
         this.fakeBalls = new ArrayList<>();
         this.illusionTicksRemaining = 0;
     }
@@ -32,7 +32,7 @@ public class IllusionPower extends Power {
      * @param side Side of the shooting player
      */
     @Override
-    public void affectBall(Ball ball, Side side) {
+    protected void shapeShot(Ball ball, Side side) {
         if (ball == null) return;
         double dir = (side == Side.LEFT) ? 1.0 : -1.0;
         ball.setHorizontalSpeed(18.0 * dir);
@@ -93,12 +93,32 @@ public class IllusionPower extends Power {
     }
 
     /**
+     * Returns the base power damage for Ilusión.
+     *
+     * @return 30.0
+     */
+    @Override
+    public double getBaseDamage() {
+        return 30.0;
+    }
+
+    /**
+     * Creates the CONFUSED effect applied on impact.
+     *
+     * @return ConfusedEffect instance
+     */
+    @Override
+    public Effect createEffect() {
+        return new ConfusedEffect();
+    }
+
+    /**
      * Updates decoy clone positions during each simulation tick.
      *
      * @param ball Real ball in play
      */
     @Override
-    public void updateShot(Ball ball){
+    protected void updateActiveShot(Ball ball){
         updateClones(ball);
     }
 }

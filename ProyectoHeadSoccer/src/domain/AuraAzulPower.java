@@ -15,7 +15,7 @@ public class AuraAzulPower extends Power {
      * Constructs South Korea's Aura Azul power.
      */
     public AuraAzulPower() {
-        super("Aura Azul", 40.0, 1.5, PlayerEffect.PUSHED);
+        super("Aura Azul", 1.5);
     }
 
     /**
@@ -25,10 +25,30 @@ public class AuraAzulPower extends Power {
      * @param side Side of the shooting player
      */
     @Override
-    public void affectBall(Ball ball, Side side) {
+    protected void shapeShot(Ball ball, Side side) {
         if (ball == null) return;
         double dir = (side == Side.LEFT) ? 1.0 : -1.0;
         ball.setHorizontalSpeed(24.0 * dir);
         ball.setVerticalSpeed(-1.5);
+    }
+
+    /**
+     * Returns the base power damage for Aura Azul.
+     *
+     * @return 40.0
+     */
+    @Override
+    public double getBaseDamage() {
+        return 40.0;
+    }
+
+    /**
+     * Creates the PUSHED effect applied on impact.
+     *
+     * @return PushedEffect instance
+     */
+    @Override
+    public Effect createEffect() {
+        return new PushedEffect();
     }
 }

@@ -6,7 +6,7 @@ package domain;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Foot implements Collidable {
+public class Foot {
     public static final double KICK_REACH_X = 20.0;
     public static final double KICK_LIFT_Y = 6.0;
     public static final int KICK_SWEEP_TICKS = 4;

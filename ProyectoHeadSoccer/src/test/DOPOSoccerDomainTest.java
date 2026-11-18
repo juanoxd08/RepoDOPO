@@ -84,35 +84,35 @@ public class DOPOSoccerDomainTest {
 
     @Test
     public void testPlayerTakesDamage() {
-        double initialHp = p1.getVidaMax();
+        double initialHp = p1.getMaxLife();
         p1.takeDamage(30.0);
-        assertEquals(initialHp - 30.0, p1.getVidaActual(), 0.001);
+        assertEquals(initialHp - 30.0, p1.getLife(), 0.001);
     }
 
     @Test
     public void testHealthCannotDropBelowZero() {
         p1.takeDamage(200.0);
-        assertEquals(0.0, p1.getVidaActual(), 0.001);
+        assertEquals(0.0, p1.getLife(), 0.001);
     }
 
     @Test
     public void testPlayerStunnedWhenHealthReachesZero() {
-        p1.takeDamage(p1.getVidaMax());
-        assertTrue(p1.isStunnedByZeroHealth());
+        p1.takeDamage(p1.getMaxLife());
+        assertTrue(p1.isStunned());
         assertTrue(p1.isDisabled());
     }
 
     @Test
     public void testPlayerRecoversFullHealthAfterStunDuration() {
-        p1.takeDamage(p1.getVidaMax());
-        assertTrue(p1.isStunnedByZeroHealth());
+        p1.takeDamage(p1.getMaxLife());
+        assertTrue(p1.isStunned());
 
         for (int i = 0; i < 185; i++) {
             p1.moveVertical();
         }
 
-        assertFalse(p1.isStunnedByZeroHealth());
-        assertEquals(p1.getVidaMax(), p1.getVidaActual(), 0.001);
+        assertFalse(p1.isStunned());
+        assertEquals(p1.getMaxLife(), p1.getLife(), 0.001);
         assertFalse(p1.isDisabled());
     }
 
@@ -157,10 +157,13 @@ public class DOPOSoccerDomainTest {
 
         koreaPower.executePowerShot(ball, p1.getSide());
         assertTrue(koreaPower.isPowerShotActive());
+        for (int i = 0; i < Power.TICKS_PER_POWER; i++) {
+            koreaPower.updateShot(ball);
+        }
 
         p2.receiveHit(koreaPower.onHitRival(p1.getKickMultiplier()));
-        assertEquals(PlayerEffect.PUSHED, p2.getCurrentEffect());
-        assertTrue(p2.getVidaActual() < p2.getVidaMax());
+        assertEquals(PlayerEffect.PUSHED.name(), p2.getActiveEffectName());
+        assertTrue(p2.getLife() < p2.getMaxLife());
     }
 
     @Test
@@ -170,9 +173,12 @@ public class DOPOSoccerDomainTest {
         p2.activatePower();
 
         lightning.executePowerShot(ball, p2.getSide());
+        for (int i = 0; i < Power.TICKS_PER_POWER; i++) {
+            lightning.updateShot(ball);
+        }
         p1.receiveHit(lightning.onHitRival(p2.getKickMultiplier()));
 
-        assertEquals(PlayerEffect.ELECTROCUTED, p1.getCurrentEffect());
+        assertEquals(PlayerEffect.ELECTROCUTED.name(), p1.getActiveEffectName());
     }
 
     @Test
@@ -183,9 +189,12 @@ public class DOPOSoccerDomainTest {
         p1.activatePower();
 
         tornado.executePowerShot(ball, p1.getSide());
+        for (int i = 0; i < Power.TICKS_PER_POWER; i++) {
+            tornado.updateShot(ball);
+        }
         p2.receiveHit(tornado.onHitRival(p1.getKickMultiplier()));
 
-        assertEquals(PlayerEffect.KNOCKED_OUT, p2.getCurrentEffect());
+        assertEquals(PlayerEffect.KNOCKED_OUT.name(), p2.getActiveEffectName());
         assertTrue(p2.isDisabled());
     }
 
@@ -197,6 +206,9 @@ public class DOPOSoccerDomainTest {
         p1.activatePower();
 
         illusion.executePowerShot(ball, p1.getSide());
+        for (int i = 0; i < Power.TICKS_PER_POWER; i++) {
+            illusion.updateShot(ball);
+        }
 
         assertEquals(7, illusion.getFakeBalls().size());
         assertTrue(illusion.hasActiveIllusion());
@@ -205,10 +217,10 @@ public class DOPOSoccerDomainTest {
     @Test
     public void testNewPowerEffectReplacesPreviousEffect() {
         p2.applyEffect(PlayerEffect.ELECTROCUTED, 3.0);
-        assertEquals(PlayerEffect.ELECTROCUTED, p2.getCurrentEffect());
+        assertEquals(PlayerEffect.ELECTROCUTED.name(), p2.getActiveEffectName());
 
         p2.applyEffect(PlayerEffect.PUSHED, 1.5);
-        assertEquals(PlayerEffect.PUSHED, p2.getCurrentEffect());
+        assertEquals(PlayerEffect.PUSHED.name(), p2.getActiveEffectName());
     }
 
 

@@ -7,33 +7,39 @@ package domain;
  * @author Cristian Salamanca
  */
 public class EffectState {
-    private PlayerEffect actualStatus;
+    private Effect currentEffect;
     private int remainingTicks;
 
     /**
      * Initializes an empty effect state with no active restriction.
      */
     public EffectState(){
-        this.actualStatus = PlayerEffect.NONE;
+        this.currentEffect = new NoneEffect();
         this.remainingTicks = 0;
     }
 
     /**
      * Applies a status effect, replacing any previous effect immediately.
      *
-     * @param effect Status effect to apply
+     * @param effect Status effect strategy to apply
      * @param duration Duration in seconds
+     * @param body Player body receiving the effect
      */
-    public void apply(PlayerEffect effect, double duration){
-        this.actualStatus = (effect != null) ? effect : PlayerEffect.NONE;
+    public void apply(Effect effect, double duration, PlayerBody body){
+        this.currentEffect = (effect != null) ? effect : new NoneEffect();
         this.remainingTicks = Physics.seconds(duration);
+        this.currentEffect.onStart(body);
     }
 
     /**
      * Advances the active effect timer and clears it upon expiration.
+     *
+     * @param body Player body affected
+     * @param side Pitch side of the affected player
      */
-    public void tick(){
-        if(actualStatus != PlayerEffect.NONE && remainingTicks > 0){
+    public void tick(PlayerBody body, Side side){
+        if(this.currentEffect.getType() != PlayerEffect.NONE && remainingTicks > 0){
+            this.currentEffect.onTick(body, side);
             remainingTicks--;
             if(remainingTicks <= 0){
                 clear();
@@ -45,38 +51,38 @@ public class EffectState {
      * Clears any active status effect immediately.
      */
     public void clear(){
-        this.actualStatus = PlayerEffect.NONE;
+        this.currentEffect = new NoneEffect();
         this.remainingTicks = 0;
     }
 
-    /** @return Movement speed multiplier (0.5 when electrocuted, 1.0 otherwise) */
+    /** @return Movement speed multiplier */
     public double speedFactor(){
-        return (actualStatus == PlayerEffect.ELECTROCUTED) ? 0.5 : 1.0;
+        return currentEffect.speedFactor();
     }
 
     /** @return True if the player can move horizontally */
     public boolean canMove(){
-        return actualStatus != PlayerEffect.FROZEN && actualStatus != PlayerEffect.KNOCKED_OUT;
+        return currentEffect.canMove();
     }
 
     /** @return True if the player can jump */
     public boolean canJump(){
-        return canMove() && actualStatus != PlayerEffect.ELECTROCUTED;
+        return currentEffect.canJump();
     }
 
     /** @return True if the player can kick or activate power */
     public boolean canKick(){
-        return canMove();
+        return currentEffect.canKick();
     }
 
     /** @return True if horizontal controls are inverted */
     public boolean isConfused(){
-        return actualStatus == PlayerEffect.CONFUSED;
+        return currentEffect.isConfused();
     }
 
-    /** @return Active status effect */
+    /** @return Active status effect type */
     public PlayerEffect getCurrent(){
-        return actualStatus;
+        return currentEffect.getType();
     }
 
     /** @return Remaining effect duration in ticks */

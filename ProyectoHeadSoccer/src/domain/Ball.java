@@ -2,15 +2,13 @@ package domain;
 
 import java.util.Optional;
 
-import java.util.Optional;
-
 /**
  * Represents the soccer ball with physics simulation including gravity, bouncing, and collision detection.
  * 
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Ball implements Collidable, BallView {
+public class Ball implements BallView {
 	private Circle circle;
 	private double verticalSpeed;
 	private double horizontalSpeed;
@@ -89,79 +87,6 @@ public class Ball implements Collidable, BallView {
 	}
 
 	/**
-	 * Handles collision impulse against a player's foot.
-	 * 
-	 * @param foot Foot entity collided with
-	 */
-	@Override
-	public void collideWithFoot(Foot foot) {
-		if (foot == null || foot.getCircle() == null) return;
-		if (!this.circle.detectCollisionWithCircle(foot.getCircle())) return;
-
-		double dx = this.circle.getX() - foot.getCircle().getX();
-		double dy = this.circle.getY() - foot.getCircle().getY();
-		double distance = Math.hypot(dx, dy);
-		if (distance == 0) {
-			dx = 1;
-			dy = -1;
-			distance = Math.hypot(dx, dy);
-		}
-		int powerKick = foot.getPowerKicking();
-		setHorizontalSpeed((dx / distance) * powerKick);
-		setVerticalSpeed((dy / distance) * powerKick);
-	}
-	
-	/**
-	 * Resolves physical bounce against a rectangular obstacle such as crossbar or player body.
-	 * 
-	 * @param r Rectangle entity collided with
-	 */
-	public void collideWithGB(Rectangle r) {
-		if (r == null || !r.detectCollisionWithCircle(this.circle)) return;
-
-		if (circle.getX() >= r.left() && circle.getX() <= r.right()) {
-			setVerticalSpeed(-verticalSpeed * Physics.RESTITUTION);
-		} else if (circle.getY() >= r.top() && circle.getY() <= r.bottom()) {
-			setHorizontalSpeed(-horizontalSpeed * Physics.RESTITUTION);
-		} else {
-			double cornerX = (circle.getX() < r.left()) ? r.left() : r.right();
-			double cornerY = (circle.getY() < r.top()) ? r.top() : r.bottom();
-			double dx = circle.getX() - cornerX;
-			double dy = circle.getY() - cornerY;
-			double distance = Math.hypot(dx, dy);
-			if (distance == 0) {
-				dx = 0;
-				dy = -1;
-				distance = 1;
-			}
-			double speed = Math.hypot(horizontalSpeed, verticalSpeed) * Physics.CORNER_RESTITUTION;
-			setHorizontalSpeed((dx / distance) * speed);
-			setVerticalSpeed((dy / distance) * speed);
-		}
-	}
-	
-	/**
-	 * Handles collision and header impulse against a player's head.
-	 * 
-	 * @param head Head entity collided with
-	 */
-	public void collideWithHead(Head head) {
-		if (head == null || head.getCircle() == null) return;
-		if (!this.circle.detectCollisionWithCircle(head.getCircle())) return;
-
-		double dx = this.circle.getX() - head.getCircle().getX();
-		double dy = this.circle.getY() - head.getCircle().getY();
-		double distance = Math.hypot(dx, dy);
-		if (distance == 0) {
-			dx = 0;
-			dy = -1;
-			distance = 1;
-		}
-		setHorizontalSpeed((dx / distance) * 20);
-		setVerticalSpeed((dy / distance) * 20);	
-	}
-	
-	/**
 	 * Resolves bounces against field boundary edges (floor, ceiling, walls).
 	 */
 	public void collideWithEdges() {
@@ -179,7 +104,12 @@ public class Ball implements Collidable, BallView {
 		}
 		if (this.circle.getY() + this.circle.getRadius() >= Field.HEIGHT) {
 			this.circle.setY(Field.HEIGHT - this.circle.getRadius());
-			setVerticalSpeed(-Math.abs(verticalSpeed) * Physics.RESTITUTION);
+			if(verticalSpeed >= 5){
+				setVerticalSpeed(-Math.abs(verticalSpeed) * Physics.RESTITUTION);
+			}else{
+				setVerticalSpeed(0.0);
+			}
+				
 		}
 	}
 
@@ -189,6 +119,15 @@ public class Ball implements Collidable, BallView {
 		if(opt.isEmpty()) return false;
 		Contact c = opt.get();
 		Vector2 normal = c.getNormal();
+
+		boolean onFloor = this.getCircle().getY() + this. getCircle().getRadius() >= Field.HEIGHT - 0.5;
+		if(onFloor && normal.getY() > 0){
+			if(normal.getX() > 0.01){
+				normal = new Vector2(normal.getX(), 0);
+			}else{
+				normal = new Vector2(0, -3);
+			}
+		}
 		this.circle.translate(normal.getX() * c.getPenetration(), normal.getY() * c.getPenetration());
 
 		Vector2 v = new Vector2(horizontalSpeed, verticalSpeed);

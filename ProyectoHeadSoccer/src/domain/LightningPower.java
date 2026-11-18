@@ -15,7 +15,7 @@ public class LightningPower extends Power {
      * Constructs Cameroon's Lightning power.
      */
     public LightningPower() {
-        super("Rayo", 60.0, 3.0, PlayerEffect.ELECTROCUTED);
+        super("Rayo", 3.0);
     }
 
     /**
@@ -25,10 +25,30 @@ public class LightningPower extends Power {
      * @param side Side of the shooting player
      */
     @Override
-    public void affectBall(Ball ball, Side side) {
+    protected void shapeShot(Ball ball, Side side) {
         if (ball == null) return;
         double dir = (side == Side.LEFT) ? 1.0 : -1.0;
         ball.setHorizontalSpeed(20.0 * dir);
         ball.setVerticalSpeed(-2.0);
+    }
+
+    /**
+     * Returns the base power damage for Rayo.
+     *
+     * @return 60.0
+     */
+    @Override
+    public double getBaseDamage() {
+        return 60.0;
+    }
+
+    /**
+     * Creates the ELECTROCUTED effect applied on impact.
+     *
+     * @return ElectrocutedEffect instance
+     */
+    @Override
+    public Effect createEffect() {
+        return new ElectrocutedEffect();
     }
 }

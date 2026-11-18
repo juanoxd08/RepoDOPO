@@ -39,8 +39,8 @@ public class Match implements MatchView {
         this.ball = new Ball();
         this.field = new Field();
         this.scoreBoard = new ScoreBoard();
-        this.player1 = new Player("jugador 1",config.getLeftCountry(), Side.LEFT, config.getLeftCountry().getPower(), new PlayerStats());
-        this.player2 =  new Player("jugador 2",config.getRightCountry(), Side.RIGHT, config.getRightCountry().getPower(), new PlayerStats());
+        this.player1 = new Player(new PlayerProfile("jugador 1"), config.getLeftCountry(), Side.LEFT);
+        this.player2 = new Player(new PlayerProfile("jugador 2"), config.getRightCountry(), Side.RIGHT);
         this.controller1 = new HumanController();
         this.controller2 = (config.getModality() == Modality.PVC) ? new COMController(Side.RIGHT) : new HumanController();
         this.rule = (config.getMatchType() == MatchType.GOALS) ? new GoalRule(config.getTargetValue()) : new TimeRule(config.getTargetValue());
@@ -62,15 +62,11 @@ public class Match implements MatchView {
         }
         if (player1 != null) {
             player1.resetPosition();
-            if (player1.getPower() != null) {
-                player1.getPower().finishPowerShot();
-            }
+            player1.finishPowerShot();
         }
         if (player2 != null) {
             player2.resetPosition();
-            if (player2.getPower() != null) {
-                player2.getPower().finishPowerShot();
-            }
+            player2.finishPowerShot();
         }
     }
 
@@ -109,8 +105,8 @@ public class Match implements MatchView {
         player2.tick();
         ball.tick();
         
-        if (player1.getPower() != null) player1.getPower().updateShot(ball);
-        if (player2.getPower() != null) player2.getPower().updateShot(ball);
+        player1.updatePowerShot(ball);
+        player2.updatePowerShot(ball);
 
         boolean wasStunned1 = player1.isStunned();
         boolean wasStunned2 = player2.isStunned();
@@ -138,15 +134,18 @@ public class Match implements MatchView {
         player1.clearSupport();
         player2.clearSupport();
 
-        ball.collideWithEdges();
-        ball.bounceOff(field.getLeftGoal().getCrossBar(), Physics.RESTITUTION, 0.0);
-        ball.bounceOff(field.getRightGoal().getCrossBar(), Physics.RESTITUTION, 0.0);
 
-        player1.collideWithBall(ball);
-        player2.collideWithBall(ball);
+
+
 
         player1.collideWithEdges();
         player2.collideWithEdges();
+
+        ball.collideWithEdges();
+        ball.bounceOff(field.getLeftGoal().getCrossBar(), Physics.CROSSBAR_RESTITUTION, 0.0);
+        ball.bounceOff(field.getRightGoal().getCrossBar(), Physics.CROSSBAR_RESTITUTION, 0.0);
+
+
 
         player1.collideWithGoal(field.getLeftGoal());
         player1.collideWithGoal(field.getRightGoal());
@@ -156,13 +155,12 @@ public class Match implements MatchView {
         player1.collideWithPlayer(player2);
         player2.collideWithPlayer(player1);
 
-        if (player1.getPower() != null && player1.getPower().isPowerShotActive() && player2.isHitByBall(ball)) {
-            player2.receiveHit(player1.getPower().onHitRival(player1.getKickMultiplier()));
-        }
+        player1.collideWithBall(ball);
+        player2.collideWithBall(ball);
 
-        if (player2.getPower() != null && player2.getPower().isPowerShotActive() && player1.isHitByBall(ball)) {
-            player1.receiveHit(player2.getPower().onHitRival(player2.getKickMultiplier()));
-        }
+
+        player2.receiveHit(player1.powerHitOn(player2, ball));
+        player1.receiveHit(player2.powerHitOn(player1, ball));
     }
 
     /**

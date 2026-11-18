@@ -6,7 +6,7 @@ package domain;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Body implements Collidable {
+public class Body {
 	private Rectangle rectangle;
 
 	/**

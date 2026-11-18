@@ -8,19 +8,19 @@ package domain;
  */
 public class PowerHit {
     private final double damage;
-    private final PlayerEffect effect;
+    private final Effect effect;
     private final double durationSeconds;
 
     /**
      * Creates a power hit outcome.
      *
      * @param damage Health damage to inflict
-     * @param effect Status effect to apply (or NONE)
+     * @param effect Status effect strategy to apply (or NoneEffect)
      * @param durationSeconds Duration of the status effect in seconds
      */
-    public PowerHit(double damage, PlayerEffect effect, double durationSeconds) {
+    public PowerHit(double damage, Effect effect, double durationSeconds) {
         this.damage = damage;
-        this.effect = (effect != null) ? effect : PlayerEffect.NONE;
+        this.effect = (effect != null) ? effect : new NoneEffect();
         this.durationSeconds = durationSeconds;
     }
 
@@ -30,7 +30,7 @@ public class PowerHit {
     }
 
     /** @return Status effect applied */
-    public PlayerEffect getEffect() {
+    public Effect getEffect() {
         return effect;
     }
 
