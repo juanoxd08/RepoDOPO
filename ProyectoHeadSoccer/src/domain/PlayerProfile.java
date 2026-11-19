@@ -1,12 +1,15 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Persistent player profile holding identity, upgradeable stats, and accumulated points.
  *
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class PlayerProfile {
+public class PlayerProfile implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final String name;
     private final PlayerStats stats;
     private int points;

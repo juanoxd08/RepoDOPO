@@ -1,5 +1,6 @@
 package domain;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 /**
@@ -8,7 +9,8 @@ import java.util.Optional;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public abstract class Figure {
+public abstract class Figure implements Serializable {
+	private static final long serialVersionUID = 1L;
 	private double x;
 	private double y;
 	

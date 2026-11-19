@@ -1,5 +1,6 @@
 package domain;
 
+import java.io.Serializable;
 import java.util.EnumMap;
 import java.util.Optional;
 
@@ -11,7 +12,8 @@ import java.util.Optional;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class ScoreBoard {
+public class ScoreBoard implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final EnumMap<Side, Integer> goals;
 
 	/**

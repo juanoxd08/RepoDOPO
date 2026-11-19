@@ -12,7 +12,6 @@ import java.util.Set;
  * @author Cristian Salamanca
  */
 public class COMController implements Controller {
-    private COMState state;
     private Side side;
     private MachineProfile profile;
     private Random random = new Random();
@@ -26,7 +25,6 @@ public class COMController implements Controller {
     public COMController(Side side, MachineProfile profile) {
         this.side = side;
         this.profile = (profile != null) ? profile : MachineProfile.EXPERTA;
-        this.state = COMState.ATTACK;
     }
 
     public MachineProfile getProfile() {

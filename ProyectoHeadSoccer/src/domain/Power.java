@@ -1,5 +1,7 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Base abstract class defining the rules and mechanics of special power shots according to DOPOSoccer specs:
  * 1. Charges in 10 seconds (~600 ticks at 60 FPS).
@@ -11,7 +13,8 @@ package domain;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public abstract class Power {
+public abstract class Power implements Serializable {
+    private static final long serialVersionUID = 1L;
     protected String name;
     protected double charge;
     protected boolean auraActive;

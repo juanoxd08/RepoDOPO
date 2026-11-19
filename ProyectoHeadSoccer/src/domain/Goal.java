@@ -1,12 +1,15 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Represents a soccer goal consisting of a physical crossbar and an interior goal area.
  * 
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Goal {
+public class Goal implements Serializable {
+	private static final long serialVersionUID = 1L;
 	private Rectangle crossBar;
 	private Rectangle goalArea;
 	private Side side;

@@ -1,6 +1,7 @@
 package presentation;
 
 import domain.*;
+import persistence.SerializedMatchRepository;
 
 import javax.swing.*;
 import java.awt.BorderLayout;
@@ -30,7 +31,7 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
 
     public HeadSoccerGUI() {
         super("DOPOSoccer 2026-2 - Head Soccer Arcade");
-        this.game = new DOPOSoccer();
+        this.game = new DOPOSoccer(new SerializedMatchRepository());
         this.currentScreen = Screen.MENU;
         this.photo = new PhotoHeadSoccer(game, this);
         this.activeKeys = new HashSet<>();

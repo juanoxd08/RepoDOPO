@@ -1,5 +1,6 @@
 package domain;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 /**
@@ -10,7 +11,8 @@ import java.util.Optional;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class PlayerBody {
+public class PlayerBody implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final Side side;
     private final Head head;
     private final Body body;
@@ -184,9 +186,10 @@ public class PlayerBody {
         if(contact.isEmpty()) return;
         Contact c = contact.get();
         if(foot.isKicking()){
-            ball.getCircle().translate(c.getNormal().getX() * c.getPenetration(), c.getNormal().getY() * c.getPenetration());
-            boolean inFront = (ball.getX() - footCircle.getX()) * side.dir() > -ball.getRadius();
+            
+            boolean inFront = (ball.getX() - footCircle.getX()) * side.dir() >= -ball.getRadius();
             if(inFront){
+                ball.getCircle().translate(side.dir() * c.getPenetration(), 0);
                 Vector2 vel = new Vector2(side.dir(), Physics.KICK_LIFT_FACTOR).normalized().scale(foot.getPowerKicking());
                 ball.setHorizontalSpeed(vel.getX());
                 ball.setVerticalSpeed(vel.getY());
@@ -211,10 +214,6 @@ public class PlayerBody {
         return ballCircle.detectCollisionWithCircle(head.getCircle())
                 || ballCircle.detectCollisionWithRectangle(body.getRectangle())
                 || ballCircle.detectCollisionWithCircle(foot.getCircle());
-    }
-
-    public void collideWithPlayer(PlayerBody other){
-        
     }
 
     /**

@@ -1,12 +1,15 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Represents the rectangular torso/body of a player.
  * 
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Body {
+public class Body implements Serializable {
+	private static final long serialVersionUID = 1L;
 	private Rectangle rectangle;
 
 	/**

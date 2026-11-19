@@ -1,5 +1,7 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Strategy interface defining movement restrictions and per-tick behavior
  * for status effects applied to a player.
@@ -7,7 +9,7 @@ package domain;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public interface Effect {
+public interface Effect extends Serializable {
 
 	/**
 	 * Returns the effect enumeration type for view and HUD reporting.

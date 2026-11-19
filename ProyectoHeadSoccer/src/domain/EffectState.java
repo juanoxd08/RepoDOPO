@@ -1,12 +1,15 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Tracks the active power status effect on a player and its movement/action restrictions.
  *
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class EffectState {
+public class EffectState implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Effect currentEffect;
     private int remainingTicks;
 

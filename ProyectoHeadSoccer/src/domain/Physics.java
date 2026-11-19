@@ -24,8 +24,8 @@ public final class Physics {
     public static final double BODY_RESTITUTION = RESTITUTION;
     public static final double FOOT_RESTITUTION = RESTITUTION;
     public static final double CROSSBAR_RESTITUTION = RESTITUTION;
-    public static final double HEAD_IMPULSE = 10.0;
-    public static final double KICK_LIFT_FACTOR = -1.45;
+    public static final double HEAD_IMPULSE = 4.0;
+    public static final double KICK_LIFT_FACTOR = -1.15;
     public static final double FRICTION = 0.95;
     public static final int TICK_MS = 1000/FPS;
 

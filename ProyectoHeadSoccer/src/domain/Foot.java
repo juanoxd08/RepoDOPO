@@ -1,12 +1,15 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Represents the player's foot entity for kicking and ball collisions.
  * 
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Foot {
+public class Foot implements Serializable {
+    private static final long serialVersionUID = 1L;
     public static final double KICK_REACH_X = 20.0;
     public static final double KICK_LIFT_Y = 6.0;
     public static final int KICK_SWEEP_TICKS = 4;

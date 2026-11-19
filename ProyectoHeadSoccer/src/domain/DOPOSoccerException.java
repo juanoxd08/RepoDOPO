@@ -14,6 +14,8 @@ public class DOPOSoccerException extends Exception{
     public static final String NOT_ENOUGH_POINTS = "puntos no suficientes";
     public static final String NULL_ARGUMENT = "argumento nulo";
     public static final String MODALITY_NOT_SUPPORTED = "modalidad no soportada";
+    public static final String SAVE_ERROR = "No se pudo guardar la partida";
+    public static final String OPEN_ERROR = "No se pudo abrir la partida";
 
     /**
      * Constructs a DOPOSoccerException with the specified detail message.

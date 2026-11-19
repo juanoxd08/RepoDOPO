@@ -1,10 +1,13 @@
 package presentation;
 
 import domain.*;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.MouseEvent;
+import java.io.File;
 
 /**
  * Graphical canvas rendering all screens and match entities using only
@@ -30,6 +33,8 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
     private String winnerNotification = "Fin del juego";
 
     public final java.awt.Rectangle btnNewGame = new java.awt.Rectangle(0, 0, 0, 0);
+    public final java.awt.Rectangle btnLoadGame = new java.awt.Rectangle(0, 0, 0, 0);
+    public final java.awt.Rectangle btnSaveGame = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnContinue = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnStart = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnMenu = new java.awt.Rectangle(0, 0, 0, 0);
@@ -45,6 +50,12 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
     public final java.awt.Rectangle btnResMed = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnResLarge = new java.awt.Rectangle(0, 0, 0, 0);
 
+    /**
+     * Constructs the main graphical panel and registers it as a match listener.
+     *
+     * @param game Domain facade instance
+     * @param parentFrame Parent application window managing navigation screens
+     */
     public PhotoHeadSoccer(DOPOSoccer game, HeadSoccerGUI parentFrame) {
         this.game = game;
         this.parentFrame = parentFrame;
@@ -55,6 +66,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         this.setBackground(new Color(135, 206, 235));
     }
 
+    /**
+     * Builds a MatchConfig from the current UI selections and starts a new match.
+     */
     public void startConfiguredMatch() {
         int target = (matchType == MatchType.TIME) ? matchDurationMinutes : targetGoals;
         try {
@@ -74,6 +88,11 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         }
     }
 
+    /**
+     * Updates the goal banner text with the scoring player's name.
+     *
+     * @param scorer Side of the player who scored
+     */
     @Override
     public void onGoal(Side scorer) {
         MatchView match = game.getMatch();
@@ -84,11 +103,23 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         }
     }
 
+    /**
+     * Updates the status banner when a player is stunned due to zero health.
+     *
+     * @param victim Side of the stunned player
+     */
     @Override
     public void onStunned(Side victim) {
         lastScorerText = "¡JUGADOR ATURDIDO!";
     }
 
+    /**
+     * Updates the end-of-match notification message with the winner and awarded points.
+     *
+     * @param winner Winning side, or null if tied
+     * @param winnerPoints Points awarded to the winner
+     * @param loserPoints Points awarded to the loser
+     */
     @Override
     public void onMatchFinished(Side winner, int winnerPoints, int loserPoints) {
         if (winner == null) {
@@ -102,6 +133,11 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         winnerNotification = "¡GANADOR: " + name + "! (+" + winnerPoints + " PUNTOS)";
     }
 
+    /**
+     * Renders the active application screen onto the panel.
+     *
+     * @param g Swing graphics context
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -123,9 +159,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         }
     }
 
-    /* =========================================================================
-     *  PANTALLA 1: MENÚ PRINCIPAL (HEAD SOCCER GAME / DOPOSoccer)
-     * ========================================================================= */
+    /*
+     * Renders the main menu screen with New Game, Load Game, and keyboard controls.
+     */
     private void drawMenuScreen(Graphics2D g2d) {
         int w = getWidth();
         int h = getHeight();
@@ -152,8 +188,11 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         String sub = "DOPOSoccer 2026-2  •  Proyecto Final POOB";
         g2d.drawString(sub, w / 2 - g2d.getFontMetrics().stringWidth(sub) / 2, h / 6 + 65);
 
-        btnNewGame.setBounds(w / 2 - 130, h / 2 - 25, 260, 56);
-        drawGlossyButton(g2d, btnNewGame, "NEW GAME", new Color(245, 175, 25), Color.BLACK, 24);
+        btnNewGame.setBounds(w / 2 - 270, h / 2 - 25, 250, 56);
+        drawGlossyButton(g2d, btnNewGame, "NEW GAME", new Color(245, 175, 25), Color.BLACK, 22);
+
+        btnLoadGame.setBounds(w / 2 + 20, h / 2 - 25, 250, 56);
+        drawGlossyButton(g2d, btnLoadGame, "ABRIR PARTIDA", new Color(70, 150, 220), Color.WHITE, 20);
 
         g2d.setColor(new Color(0, 0, 0, 160));
         g2d.fillRoundRect(w / 2 - 280, h / 2 + 65, 560, 120, 18, 18);
@@ -172,9 +211,10 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         g2d.drawString(tip, w / 2 - g2d.getFontMetrics().stringWidth(tip) / 2, h - 30);
     }
 
-    /* =========================================================================
-     *  PANTALLA 2: SELECCIÓN DE JUGADORES (SELECT PLAYERS)
-     * ========================================================================= */
+
+    /*
+     * Renders the player, modality, machine profile, and match type selection screen.
+     */
     private void drawSelectPlayersScreen(Graphics2D g2d) {
         int w = getWidth();
         int h = getHeight();
@@ -271,9 +311,10 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         drawGlossyButton(g2d, btnContinue, "CONTINUE ➔", new Color(245, 175, 25), Color.BLACK, 20);
     }
 
-    /* =========================================================================
-     *  PANTALLA 3: SELECCIÓN DE CAMPO (SELECT THE CAMP / RESOLUCIÓN)
-     * ========================================================================= */
+
+    /*
+     * Renders the field resolution selection screen before match start.
+     */
     private void drawSelectCampScreen(Graphics2D g2d) {
         int w = getWidth();
         int h = getHeight();
@@ -316,9 +357,10 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         drawGlossyButton(g2d, btnStart, "⚽ START ⚽", new Color(40, 180, 40), Color.WHITE, 24);
     }
 
-    /* =========================================================================
-     *  PANTALLA 4: PARTIDO EN JUEGO (STATE PLAYING, PAUSE, GOAL, DRAW, FINISHED)
-     * ========================================================================= */
+
+    /*
+     * Renders the active match screen, scaled pitch entities, HUD, and state overlays.
+     */
     private void drawMatchScreen(Graphics2D g2d, MatchView match) {
         if (match == null) return;
         int fieldW = match.getFieldWidth();
@@ -354,6 +396,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         }
     }
 
+    /*
+     * Renders the decorative stadium sky, stands, and turf background for menu screens.
+     */
     private void drawBackgroundField(Graphics2D g2d) {
         int w = getWidth();
         int h = getHeight();
@@ -365,6 +410,12 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         g2d.fillRect(0, (int) (h * 0.65), w, (int) (h * 0.35));
     }
 
+    /**
+     * Renders the soccer pitch, stadium banner, field lines, and both goals.
+     *
+     * @param g Graphics context scaled to field coordinates
+     * @param match Read-only match view
+     */
     public void drawField(Graphics g, MatchView match) {
         Graphics2D g2d = (Graphics2D) g;
         int fieldW = match.getFieldWidth();
@@ -398,6 +449,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         drawGoal(g2d, match, Side.RIGHT);
     }
 
+    /*
+     * Renders the goal net and crossbar for the specified side.
+     */
     private void drawGoal(Graphics2D g2d, MatchView match, Side side) {
         domain.Rectangle area = match.getGoalArea(side);
         if (area != null) {
@@ -422,6 +476,12 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         }
     }
 
+    /**
+     * Renders a player's limbs, active power aura, and status effect indicator.
+     *
+     * @param g Graphics context scaled to field coordinates
+     * @param p Read-only player view
+     */
     public void drawPlayer(Graphics g, PlayerView p) {
         if (p == null || p.getHeadShape() == null) return;
         Graphics2D g2d = (Graphics2D) g;
@@ -482,6 +542,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         }
     }
 
+    /*
+     * Resolves the display color associated with a playable country.
+     */
     private Color getColorByCountry(Country c) {
         if (c == null) return Color.RED;
         switch (c) {
@@ -493,6 +556,12 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         }
     }
 
+    /**
+     * Renders the soccer ball and its power-shot glow when active.
+     *
+     * @param g Graphics context scaled to field coordinates
+     * @param match Read-only match view
+     */
     public void drawBall(Graphics g, MatchView match) {
         BallView ball = match.getBall();
         if (ball == null) return;
@@ -518,9 +587,12 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         g2d.drawLine(bx, by - r + 2, bx, by + r - 2);
     }
 
-    /* =========================================================================
-     *  HUD SUPERIOR: BARRAS DE VIDA, PODER, MARCADOR Y TIMER
-     * ========================================================================= */
+    /**
+     * Renders the top HUD including scoreboard, timer or goal target, and player bars.
+     *
+     * @param g2d Screen-space graphics context
+     * @param match Read-only match view
+     */
     public void drawHUD(Graphics2D g2d, MatchView match) {
         int w = getWidth();
 
@@ -563,6 +635,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         }
     }
 
+    /*
+     * Renders a single player's name, health bar, and power gauge in the HUD.
+     */
     private void drawPlayerHUD(Graphics2D g2d, PlayerView p, int x, int y, int barW) {
         g2d.setFont(new Font("Arial", Font.BOLD, 13));
         g2d.setColor(Color.WHITE);
@@ -601,9 +676,10 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         }
     }
 
-    /* =========================================================================
-     *  OVERLAYS DE ESTADOS
-     * ========================================================================= */
+
+    /*
+     * Renders the pause overlay with resume, menu, and save match controls.
+     */
     private void drawPauseOverlay(Graphics2D g2d) {
         int w = getWidth();
         int h = getHeight();
@@ -621,8 +697,14 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         String s2 = "Presiona 'M' para salir al Menú Principal";
         g2d.drawString(s1, w / 2 - g2d.getFontMetrics().stringWidth(s1) / 2, h / 2 + 15);
         g2d.drawString(s2, w / 2 - g2d.getFontMetrics().stringWidth(s2) / 2, h / 2 + 45);
+
+        btnSaveGame.setBounds(w / 2 - 130, h / 2 + 75, 260, 48);
+        drawGlossyButton(g2d, btnSaveGame, "GUARDAR PARTIDA", new Color(40, 170, 80), Color.WHITE, 18);
     }
 
+    /*
+     * Renders the goal celebration banner overlay.
+     */
     private void drawGoalOverlay(Graphics2D g2d) {
         int w = getWidth();
         int h = getHeight();
@@ -640,6 +722,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         g2d.drawString(desc, w / 2 - g2d.getFontMetrics().stringWidth(desc) / 2, h / 2 + 40);
     }
 
+    /*
+     * Renders the sudden-death golden goal banner overlay.
+     */
     private void drawDrawOverlay(Graphics2D g2d) {
         int w = getWidth();
         int h = getHeight();
@@ -657,6 +742,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         g2d.drawString(sub, w / 2 - g2d.getFontMetrics().stringWidth(sub) / 2, h / 2 + 45);
     }
 
+    /*
+     * Renders the match-finished overlay with winner announcement and return-to-menu button.
+     */
     private void drawFinishedOverlay(Graphics2D g2d) {
         int w = getWidth();
         int h = getHeight();
@@ -682,9 +770,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         drawGlossyButton(g2d, btnMenu, "VOLVER AL MENÚ", new Color(245, 175, 25), Color.BLACK, 18);
     }
 
-    /* =========================================================================
-     *  MÉTODOS AUXILIARES DE RENDERIZADO DE BOTONES INTERACTIVOS
-     * ========================================================================= */
+    /*
+     * Renders a rounded action button with centered label text.
+     */
     private void drawGlossyButton(Graphics2D g2d, java.awt.Rectangle r, String text, Color bg, Color fg, int fontSize) {
         g2d.setColor(bg);
         g2d.fillRoundRect(r.x, r.y, r.width, r.height, 16, 16);
@@ -700,6 +788,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         g2d.drawString(text, tx, ty);
     }
 
+    /*
+     * Renders a selectable toggle button reflecting active or inactive state.
+     */
     private void drawToggleOption(Graphics2D g2d, java.awt.Rectangle r, String text, boolean selected) {
         Color bg = selected ? new Color(245, 175, 25) : new Color(50, 55, 65);
         Color fg = selected ? Color.BLACK : Color.WHITE;
@@ -717,6 +808,11 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         g2d.drawString(text, tx, ty);
     }
 
+    /**
+     * Dispatches mouse click events across active UI buttons for the current screen.
+     *
+     * @param e Mouse click event
+     */
     public void handleMouseClick(MouseEvent e) {
         Point p = e.getPoint();
         Screen screen = parentFrame.getCurrentScreen();
@@ -724,6 +820,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         if (screen == Screen.MENU) {
             if (btnNewGame.contains(p)) {
                 parentFrame.setCurrentScreen(Screen.SELECT_PLAYERS);
+                repaint();
+            } else if (btnLoadGame.contains(p)) {
+                openSavedMatch();
                 repaint();
             }
         } else if (screen == Screen.SELECT_PLAYERS) {
@@ -785,9 +884,52 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
             }
         } else if (screen == Screen.MATCH) {
             MatchView match = game.getMatch();
-            if (match != null && match.getStatus() == GameStatus.FINISHED && btnMenu.contains(p)) {
+            if (match != null && match.getStatus() == GameStatus.PAUSED && btnSaveGame.contains(p)) {
+                saveCurrentMatch();
+                repaint();
+            } else if (match != null && match.getStatus() == GameStatus.FINISHED && btnMenu.contains(p)) {
                 parentFrame.setCurrentScreen(Screen.MENU);
                 repaint();
+            }
+        }
+    }
+
+    /*
+     * Opens a file chooser dialog to save the currently paused match.
+     */
+    private void saveCurrentMatch() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Guardar partida de DOPOSoccer");
+        chooser.setFileFilter(new FileNameExtensionFilter("Partidas DOPOSoccer (*.dat)", "dat"));
+        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+            if (!file.getName().toLowerCase().endsWith(".dat")) {
+                file = new File(file.getParentFile(), file.getName() + ".dat");
+            }
+            try {
+                game.save(file);
+                JOptionPane.showMessageDialog(this, "Partida guardada correctamente.", "Guardar", JOptionPane.INFORMATION_MESSAGE);
+            } catch (DOPOSoccerException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Error al guardar", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    /*
+     * Opens a file chooser dialog to load a previously saved match.
+     */
+    private void openSavedMatch() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Abrir partida de DOPOSoccer");
+        chooser.setFileFilter(new FileNameExtensionFilter("Partidas DOPOSoccer (*.dat)", "dat"));
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try {
+                game.open(chooser.getSelectedFile());
+                this.lastScorerText = "¡Anotación!";
+                this.winnerNotification = "Fin del juego";
+                parentFrame.setCurrentScreen(Screen.MATCH);
+            } catch (DOPOSoccerException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Error al abrir", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

@@ -1,5 +1,7 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Performance statistics governing speed, jump, kick damage multiplier, and maximum health (survival).
  * All stats scale from 1 to 10 according to the DOPOSoccer specification.
@@ -7,7 +9,8 @@ package domain;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class PlayerStats {
+public class PlayerStats implements Serializable {
+	private static final long serialVersionUID = 1L;
 	private int speed;
 	private int jump;
 	private int kick;

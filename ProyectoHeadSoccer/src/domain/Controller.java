@@ -1,5 +1,6 @@
 package domain;
 
+import java.io.Serializable;
 import java.util.Set;
 
 /**
@@ -8,7 +9,7 @@ import java.util.Set;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public interface Controller {
+public interface Controller extends Serializable {
 
     /**
      * Decides the set of actions to execute during the current frame.

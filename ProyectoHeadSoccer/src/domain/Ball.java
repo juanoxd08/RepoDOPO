@@ -1,5 +1,6 @@
 package domain;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 /**
@@ -8,7 +9,8 @@ import java.util.Optional;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Ball implements BallView {
+public class Ball implements BallView, Serializable {
+	private static final long serialVersionUID = 1L;
 	private Circle circle;
 	private double verticalSpeed;
 	private double horizontalSpeed;
@@ -122,23 +124,18 @@ public class Ball implements BallView {
 
 		boolean onFloor = this.getCircle().getY() + this. getCircle().getRadius() >= Field.HEIGHT - 0.5;
 		if(onFloor && normal.getY() > 0){
-			if(normal.getX() > 0.01){
-				normal = new Vector2(normal.getX(), 0);
+			if(Math.abs(normal.getX()) > 0.01){
+				normal = new Vector2(Math.signum(normal.getX()), 0);
 			}else{
-				normal = new Vector2(0, -3);
+				normal = new Vector2(0, -1);
 			}
 		}
 		this.circle.translate(normal.getX() * c.getPenetration(), normal.getY() * c.getPenetration());
 
 		Vector2 v = new Vector2(horizontalSpeed, verticalSpeed);
-		if (impulse > 0) {
-			v = normal.scale(impulse);
-		} else {
-			double vn = v.dot(normal);
-			if (vn < 0) {
-				v = v.sub(normal.scale((1.0 + restitution) * vn));
-			}
-		}
+		double vn = v.dot(normal);
+		if (vn < 0) v = v.sub(normal.scale((1.0 + restitution) * vn));
+		if(impulse > 0) v = v.add(normal.scale(impulse));
 		this.horizontalSpeed = v.getX();
 		this.verticalSpeed = v.getY();
 		return true;

@@ -1,12 +1,15 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Manages player health, zero-health stun state, and 3-second recovery.
  *
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Life {
+public class Life implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final double MAX_LIFE;
     private double life;
     private boolean stunned;

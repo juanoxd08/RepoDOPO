@@ -1,5 +1,6 @@
 package domain;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -13,6 +14,23 @@ import java.util.Set;
 public class DOPOSoccer {
     private Match currentMatch;
     private final List<MatchListener> listeners = new ArrayList<>();
+    private final MatchRepository matchRepository;
+
+    /**
+     * Creates a facade instance without a configured match repository.
+     */
+    public DOPOSoccer() {
+        this(null);
+    }
+
+    /**
+     * Creates a facade instance with the given match persistence repository.
+     *
+     * @param matchRepository Repository used to save and open matches
+     */
+    public DOPOSoccer(MatchRepository matchRepository) {
+        this.matchRepository = matchRepository;
+    }
 
     /**
      * Starts a new match from the given configuration and attaches registered listeners.
@@ -124,6 +142,35 @@ public class DOPOSoccer {
         listeners.remove(listener);
         if (currentMatch != null) {
             currentMatch.removeListener(listener);
+        }
+    }
+
+    /**
+     * Saves the active match to the specified file.
+     *
+     * @param file Destination file
+     * @throws DOPOSoccerException if there is no active match, repository is missing, or saving fails
+     */
+    public void save(File file) throws DOPOSoccerException {
+        if (currentMatch == null) throw new DOPOSoccerException(DOPOSoccerException.INVALID_STATE);
+        if (matchRepository == null) throw new DOPOSoccerException(DOPOSoccerException.NULL_ARGUMENT);
+        matchRepository.save(currentMatch, file);
+    }
+
+    /**
+     * Opens a saved match from the specified file and reattaches registered listeners.
+     *
+     * @param file Source file
+     * @throws DOPOSoccerException if repository is missing or loading fails
+     */
+    public void open(File file) throws DOPOSoccerException {
+        if (matchRepository == null) throw new DOPOSoccerException(DOPOSoccerException.NULL_ARGUMENT);
+        currentMatch = matchRepository.open(file);
+
+        if (currentMatch != null) {
+            for (MatchListener listener : listeners) {
+                this.currentMatch.addListener(listener);
+            }
         }
     }
 }

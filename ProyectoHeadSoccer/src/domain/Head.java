@@ -1,12 +1,15 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Represents the player's head entity for heading the ball and managing stun effects.
  * 
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Head {
+public class Head implements Serializable {
+	private static final long serialVersionUID = 1L;
 	private Circle circle;
 	private int kicksRecieved;
 	private int kickTicks;

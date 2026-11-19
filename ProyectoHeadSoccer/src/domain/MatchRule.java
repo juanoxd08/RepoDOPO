@@ -1,5 +1,6 @@
 package domain;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 /**
@@ -8,7 +9,7 @@ import java.util.Optional;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public interface MatchRule {
+public interface MatchRule extends Serializable {
     /**
      * Updates rule state on each simulation tick.
      *

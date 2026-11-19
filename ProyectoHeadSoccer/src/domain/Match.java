@@ -1,5 +1,8 @@
 package domain;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -12,7 +15,8 @@ import java.util.Set;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Match implements MatchView {
+public class Match implements MatchView, Serializable {
+    private static final long serialVersionUID = 1L;
     protected Player player1;
     protected Player player2;
     protected Controller controller1;
@@ -23,7 +27,7 @@ public class Match implements MatchView {
     protected GameStatus state;
     private GameStatus stateBeforePause;
     protected MatchRule rule;
-    protected List<MatchListener>  listeners = new ArrayList<>();
+    protected transient List<MatchListener> listeners = new ArrayList<>();
   
 
     protected int goalCelebrationTicks;
@@ -265,7 +269,11 @@ public class Match implements MatchView {
     public void removeListener(MatchListener listener) {
         listeners.remove(listener);
     }
-
+    
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException{
+        in.defaultReadObject();
+        listeners = new ArrayList<>();
+    }
 
 
 

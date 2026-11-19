@@ -29,6 +29,9 @@ import static org.junit.Assert.*;
 public class DOPOSoccerStaticDynamicTest {
 
 
+    /**
+     * Verifies structural interface and abstract class contracts in the domain.
+     */
     @Test
     public void testStaticInterfaceContracts() {
         assertTrue(MatchView.class.isInterface());
@@ -41,6 +44,11 @@ public class DOPOSoccerStaticDynamicTest {
         assertTrue(Modifier.isAbstract(Figure.class.getModifiers()));
     }
 
+    /**
+     * Verifies public method signatures on Match and DOPOSoccer facade.
+     *
+     * @throws NoSuchMethodException if an expected method signature is missing
+     */
     @Test
     public void testStaticMethodSignatures() throws NoSuchMethodException {
         Method getPlayer = Match.class.getMethod("getPlayer", Side.class);
@@ -62,6 +70,9 @@ public class DOPOSoccerStaticDynamicTest {
         assertEquals(MatchView.class, getMatch.getReturnType());
     }
 
+    /**
+     * Verifies enumeration constants across Country, MachineProfile, MatchType, and FieldResolution.
+     */
     @Test
     public void testStaticEnumerationsIntegrity() {
         assertNotNull(Country.valueOf("SOUTH_KOREA"));
@@ -82,6 +93,9 @@ public class DOPOSoccerStaticDynamicTest {
         assertNotNull(FieldResolution.valueOf("LARGE"));
     }
 
+    /**
+     * Verifies positive invariants for field dimensions and physics constants.
+     */
     @Test
     public void testStaticPhysicsConstants() {
         assertTrue(Field.WIDTH > 0);
@@ -90,7 +104,11 @@ public class DOPOSoccerStaticDynamicTest {
         assertTrue(Physics.FPS > 0);
     }
 
-
+    /**
+     * Simulates match creation, frame progression, and pause/resume transitions through DOPOSoccer.
+     *
+     * @throws DOPOSoccerException if match configuration is invalid
+     */
     @Test
     public void testDynamicGameFlowSimulation() throws DOPOSoccerException {
         DOPOSoccer game = new DOPOSoccer();
@@ -120,6 +138,11 @@ public class DOPOSoccerStaticDynamicTest {
         assertEquals(GameStatus.PLAYING, game.getMatch().getStatus());
     }
 
+    /**
+     * Verifies that all machine profiles produce valid action sets during an active match simulation.
+     *
+     * @throws DOPOSoccerException if match configuration is invalid
+     */
     @Test
     public void testDynamicMachineControllersReaction() throws DOPOSoccerException {
         for (MachineProfile profile : MachineProfile.values()) {
@@ -136,12 +159,17 @@ public class DOPOSoccerStaticDynamicTest {
 
             for (int t = 0; t < 50; t++) {
                 Set<PlayerAction> actions = com.decide(match);
-                assertNotNull("El controlador " + profile + " debe retornar decisiones vÃ¡lidas", actions);
+                assertNotNull("El controlador " + profile + " debe retornar decisiones validas", actions);
                 match.tick();
             }
         }
     }
 
+    /**
+     * Simulates gravity, goal celebration delay, kickoff reset, and match completion on target score.
+     *
+     * @throws DOPOSoccerException if match configuration is invalid
+     */
     @Test
     public void testDynamicBallPhysicsAndGoalSequence() throws DOPOSoccerException {
         MatchConfig config = MatchConfig.builder()
@@ -158,7 +186,7 @@ public class DOPOSoccerStaticDynamicTest {
         for (int i = 0; i < 10; i++) {
             match.tick();
         }
-        assertTrue("El balÃ³n debe descender debido a la gravedad", match.getBall().getY() > startY);
+        assertTrue("El balon debe descender debido a la gravedad", match.getBall().getY() > startY);
 
         match.onGoal(Side.LEFT);
         assertEquals(GameStatus.GOAL_SCORED, match.getStatus());

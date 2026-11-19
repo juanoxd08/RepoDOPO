@@ -1,12 +1,15 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Immutable 2D vector used for positions, velocities, and collision normals.
  *
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Vector2 {
+public class Vector2 implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final double x;
     private final double y;
 

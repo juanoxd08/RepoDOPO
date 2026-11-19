@@ -1,5 +1,6 @@
 package domain;
 
+import java.io.Serializable;
 import java.util.Set;
 
 /**
@@ -9,7 +10,8 @@ import java.util.Set;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Player implements PlayerView {
+public class Player implements PlayerView, Serializable {
+	private static final long serialVersionUID = 1L;
 	private final PlayerProfile profile;
 	private final Country country;
 	private final Side side;
@@ -399,7 +401,6 @@ public class Player implements PlayerView {
 	public String getName() { return profile.getName(); }
 	public Country getCountry() { return country; }
 	public Side getSide() { return side; }
-	public Power getPower() { return power; }
 	public double getVerticalSpeed() { return playerBody.getVerticalSpeed(); }
 	public int getPoints() { return profile.getPoints(); }
 	public void addPoints(int amount) { profile.addPoints(amount); }

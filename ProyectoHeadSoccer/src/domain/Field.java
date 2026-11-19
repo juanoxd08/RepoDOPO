@@ -1,12 +1,15 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Represents the 2D soccer field containing boundaries and goal areas.
  * 
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class Field {
+public class Field implements Serializable {
+	private static final long serialVersionUID = 1L;
 	public static final int WIDTH = 350;
 	public static final int HEIGHT = 200;
 
