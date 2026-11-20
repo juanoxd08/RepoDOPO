@@ -62,6 +62,29 @@ public abstract class MachineController implements Controller {
         }
     }
 
+    /*
+     * Returns true when the ball is horizontally close and at or above head height plus margin.
+     */
+    protected boolean shouldJumpForBall(PlayerView me, BallView ball, double maxDx, double headMarginY){
+        return Math.abs(me.getHeadShape().getX() - ball.getX()) <= maxDx
+                && ball.getY() <= me.getHeadShape().getY() + headMarginY;
+    }
+
+    /*
+     * Returns true when the ball is within horizontal kicking reach and near ground height.
+     */
+    protected boolean shouldKickBall(MatchView match, PlayerView me, BallView ball, double maxFootDx, double maxHeightAboveFloor){
+        return Math.abs(me.getFootShape().getX() - ball.getX()) <= maxFootDx
+                && ball.getY() >= match.getFieldHeight() - maxHeightAboveFloor;
+    }
+
+    /*
+     * Returns the horizontal X coordinate of this machine's own goal line.
+     */
+    protected double ownGoalX(MatchView match) {
+        return (side == Side.RIGHT) ? match.getFieldWidth() : 0.0;
+    }
+
     /**
      * Selects the intended actions for this frame based on the specific machine profile strategy.
      *

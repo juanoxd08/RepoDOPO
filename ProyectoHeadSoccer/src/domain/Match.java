@@ -46,7 +46,7 @@ public class Match implements MatchView, Serializable {
         this.player1 = new Player(new PlayerProfile("jugador 1"), config.getLeftCountry(), Side.LEFT);
         this.player2 = new Player(new PlayerProfile("jugador 2"), config.getRightCountry(), Side.RIGHT);
         this.controller1 = new HumanController();
-        this.controller2 = (config.getModality() == Modality.PVC) ? new COMController(Side.RIGHT) : new HumanController();
+        this.controller2 = (config.getModality() == Modality.PVC) ? config.getMachineProfile().create(Side.RIGHT) : new HumanController();
         this.rule = (config.getMatchType() == MatchType.GOALS) ? new GoalRule(config.getTargetValue()) : new TimeRule(config.getTargetValue());
         this.state = GameStatus.PLAYING;
         this.stateBeforePause = GameStatus.NOT_STARTED;

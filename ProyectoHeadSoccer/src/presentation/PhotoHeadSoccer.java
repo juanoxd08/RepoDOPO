@@ -1,6 +1,7 @@
 package presentation;
 
 import domain.*;
+import persistence.Log;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -78,12 +79,14 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
                     .rightCountry(rightCountry)
                     .matchType(matchType)
                     .targetValue(target)
+                    .machineProfile(machineProfile)
                     .build();
             this.lastScorerText = "¡Anotación!";
             this.winnerNotification = "Fin del juego";
             game.newMatch(config);
             parentFrame.setCurrentScreen(Screen.MATCH);
         } catch (DOPOSoccerException ex) {
+            Log.record(ex);
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Error de configuración", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -910,6 +913,7 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
                 game.save(file);
                 JOptionPane.showMessageDialog(this, "Partida guardada correctamente.", "Guardar", JOptionPane.INFORMATION_MESSAGE);
             } catch (DOPOSoccerException ex) {
+                Log.record(ex);
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Error al guardar", JOptionPane.ERROR_MESSAGE);
             }
         }
@@ -929,6 +933,7 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
                 this.winnerNotification = "Fin del juego";
                 parentFrame.setCurrentScreen(Screen.MATCH);
             } catch (DOPOSoccerException ex) {
+                Log.record(ex);
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Error al abrir", JOptionPane.ERROR_MESSAGE);
             }
         }

@@ -12,6 +12,7 @@ public final class MatchConfig {
     private final Country rightCountry;
     private final MatchType matchType;
     private final int targetValue;
+    private final MachineProfile machineProfile;
 
     private MatchConfig(Builder builder) {
         this.modality = builder.modality;
@@ -19,6 +20,7 @@ public final class MatchConfig {
         this.rightCountry = builder.rightCountry;
         this.matchType = builder.matchType;
         this.targetValue = builder.targetValue;
+        this.machineProfile = builder.machineProfile;
     }
 
     /**
@@ -67,6 +69,15 @@ public final class MatchConfig {
     }
 
     /**
+     * Returns the configured machine AI profile for PVC matches.
+     *
+     * @return Machine profile
+     */
+    public MachineProfile getMachineProfile() {
+        return machineProfile;
+    }
+
+    /**
      * Creates a new builder for MatchConfig.
      *
      * @return MatchConfig builder
@@ -87,6 +98,7 @@ public final class MatchConfig {
         private Country rightCountry = Country.CAMEROON;
         private MatchType matchType = MatchType.TIME;
         private int targetValue = 2;
+        private MachineProfile machineProfile = MachineProfile.EXPERTA;
 
         /**
          * Sets the match modality.
@@ -144,6 +156,17 @@ public final class MatchConfig {
         }
 
         /**
+         * Sets the machine AI profile for PVC matches.
+         *
+         * @param mp Machine profile
+         * @return This builder
+         */
+        public Builder machineProfile(MachineProfile mp) {
+            this.machineProfile = mp;
+            return this;
+        }
+
+        /**
          * Validates fields and builds an immutable MatchConfig.
          *
          * @return Validated MatchConfig instance
@@ -153,8 +176,8 @@ public final class MatchConfig {
             if (modality == null || leftCountry == null || rightCountry == null || matchType == null) {
                 throw new DOPOSoccerException(DOPOSoccerException.INVALID_MATCH_CONFIG);
             }
-            if (modality == Modality.PVC) {
-                throw new DOPOSoccerException(DOPOSoccerException.MODALITY_NOT_SUPPORTED);
+            if (modality == Modality.PVC && machineProfile == null) {
+                throw new DOPOSoccerException(DOPOSoccerException.INVALID_MATCH_CONFIG);
             }
             if (targetValue <= 0) {
                 throw new DOPOSoccerException(DOPOSoccerException.INVALID_MATCH_CONFIG);

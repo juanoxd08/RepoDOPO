@@ -154,6 +154,7 @@ public class DOPOSoccer {
     public void save(File file) throws DOPOSoccerException {
         if (currentMatch == null) throw new DOPOSoccerException(DOPOSoccerException.INVALID_STATE);
         if (matchRepository == null) throw new DOPOSoccerException(DOPOSoccerException.NULL_ARGUMENT);
+        currentMatch.pause();
         matchRepository.save(currentMatch, file);
     }
 
