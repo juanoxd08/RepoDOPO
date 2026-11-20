@@ -1,6 +1,6 @@
 # DOPOSoccer 2026-2 — Hoja de ruta (dominio)
 
-Código de partida: commit **`fix5`** (`0b62834`).
+Código de partida: commit **`fix6`** (`44b1042`).
 Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 > Esta hoja cubre **solo el dominio** (y la capa de persistencia). Lo de la interfaz gráfica se lleva aparte.
@@ -19,6 +19,21 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
+## Avances de `fix6` (verificado)
+
+- Compila; **41 de 41 pruebas pasan** (todavía no hay pruebas nuevas de la máquina ni de los perfiles).
+- **Jugador contra máquina ya se puede crear:** `MatchConfig.Builder.machineProfile(...)`, `build()` acepta `PVC` (exige perfil), `Match` crea la máquina con `config.getMachineProfile().create(Side.RIGHT)` y la GUI ya le pasa el perfil elegido.
+- **`MachineProfile` es una Factory:** cada valor guarda un `Function<Side, MachineController>`; además tiene `create(side, random)` para el Torpe.
+- **`MachineController`** ganó métodos de ayuda comunes: `shouldJumpForBall`, `shouldKickBall`, `ownGoalX`.
+- **`DefensiveMachine`, terminada:** vuelve a una posición base frente a su arco cuando el balón está lejos (más de 130 unidades) y, si el balón se acerca, se ubica entre el balón y su arco y lo despeja. Probado: con el balón en x = 230 junto a su arco, lo despejó hasta x = 132 y volvió a su posición base.
+- **`ExpertMachine`, terminada:** **compone** una ofensiva y una defensiva y elige a cuál delegar según el estado del partido: rival con aura → defensiva; rival aturdido o inconsciente → ofensiva; va ganando (salvo empate con poco tiempo) → defensiva; si no → ofensiva. Además activa el poder si está lleno y el balón está cerca.
+- **`ClumsyMachine` y `OffensiveMachine`: solo el esqueleto** (`chooseActions` devuelve un conjunto vacío). Las termina Cristian.
+  - Consecuencia, medida en partidos de 60 s: con los perfiles **Torpe** y **Ofensiva** la máquina **no se mueve nunca**, y la **Experta** tampoco se mueve mientras el partido esté empatado o vaya perdiendo, porque en esos casos delega en la ofensiva. Se arregla solo cuando exista la `OffensiveMachine`.
+- **Persistencia del progreso, iniciada:** `ProfileRepository` (interfaz en el dominio) + `SerializedProfileRepository` (en `persistence`, un archivo `profiles.dat` con un mapa nombre → perfil; si el nombre no existe, devuelve un perfil nuevo). **Todavía no está conectada:** ni la fachada ni `Match` la usan.
+- **Guardar partida** ahora pausa el partido antes de guardar. La GUI registra con `Log.record` los errores que atrapa.
+
+---
+
 ## Estado en `fix5` (verificado)
 
 - Compila; **41 de 41 pruebas pasan** (19 de dominio, 12 de física, 7 estáticas y dinámicas, 3 de persistencia).
@@ -34,34 +49,29 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-## Prioridad 1 — Jugador contra máquina (V2) · ≈ 4 – 5 h
+## Prioridad 1 — Jugador contra máquina (V2) · ≈ 2 – 3 h restantes
 
 El PDF pide la modalidad **jugador contra máquina** con **4 perfiles**: Torpe (*escoge al azar*), Ofensiva (*su prioridad es anotar*), Defensiva (*su prioridad es defender el arco*) y Experta (*decide según el estado del partido*).
 
-### 1.1 Una clase por perfil (Strategy + Template Method) · ≈ 2.5 h
-- [ ] `ClumsyMachine extends MachineController`: acciones al azar que mantiene unos ticks. **`Random` inyectable** por constructor, para poder probarlo.
-- [ ] `OffensiveMachine`: se ubica detrás del balón respecto al arco rival, salta si el balón viene alto, patea si está al alcance, usa el poder cuando va a tocar el balón.
-- [ ] `DefensiveMachine`: se queda **entre el balón y su arco**; si el balón entra en su mitad, va a despejarlo. Nunca empuja el balón hacia su propio arco.
-- [ ] `ExpertMachine`: **decide según el estado del partido**, usando solo `MatchView`. Por ejemplo:
-  - va perdiendo, o queda poco tiempo con empate → se comporta como ofensiva;
-  - va ganando → como defensiva;
-  - el rival tiene el aura activa → defensiva (se protege del tiro);
-  - tiene el poder listo y el balón cerca → lo activa;
-  - el rival está aturdido o inmovilizado → ataca.
-  - Lo más limpio: `ExpertMachine` **compone** una `OffensiveMachine` y una `DefensiveMachine` y elige a cuál delegarle en cada tick.
-- [ ] La lógica actual de `COMController` se **mueve** a estas clases (no se reescribe). Después se borra `COMController`.
-- [ ] Reemplazar los números sueltos (18, 26, 70, 130...) por constantes con nombre, y los `side == RIGHT ? … : …` por `side.dir()`.
+### 1.1 Una clase por perfil (Strategy + Template Method)
+- [ ] **`ClumsyMachine`** · *Cristian* · ≈ 0.5 h: el esqueleto ya tiene el `Random` inyectable. Falta `chooseActions`: elegir acciones al azar y **mantenerlas unos ticks** (si cambia en cada tick, la máquina solo tiembla). La lógica de `decideTorpe` de `COMController` sirve tal cual: el temporizador `randomActionTimer` y el conjunto `bufferedRandomActions` pasan a ser atributos de `ClumsyMachine`.
+- [ ] **`OffensiveMachine`** · *Cristian* · ≈ 1 h: es **la más importante**, porque la Experta delega en ella cuando va empatando o perdiendo. Falta `chooseActions`: ubicarse detrás del balón respecto al arco rival (`ball.getX() − side.dir() × distancia`), saltar si el balón viene alto (`shouldJumpForBall`), patear si está al alcance (`shouldKickBall`) y activar el poder cuando va a tocar el balón. La lógica de `decideOfensiva` de `COMController` sirve como punto de partida; usar los métodos de ayuda de `MachineController` y constantes con nombre, como en `DefensiveMachine`.
+- [x] **`DefensiveMachine`** · *Juan* · ✅ hecha en `fix6`.
+- [x] **`ExpertMachine`** · *Juan* · ✅ hecha en `fix6` (compone ofensiva y defensiva).
+- [ ] Cuando estén las 4: **borrar `COMController`** (hoy solo lo usa una prueba de `DOPOSoccerStaticDynamicTest`, que hay que pasar a los perfiles nuevos).
+- [ ] Mejora pequeña: `ExpertMachine` compara el efecto del rival como texto (`PlayerEffect.KNOCKED_OUT.name().equals(rival.getActiveEffectName())`). Cuando `PlayerView` exponga el efecto como `PlayerEffect` (lo pide también la GUI), compararlo directamente.
 
-### 1.2 `MachineProfile` como Factory · ≈ 0.5 h
-- [ ] Cada valor del `enum` crea su controlador: `MachineController create(Side side)` (con `Supplier`/`Function`, como `Country` crea el poder).
-- [ ] Una sobrecarga `create(Side side, Random random)` para las pruebas del perfil Torpe.
+### 1.2 `MachineProfile` como Factory · ✅ hecho en `fix6`
+- [x] Cada valor del `enum` crea su controlador con `create(Side side)`.
+- [x] `create(Side side, Random random)` para las pruebas del perfil Torpe.
 
-### 1.3 Configuración y partido · ≈ 0.5 h
-- [ ] `MatchConfig.Builder`: método `machineProfile(MachineProfile)`; `build()` **deja de rechazar `PVC`** y valida que, si la modalidad es `PVC`, haya perfil.
-- [ ] `Match`: el control derecho sale de `config.getMachineProfile().create(Side.RIGHT)`, en lugar de `new COMController(Side.RIGHT)`.
-- [ ] `MatchView`/`PlayerView`: si la GUI necesita mostrar el perfil de la máquina, exponerlo por la vista.
+### 1.3 Configuración y partido · ✅ hecho en `fix6`
+- [x] `MatchConfig.Builder.machineProfile(...)`; `build()` acepta `PVC` y exige el perfil.
+- [x] `Match` crea la máquina con `config.getMachineProfile().create(Side.RIGHT)`.
+- [x] La GUI le pasa el perfil elegido al Builder.
+- [ ] (Opcional) Exponer el perfil de la máquina por `MatchView`/`PlayerView`, si la GUI quiere mostrarlo en el HUD.
 
-### 1.4 Pruebas · ≈ 1 h
+### 1.4 Pruebas · ≈ 1 h · *falta todo*
 - [ ] **Torpe** con un `Random` de semilla fija: siempre las mismas acciones.
 - [ ] **Ofensiva:** balón delante, entre ella y el arco rival → se acerca y patea.
 - [ ] **Defensiva:** balón cerca de su arco → queda entre el balón y el arco; balón lejos → vuelve a su posición.
@@ -73,24 +83,32 @@ El PDF pide la modalidad **jugador contra máquina** con **4 perfiles**: Torpe (
 
 ---
 
-## Prioridad 2 — Persistencia completa (V2) · ≈ 3 – 4 h
+## Prioridad 2 — Persistencia completa (V2) · ≈ 2 – 2.5 h restantes
 
-El PDF pide dos cosas: **guardar y abrir el estado de un partido** (✅ hecho) y **mantener el progreso de los jugadores (puntos y estadísticas)** (❌ falta).
+El PDF pide dos cosas: **guardar y abrir el estado de un partido** (✅ hecho) y **mantener el progreso de los jugadores (puntos y estadísticas)** (🟡 el repositorio existe, falta conectarlo).
 
-### 2.1 Progreso de los jugadores · ≈ 2 – 2.5 h
-- [ ] Interfaz en el dominio: **`ProfileRepository`** con `PlayerProfile load(String name)` (si no existe, crea uno nuevo con todo en 1 y 0 puntos) y `void save(PlayerProfile profile)`. Que lance `DOPOSoccerException`.
-- [ ] Implementación en `persistence`: **`SerializedProfileRepository`** (un archivo con un mapa nombre → perfil). `PlayerProfile` y `PlayerStats` ya son serializables.
-- [ ] `MatchConfig.Builder`: recibir el **nombre** (o el `PlayerProfile`) de cada lado. Hoy `Match` crea `new PlayerProfile("jugador 1")` en cada partido y **los puntos se pierden**.
-- [ ] Fachada: `DOPOSoccer(MatchRepository, ProfileRepository)`; carga los perfiles al crear el partido y los **guarda automáticamente al terminar** (cuando `Match` reparte los 100/25 puntos).
-- [ ] Prueba: jugar un partido, terminarlo, crear otro con los mismos nombres → los puntos se conservan.
+### 2.1 Progreso de los jugadores · ≈ 1.5 – 2 h restantes
+- [x] Interfaz **`ProfileRepository`** en el dominio (`load(name)`, `save(profile)`) · ✅ `fix6`.
+- [x] **`SerializedProfileRepository`** en `persistence` (`profiles.dat`, mapa nombre → perfil) · ✅ `fix6`.
+- [ ] **Conectarlo** (esto es lo que hace que el progreso funcione de verdad):
+  1. `MatchConfig.Builder`: recibir el **nombre** de cada jugador (`leftPlayerName(...)`, `rightPlayerName(...)`). Para la máquina, un nombre fijo por perfil (por ejemplo "COM Defensiva").
+  2. **Fachada:** `DOPOSoccer(MatchRepository, ProfileRepository)`. En `newMatch(config)`, cargar los dos perfiles con `profileRepository.load(nombre)` y pasárselos al partido.
+  3. **`Match`:** recibir los perfiles cargados en lugar de crear `new PlayerProfile("jugador 1")` (hoy los puntos se pierden en cada partido).
+  4. **Guardado automático al terminar:** la fachada se registra como observadora del partido (o `Match` le avisa) y, en `onMatchFinished`, guarda los dos perfiles con `profileRepository.save(...)`.
+  5. La GUI crea la fachada con los dos repositorios: `new DOPOSoccer(new SerializedMatchRepository(), new SerializedProfileRepository())`.
+- [ ] Pruebas:
+  - `SerializedProfileRepository` con un archivo temporal: guardar un perfil con puntos, cargarlo de nuevo → mismos puntos y estadísticas; cargar un nombre que no existe → perfil nuevo en 1 y con 0 puntos.
+  - Integración: jugar un partido hasta el final, crear otro con los mismos nombres → el ganador tiene 100 puntos y el perdedor 25.
+- [ ] Detalle de diseño: el perfil del jugador derecho en PvM es de la máquina; decidir si la máquina acumula puntos (pregunta para el monitor) o si solo se guarda el del humano.
 
-### 2.2 Guardar y abrir partida: cerrar detalles · ≈ 0.5 h
-- [ ] Al guardar, dejar el partido en **pausa**, para que al abrirlo no arranque solo.
+### 2.2 Guardar y abrir partida: cerrar detalles · ≈ 0.5 h restantes
+- [x] Al guardar, el partido queda en **pausa** · ✅ `fix6`.
 - [ ] Probar abrir un archivo que no existe y uno corrupto → `DOPOSoccerException` con mensaje claro, y la traza en el log.
-- [ ] Probar guardar y abrir en PvM (Prioridad 1).
+- [ ] Probar guardar y abrir en PvM: la máquina sigue jugando después de abrir.
 
-### 2.3 Log · ≈ 0.5 h
-- [ ] Que **todo** error se registre, no solo los de archivos: la GUI debería llamar `Log.record(...)` cuando atrapa una `DOPOSoccerException` o una excepción inesperada.
+### 2.3 Log · 🟡 casi
+- [x] La GUI registra con `Log.record(...)` las `DOPOSoccerException` que atrapa · ✅ `fix6`.
+- [ ] Atrapar también las excepciones **inesperadas** del bucle del juego (`RuntimeException` dentro del `Timer`), registrarlas y mostrar un mensaje, para que el juego no se congele en silencio.
 - [ ] Ojo con el diseño: `Log` vive en `persistence`. El dominio **no** debe importarlo (sería una dependencia al revés). Si el dominio necesita registrar algo, que lance la excepción y la capa de arriba la registre.
 
 ---
@@ -152,7 +170,7 @@ El PDF pide dos cosas: **guardar y abrir el estado de un partido** (✅ hecho) y
 ---
 
 ## Pendientes de diseño (cuando haya tiempo)
-- **D1.** Código muerto: `FreezePower` y `FrozenEffect` (ningún país los usa); `COMController` cuando existan los 4 perfiles.
+- **D1.** Código muerto: `FreezePower` y `FrozenEffect` (ningún país los usa); `COMController` (ya ningún partido lo usa; solo una prueba) cuando existan los 4 perfiles.
 - **D2.** `Field.WIDTH`/`HEIGHT` siguen siendo constantes globales en varias clases.
 - **D3.** `Player.getPower()` sigue público y solo lo usan las pruebas.
 - **D4.** Tamaño de clases: `Player` 262 líneas de código, `Match` 249, `PlayerBody` 206. No crecerlas; si `Match` sigue creciendo, sacar la creación de jugadores y controles a una `MatchFactory`.
@@ -163,15 +181,18 @@ El PDF pide dos cosas: **guardar y abrir el estado de un partido** (✅ hecho) y
 
 | Orden | Qué | Horas | Para |
 |---|---|---|---|
-| 1 | **Jugador contra máquina** (4 perfiles, Factory, configuración, pruebas) | 4 – 5 | **V2 (sábado)** |
-| 2 | **Persistencia del progreso** + detalles de guardar/abrir + log | 3 – 4 | **V2 (sábado)** |
+| 1 | **Jugador contra máquina**: Torpe y Ofensiva (Cristian) + pruebas de los 4 perfiles | 2 – 3 | **V2 (sábado)** |
+| 2 | **Conectar la persistencia del progreso** + pruebas + detalles de guardar/abrir | 2 – 2.5 | **V2 (sábado)** |
 | 3 | Mejora de estadísticas con puntos | 2 – 3 | V2 o V3 |
 | 4 | Planificación de versiones, diagramas, pruebas de aceptación | 3 – 4 | V2 y V3 |
 | 5 | Bugs 7, 8 y 9 | 2 – 3 | Después de la entrega |
 | 6 | Pendientes de diseño | 1 – 2 | Cuando haya tiempo |
-| | **Total** | **≈ 15 – 21 h** | |
+| | **Total** | **≈ 12 – 17.5 h** | |
 
-**Para el sábado, lo mínimo:** prioridades 1 y 2, más la planificación de versiones (prioridad 4).
+**Para el sábado, lo mínimo:**
+- **Cristian:** `OffensiveMachine` primero (sin ella, la Experta tampoco ataca) y luego `ClumsyMachine`.
+- **Juan:** conectar el progreso (2.1, pasos 1 a 5) y las pruebas de la máquina (1.4) para los perfiles que ya están.
+- **Los dos:** la planificación de versiones (prioridad 4).
 
 ## Reglas de trabajo
 1. La API pública (fachada, vistas, eventos y `MatchConfig`) no cambia sin avisar.
