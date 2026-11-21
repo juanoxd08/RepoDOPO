@@ -1,5 +1,6 @@
 package domain;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -20,4 +21,6 @@ public interface MatchView {
     int getFieldHeight();
     Rectangle getGoalArea(Side side);
     Rectangle getCrossBar(Side side);
+    Modality getModality();
+    List<Circle> getFakeBalls();
 }

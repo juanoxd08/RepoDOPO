@@ -1,6 +1,8 @@
 package domain;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Base abstract class defining the rules and mechanics of special power shots according to DOPOSoccer specs:
@@ -199,4 +201,13 @@ public abstract class Power implements Serializable {
     public void setPowerShotActive(boolean active) { this.powerShotActive = active; }
     public double getEffectDurationSeconds() { return effectDurationSeconds; }
     public PlayerEffect getEffectType() { return createEffect().getType(); }
+
+    /**
+     * Decoy balls created by this power, if any. Only the Illusion power creates them.
+     *
+     * @return Copies of the decoy balls (empty by default)
+     */
+    public List<Circle> getDecoyBalls() {
+        return Collections.emptyList();
+    }
 }

@@ -28,6 +28,7 @@ public class Match implements MatchView, Serializable {
     private GameStatus stateBeforePause;
     protected MatchRule rule;
     protected transient List<MatchListener> listeners = new ArrayList<>();
+    private final Modality modality;
   
 
     protected int goalCelebrationTicks;
@@ -52,6 +53,7 @@ public class Match implements MatchView, Serializable {
         this.stateBeforePause = GameStatus.NOT_STARTED;
         this.goalCelebrationTicks = 0;
         this.pointsAwarded = false;
+        this.modality = config.getModality();
         resetPositions();
     }
 
@@ -342,4 +344,21 @@ public class Match implements MatchView, Serializable {
     public void setController1(Controller controller1) { this.controller1 = controller1; }
     public Controller getController2() { return controller2; }
     public void setController2(Controller controller2) { this.controller2 = controller2; }
+
+    @Override
+    public Modality getModality() {
+        return modality;
+    }
+
+    @Override
+    public List<Circle> getFakeBalls() {
+        List<Circle> fakeBalls = new ArrayList<>();
+        if (player1 != null) {
+            fakeBalls.addAll(player1.getDecoyBalls());
+        }
+        if (player2 != null) {
+            fakeBalls.addAll(player2.getDecoyBalls());
+        }
+        return fakeBalls;
+    }
 }

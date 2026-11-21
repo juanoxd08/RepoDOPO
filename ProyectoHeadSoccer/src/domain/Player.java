@@ -1,6 +1,8 @@
 package domain;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -459,5 +461,17 @@ public class Player implements PlayerView, Serializable {
 	@Override
 	public int getStat(StatType type) {
 		return profile.getStat(type);
+	}
+
+	/**
+	 * Decoy balls currently created by this player's power (Illusion).
+	 *
+	 * @return Copies of the decoy balls, or an empty list
+	 */
+	public List<Circle> getDecoyBalls() {
+		if (power == null) {
+			return Collections.emptyList();
+		}
+		return power.getDecoyBalls();
 	}
 }

@@ -11,4 +11,6 @@ public interface BallView {
     double getY();
     double getRadius();
     boolean hasPowerShot();
+    double getHorizontalSpeed();
+    double getVerticalSpeed();
 }

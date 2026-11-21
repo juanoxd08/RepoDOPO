@@ -80,7 +80,23 @@ public class IllusionPower extends Power {
      * @return List of fake ball circles
      */
     public List<Circle> getFakeBalls() {
-        return fakeBalls;
+        return getDecoyBalls();
+    }
+
+    /**
+     * Returns copies of the active decoy balls, so callers cannot move the real ones.
+     *
+     * @return Copies of the decoy circles, or an empty list if the illusion is not active
+     */
+    @Override
+    public List<Circle> getDecoyBalls() {
+        List<Circle> copies = new ArrayList<>();
+        if (hasActiveIllusion()) {
+            for (Circle ball : fakeBalls) {
+                copies.add(new Circle(ball.getX(), ball.getY(), ball.getRadius()));
+            }
+        }
+        return copies;
     }
 
     /**
