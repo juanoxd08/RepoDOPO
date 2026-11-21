@@ -49,6 +49,41 @@ public class PlayerStats implements Serializable {
 	}
 
 	/**
+	 * Increments the specified statistic by one level up to the maximum rating of 10.
+	 *
+	 * @param statType Statistic to increment
+	 * @throws DOPOSoccerException if statType is null or already at maximum level
+	 */
+	public void increment(StatType statType) throws DOPOSoccerException{
+		if (statType == null) {
+			throw new DOPOSoccerException(DOPOSoccerException.NULL_ARGUMENT);
+		}
+		switch (statType) {
+			case SPEED:
+        		if (speed >= 10) throw new DOPOSoccerException(DOPOSoccerException.MAX_STAT_REACHED);
+        		speed++;
+				break;
+
+			case JUMP:
+        		if (jump >= 10) throw new DOPOSoccerException(DOPOSoccerException.MAX_STAT_REACHED);
+        		jump++;
+				break;
+				
+			case KICK:
+        		if (kick >= 10) throw new DOPOSoccerException(DOPOSoccerException.MAX_STAT_REACHED);
+        		kick++;
+				break;
+
+			case SURVIVAL:
+        		if (survival >= 10) throw new DOPOSoccerException(DOPOSoccerException.MAX_STAT_REACHED);
+        		survival++;
+				break;
+			default:
+				break;
+		} 
+	}
+
+	/**
 	 * Returns the displacement in pixels per frame based on speed rating (+10% per level above 1).
 	 * 
 	 * @return Speed displacement in pixels

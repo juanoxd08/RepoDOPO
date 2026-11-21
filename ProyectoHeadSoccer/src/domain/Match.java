@@ -41,11 +41,26 @@ public class Match implements MatchView, Serializable {
      * @throws DOPOSoccerException if configuration or rule initialization fails
      */
     public Match(MatchConfig config) throws DOPOSoccerException{
+        this(config, null, null);
+     
+    }
+
+    /**
+     * Constructs a soccer match from a validated MatchConfig and preloaded player profiles.
+     *
+     * @param config Validated match configuration
+     * @param profile1 Preloaded left player profile, or null to create a new default one
+     * @param profile2 Preloaded right player profile, or null to create a new default one
+     * @throws DOPOSoccerException if configuration or rule initialization fails
+     */
+    public Match(MatchConfig config, PlayerProfile profile1, PlayerProfile profile2) throws DOPOSoccerException{
         this.ball = new Ball();
         this.field = new Field();
         this.scoreBoard = new ScoreBoard();
-        this.player1 = new Player(new PlayerProfile("jugador 1"), config.getLeftCountry(), Side.LEFT);
-        this.player2 = new Player(new PlayerProfile("jugador 2"), config.getRightCountry(), Side.RIGHT);
+        PlayerProfile p1 = (profile1 != null) ? profile1 : new PlayerProfile(config.getLeftPlayerName());
+        PlayerProfile p2 = (profile2 != null) ? profile2 : new PlayerProfile(config.getRightPlayerName());
+        this.player1 = new Player(p1, config.getLeftCountry(), Side.LEFT);
+        this.player2 = new Player(p2, config.getRightCountry(), Side.RIGHT);
         this.controller1 = new HumanController();
         this.controller2 = (config.getModality() == Modality.PVC) ? config.getMachineProfile().create(Side.RIGHT) : new HumanController();
         this.rule = (config.getMatchType() == MatchType.GOALS) ? new GoalRule(config.getTargetValue()) : new TimeRule(config.getTargetValue());
@@ -54,6 +69,7 @@ public class Match implements MatchView, Serializable {
         this.goalCelebrationTicks = 0;
         this.pointsAwarded = false;
         this.modality = config.getModality();
+
         resetPositions();
     }
 
@@ -344,6 +360,16 @@ public class Match implements MatchView, Serializable {
     public void setController1(Controller controller1) { this.controller1 = controller1; }
     public Controller getController2() { return controller2; }
     public void setController2(Controller controller2) { this.controller2 = controller2; }
+
+    /**
+     * Returns the underlying player profile for the given side for domain persistence coordination.
+     *
+     * @param side Player side
+     * @return Player profile for that side
+     */
+    PlayerProfile getProfile(Side side) {
+        return (side == Side.LEFT) ? player1.getProfile() : player2.getProfile();
+    }
 
     @Override
     public Modality getModality() {

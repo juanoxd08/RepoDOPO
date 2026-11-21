@@ -317,4 +317,64 @@ public class DOPOSoccerDomainTest {
 
         assertEquals(GameStatus.SUDDEN_DEATH, match.getStatus());
     }
+
+    /**
+     * Verifies that upgrading a stat with enough points deducts cost, increments level, and doubles future cost.
+     *
+     * @throws DOPOSoccerException if upgrade unexpectedly fails
+     */
+    @Test
+    public void testProfileUpgradeDeductsPointsAndDoublesCost() throws DOPOSoccerException {
+        PlayerProfile profile = new PlayerProfile("Juan");
+        profile.addPoints(2000);
+
+        assertEquals(500, profile.upgradeCost(StatType.SPEED));
+        profile.upgrade(StatType.SPEED);
+        assertEquals(2, profile.getStat(StatType.SPEED));
+        assertEquals(1500, profile.getPoints());
+
+        assertEquals(1000, profile.upgradeCost(StatType.SPEED));
+        profile.upgrade(StatType.SPEED);
+        assertEquals(3, profile.getStat(StatType.SPEED));
+        assertEquals(500, profile.getPoints());
+
+        assertEquals(2000, profile.upgradeCost(StatType.SPEED));
+    }
+
+    /**
+     * Verifies that upgrading without enough points throws NOT_ENOUGH_POINTS without mutating state.
+     */
+    @Test
+    public void testProfileUpgradeWithoutEnoughPointsThrowsException() {
+        PlayerProfile profile = new PlayerProfile("Juan");
+        profile.addPoints(400);
+
+        try {
+            profile.upgrade(StatType.KICK);
+            fail("Expected DOPOSoccerException when points are insufficient");
+        } catch (DOPOSoccerException e) {
+            assertEquals(DOPOSoccerException.NOT_ENOUGH_POINTS, e.getMessage());
+            assertEquals(1, profile.getStat(StatType.KICK));
+            assertEquals(400, profile.getPoints());
+        }
+    }
+
+    /**
+     * Verifies that upgrading a stat already at level 10 throws MAX_STAT_REACHED and returns cost 0.
+     */
+    @Test
+    public void testProfileUpgradeAtMaxLevelThrowsException() {
+        PlayerProfile profile = new PlayerProfile("Juan", new PlayerStats(10, 1, 1, 1));
+        profile.addPoints(100000);
+
+        assertEquals(0, profile.upgradeCost(StatType.SPEED));
+        try {
+            profile.upgrade(StatType.SPEED);
+            fail("Expected DOPOSoccerException when stat is already at max level");
+        } catch (DOPOSoccerException e) {
+            assertEquals(DOPOSoccerException.MAX_STAT_REACHED, e.getMessage());
+            assertEquals(10, profile.getStat(StatType.SPEED));
+            assertEquals(100000, profile.getPoints());
+        }
+    }
 }

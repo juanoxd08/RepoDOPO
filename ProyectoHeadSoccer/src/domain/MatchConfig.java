@@ -13,6 +13,8 @@ public final class MatchConfig {
     private final MatchType matchType;
     private final int targetValue;
     private final MachineProfile machineProfile;
+    private final String leftPlayerName;
+    private final String rightPlayerName;
 
     private MatchConfig(Builder builder) {
         this.modality = builder.modality;
@@ -21,6 +23,8 @@ public final class MatchConfig {
         this.matchType = builder.matchType;
         this.targetValue = builder.targetValue;
         this.machineProfile = builder.machineProfile;
+        this.leftPlayerName = builder.leftPlayerName;
+        this.rightPlayerName = builder.rightPlayerName;
     }
 
     /**
@@ -78,6 +82,24 @@ public final class MatchConfig {
     }
 
     /**
+     * Returns the left player name.
+     *
+     * @return Left player name
+     */
+    public String getLeftPlayerName() {
+        return leftPlayerName;
+    }
+
+    /**
+     * Returns the right player name.
+     *
+     * @return Right player name
+     */
+    public String getRightPlayerName() {
+        return rightPlayerName;
+    }
+
+    /**
      * Creates a new builder for MatchConfig.
      *
      * @return MatchConfig builder
@@ -99,6 +121,8 @@ public final class MatchConfig {
         private MatchType matchType = MatchType.TIME;
         private int targetValue = 2;
         private MachineProfile machineProfile = MachineProfile.EXPERTA;
+        private String leftPlayerName = "jugador 1";
+        private String rightPlayerName = "jugador 2";
 
         /**
          * Sets the match modality.
@@ -167,6 +191,28 @@ public final class MatchConfig {
         }
 
         /**
+         * Sets the left player name.
+         *
+         * @param n Left player name
+         * @return This builder
+         */
+        public Builder leftPlayerName(String n) {
+            this.leftPlayerName = n;
+            return this;
+        }
+
+        /**
+         * Sets the right player name.
+         *
+         * @param n Right player name
+         * @return This builder
+         */
+        public Builder rightPlayerName(String n) {
+            this.rightPlayerName = n;
+            return this;
+        }
+
+        /**
          * Validates fields and builds an immutable MatchConfig.
          *
          * @return Validated MatchConfig instance
@@ -181,6 +227,13 @@ public final class MatchConfig {
             }
             if (targetValue <= 0) {
                 throw new DOPOSoccerException(DOPOSoccerException.INVALID_MATCH_CONFIG);
+            }
+            if (leftPlayerName == null || leftPlayerName.trim().isEmpty()
+                    || rightPlayerName == null || rightPlayerName.trim().isEmpty()) {
+                throw new DOPOSoccerException(DOPOSoccerException.INVALID_MATCH_CONFIG);
+            }
+            if (modality == Modality.PVC && this.rightPlayerName.equals("jugador 2")) {
+                this.rightPlayerName = "COM " + machineProfile.getDisplayName();
             }
             return new MatchConfig(this);
         }

@@ -8,7 +8,7 @@ import java.io.Serializable;
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
-public class PlayerProfile implements Serializable {
+public class PlayerProfile implements Serializable, ProfileView {
     private static final long serialVersionUID = 1L;
     private final String name;
     private final PlayerStats stats;
@@ -24,6 +24,42 @@ public class PlayerProfile implements Serializable {
         this.name = (name != null) ? name : "Player";
         this.stats = (stats != null) ? stats : new PlayerStats();
         this.points = 0;
+    }
+
+    /**
+     * Returns the point cost required to upgrade the given statistic by one level,
+     * or 0 if null or already at maximum level.
+     *
+     * @param type Statistic type
+     * @return Upgrade cost in points
+     */
+    @Override 
+    public int upgradeCost(StatType type){
+        if(type == null) return 0;
+        int level = getStat(type);
+        if(level >= 10) return 0;
+        return 500 * (1 << (level - 1));
+    }
+
+    /**
+     * Upgrades the specified statistic by one level, deducting the required points.
+     *
+     * @param type Statistic type to upgrade
+     * @throws DOPOSoccerException if type is null, max level is reached, or points are insufficient
+     */
+    public void upgrade(StatType type) throws DOPOSoccerException {
+        if (type == null) {
+            throw new DOPOSoccerException(DOPOSoccerException.NULL_ARGUMENT);
+        }
+        if (getStat(type) >= 10) {
+            throw new DOPOSoccerException(DOPOSoccerException.MAX_STAT_REACHED);
+        }
+        int cost = upgradeCost(type);
+        if (points < cost) {
+            throw new DOPOSoccerException(DOPOSoccerException.NOT_ENOUGH_POINTS);
+        }
+        points -= cost;
+        stats.increment(type);
     }
 
     /**

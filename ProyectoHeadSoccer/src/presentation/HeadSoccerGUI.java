@@ -1,7 +1,9 @@
 package presentation;
 
 import domain.*;
+import persistence.Log;
 import persistence.SerializedMatchRepository;
+import persistence.SerializedProfileRepository;
 
 import javax.swing.*;
 import java.awt.BorderLayout;
@@ -31,7 +33,7 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
 
     public HeadSoccerGUI() {
         super("DOPOSoccer 2026-2 - Head Soccer Arcade");
-        this.game = new DOPOSoccer(new SerializedMatchRepository());
+        this.game = new DOPOSoccer(new SerializedMatchRepository(), new SerializedProfileRepository());
         this.currentScreen = Screen.MENU;
         this.photo = new PhotoHeadSoccer(game, this);
         this.activeKeys = new HashSet<>();
@@ -80,8 +82,19 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
     @Override
     public void actionPerformed(ActionEvent e) {
         if (currentScreen == Screen.MATCH) {
-            processContinuousKeys();
-            game.tick();
+            try {
+                processContinuousKeys();
+                game.tick();
+            } catch (RuntimeException ex) {
+                Log.record(ex);
+                game.pause();
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Ocurrió un error inesperado: " + ex.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
         }
         photo.repaint();
     }

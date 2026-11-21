@@ -408,6 +408,15 @@ public class Player implements PlayerView, Serializable {
 	public void addPoints(int amount) { profile.addPoints(amount); }
 	public int getStunTicksRemaining() { return life.getStunTicksRemaining(); }
 
+	/**
+	 * Returns the underlying player profile for domain persistence coordination.
+	 *
+	 * @return Player profile
+	 */
+	PlayerProfile getProfile() {
+		return profile;
+	}
+
 	@Override
 	public double getLife() {
 		return life.getCurrent();
