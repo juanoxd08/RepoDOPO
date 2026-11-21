@@ -1,6 +1,6 @@
 # DOPOSoccer 2026-2 — Hoja de ruta (dominio)
 
-Código de partida: commit **`fix6`** (`44b1042`).
+Código de partida: commit **`fix6`** (`44b1042`) + **aportes de Cristian combinados** (commit `e6d3bbc` en la rama `claude/brave-newton-pne4dc`).
 Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 > Esta hoja cubre **solo el dominio** (y la capa de persistencia). Lo de la interfaz gráfica se lleva aparte.
@@ -31,6 +31,26 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
   - Consecuencia, medida en partidos de 60 s: con los perfiles **Torpe** y **Ofensiva** la máquina **no se mueve nunca**, y la **Experta** tampoco se mueve mientras el partido esté empatado o vaya perdiendo, porque en esos casos delega en la ofensiva. Se arregla solo cuando exista la `OffensiveMachine`.
 - **Persistencia del progreso, iniciada:** `ProfileRepository` (interfaz en el dominio) + `SerializedProfileRepository` (en `persistence`, un archivo `profiles.dat` con un mapa nombre → perfil; si el nombre no existe, devuelve un perfil nuevo). **Todavía no está conectada:** ni la fachada ni `Match` la usan.
 - **Guardar partida** ahora pausa el partido antes de guardar. La GUI registra con `Log.record` los errores que atrapa.
+
+---
+
+## Aportes de Cristian combinados sobre `fix6` (commit `e6d3bbc`, verificado)
+
+Su versión traía un merge sin resolver (marcas `<<<<<<<` en 4 archivos y 59 errores de compilación). Se tomó `fix6` como base y se agregó solo lo bueno. **Compila y pasan las 41 pruebas.**
+
+**Lo que entró:**
+- **`MatchView.getFakeBalls()`** (balones falsos de la Ilusión), sin `instanceof`: `Power.getDecoyBalls()` devuelve una lista vacía por defecto, `IllusionPower` lo sobrescribe devolviendo **copias**, `Player` delega y `Match` junta los de los dos jugadores. Probado: durante el tiro de EE. UU. devuelve los 7 falsos, y modificar la lista devuelta no mueve los reales.
+- **`MatchView.getModality()`**: `Match` guarda la modalidad de la configuración.
+- **`BallView.getHorizontalSpeed()` y `getVerticalSpeed()`** (solo lectura, para animar el balón).
+- **`DOPOSoccerException`**: constructor con causa, `DOPOSoccerException(String, Throwable)`, y mensajes nuevos `NO_ACTIVE_MATCH`, `FILE_NOT_FOUND`, `INVALID_FILE` y `MAX_STAT_REACHED`.
+
+**Lo que se dejó fuera, y por qué:**
+- `DOPOSoccerLog` (en `domain`): duplicaba `persistence.Log` y escribía archivos desde el dominio.
+- `Player.hasActivePowerShot()` y `consumePowerHit()`: repetían lo que ya hace `powerHitOn(...)`; además venían duplicados `finishPowerShot()` y `updatePowerShot()`.
+- Su lado del conflicto en `Match` (quitaba el `transient` de los listeners: guardar partida habría fallado) y en `Power`/`IllusionPower` (usaba la API vieja: `affectBall` y un `updateShot` sobrescrito, que desde `fix4` es `final`).
+- Sus `SAVE_ERROR` y `OPEN_ERROR`: ya existían; se dejaron los de `fix6`.
+
+**Lo que queda por usar** (los mensajes nuevos todavía no los lanza nadie): ver 2.2 y Prioridad 3.
 
 ---
 
@@ -103,6 +123,10 @@ El PDF pide dos cosas: **guardar y abrir el estado de un partido** (✅ hecho) y
 
 ### 2.2 Guardar y abrir partida: cerrar detalles · ≈ 0.5 h restantes
 - [x] Al guardar, el partido queda en **pausa** · ✅ `fix6`.
+- [ ] **Usar los mensajes nuevos de Cristian** (ya existen en `DOPOSoccerException`):
+  - `DOPOSoccer.save` sin partido → `NO_ACTIVE_MATCH` (hoy lanza `INVALID_STATE`);
+  - `SerializedMatchRepository.open`: archivo inexistente → `FILE_NOT_FOUND`; archivo que no es una partida (`ClassNotFoundException`, `ClassCastException`, `StreamCorruptedException`) → `INVALID_FILE`; otros errores de lectura → `OPEN_ERROR`;
+  - en todos los casos, lanzar con el **constructor con causa** (`new DOPOSoccerException(mensaje, e)`), para que el log guarde el error original.
 - [ ] Probar abrir un archivo que no existe y uno corrupto → `DOPOSoccerException` con mensaje claro, y la traza en el log.
 - [ ] Probar guardar y abrir en PvM: la máquina sigue jugando después de abrir.
 
@@ -119,7 +143,7 @@ El PDF pide dos cosas: **guardar y abrir el estado de un partido** (✅ hecho) y
 
 - [ ] `PlayerProfile.upgrade(StatType type)`:
   - precio = **500 × 2^(nivel actual − 1)** (500, 1000, 2000...). Confirmar con el monitor si el precio se duplica por estadística o por cada compra;
-  - lanza `DOPOSoccerException(NOT_ENOUGH_POINTS)` si no alcanza, e `INVALID_STAT` si ya está en 10;
+  - lanza `DOPOSoccerException(NOT_ENOUGH_POINTS)` si no alcanza, y **`MAX_STAT_REACHED`** (ya existe, lo agregó Cristian) si ya está en 10;
   - descuenta los puntos y sube el nivel.
 - [ ] `PlayerProfile.upgradeCost(StatType type)`, para que la GUI muestre el precio.
 - [ ] Fachada: `upgrade(String playerName, StatType type)` y lectura del perfil (puntos y niveles) **por una vista de solo lectura** (`ProfileView`), sin entregar el `PlayerProfile` real.
@@ -167,6 +191,13 @@ El PDF pide dos cosas: **guardar y abrir el estado de un partido** (✅ hecho) y
   - Además, no sacar nunca el balón **a través** de un cuerpo: si después de todas las correcciones el balón quedó dentro de un jugador, empujarlo hacia arriba.
 - **Prueba:** el mismo escenario de las 27 combinaciones → 0 casos con el balón detrás de un jugador.
 
+### BUG-10 · Los balones falsos de la Ilusión nunca desaparecen si el tiro golpea al rival — **confirmado** (venía de `fix6`)
+- **Medición:** tiro de EE. UU. que golpea al rival → 200 ticks después siguen los 7 balones falsos (`getFakeBalls()` devuelve 7), quietos, con 145 ticks de ilusión "pendientes". El PDF dice que los falsos **desaparecen al terminar el efecto** (2.5 s).
+- **Causa:** los falsos solo se actualizan (y su contador solo baja) en `updateActiveShot`, que `Power.updateShot` llama **mientras el tiro está activo**. Al golpear al rival, `onHitRival` termina el tiro y nadie vuelve a llamar `updateClones`: el contador se congela y la lista nunca se vacía.
+- **Arreglo:** que la duración de la ilusión **no dependa** de que el tiro siga activo. Por ejemplo, un *hook* que `updateShot` llame en **todos** los ticks (`updateDecoys(ball)`), o que `IllusionPower` descuente su contador aparte, y al llegar a 0 vacíe la lista.
+- **Por qué importa ahora:** cuando la GUI dibuje los falsos con `getFakeBalls()`, se van a quedar en pantalla.
+- **Prueba:** tiro de la Ilusión que golpea al rival → a los 2.5 s `getFakeBalls()` está vacío.
+
 ---
 
 ## Pendientes de diseño (cuando haya tiempo)
@@ -174,6 +205,8 @@ El PDF pide dos cosas: **guardar y abrir el estado de un partido** (✅ hecho) y
 - **D2.** `Field.WIDTH`/`HEIGHT` siguen siendo constantes globales en varias clases.
 - **D3.** `Player.getPower()` sigue público y solo lo usan las pruebas.
 - **D4.** Tamaño de clases: `Player` 262 líneas de código, `Match` 249, `PlayerBody` 206. No crecerlas; si `Match` sigue creciendo, sacar la creación de jugadores y controles a una `MatchFactory`.
+- **D5.** Un **solo** log: `persistence.Log`. No crear otro en el dominio (se descartó `DOPOSoccerLog`).
+- **D6.** Pruebas de `getFakeBalls()` y `getModality()` (los aportes de Cristian todavía no tienen pruebas propias).
 
 ---
 
@@ -185,12 +218,12 @@ El PDF pide dos cosas: **guardar y abrir el estado de un partido** (✅ hecho) y
 | 2 | **Conectar la persistencia del progreso** + pruebas + detalles de guardar/abrir | 2 – 2.5 | **V2 (sábado)** |
 | 3 | Mejora de estadísticas con puntos | 2 – 3 | V2 o V3 |
 | 4 | Planificación de versiones, diagramas, pruebas de aceptación | 3 – 4 | V2 y V3 |
-| 5 | Bugs 7, 8 y 9 | 2 – 3 | Después de la entrega |
+| 5 | Bugs 7, 8, 9 y 10 | 2.5 – 3.5 | Después de la entrega |
 | 6 | Pendientes de diseño | 1 – 2 | Cuando haya tiempo |
-| | **Total** | **≈ 12 – 17.5 h** | |
+| | **Total** | **≈ 12.5 – 18 h** | |
 
 **Para el sábado, lo mínimo:**
-- **Cristian:** `OffensiveMachine` primero (sin ella, la Experta tampoco ataca) y luego `ClumsyMachine`.
+- **Cristian:** `OffensiveMachine` primero (sin ella, la Experta tampoco ataca) y luego `ClumsyMachine`. **Antes de seguir, traer esta rama** (`git pull origin claude/brave-newton-pne4dc`) en lugar de resolver su merge a mano: sus aportes ya están combinados aquí.
 - **Juan:** conectar el progreso (2.1, pasos 1 a 5) y las pruebas de la máquina (1.4) para los perfiles que ya están.
 - **Los dos:** la planificación de versiones (prioridad 4).
 
