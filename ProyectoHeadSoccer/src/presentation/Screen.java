@@ -10,5 +10,6 @@ public enum Screen {
     MENU,
     SELECT_PLAYERS,
     SELECT_CAMP,
-    MATCH
+    MATCH,
+    UPGRADES
 }

@@ -328,8 +328,13 @@ public class Player implements PlayerView, Serializable {
 	 *
 	 * @param ball Ball in play
 	 */
-	public void collideWithBall(Ball ball) {
-		playerBody.collideWithBall(ball, power);
+	public boolean collideWithBall(Ball ball) {
+		boolean hadArua = hasAura();
+		boolean collide = playerBody.collideWithBall(ball, power);
+		if(hadArua && !hasAura()){
+			ball.setPowerShotCountry(country);
+		}
+		return collide;
 	}
 
 	/**
@@ -450,6 +455,16 @@ public class Player implements PlayerView, Serializable {
 	@Override
 	public String getActiveEffectName() {
 		return (effect.getCurrent() != PlayerEffect.NONE) ? effect.getCurrent().name() : "";
+	}
+
+	@Override
+	public PlayerEffect getActiveEffect() {
+		return effect.getCurrent();
+	}
+
+	@Override
+	public double getEffectProgress() {
+		return effect.getProgress();
 	}
 
 	@Override

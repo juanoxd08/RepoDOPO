@@ -15,12 +15,15 @@ public class Ball implements BallView, Serializable {
 	private double verticalSpeed;
 	private double horizontalSpeed;
 	private boolean powerShot;
+	private Country powerShotCountry;
+	private boolean powerShotCharging;
+	private double powerShotChargeProgress;
 	
 	/**
 	 * Default constructor initializing ball at origin with default radius.
 	 */
 	public Ball() {
-		this.circle = new Circle(0, 0, 10);
+		this.circle = new Circle(0, 0, 8);
 	}
 
 	/**
@@ -181,6 +184,8 @@ public class Ball implements BallView, Serializable {
 		copy.setHorizontalSpeed(horizontalSpeed);
 		copy.setVerticalSpeed(verticalSpeed);
 		copy.setPowerShot(powerShot);
+		copy.setPowerShotCountry(powerShotCountry);
+		copy.setPowerShotCharging(powerShotCharging, powerShotChargeProgress);
 		return copy;
 	}
 
@@ -204,7 +209,64 @@ public class Ball implements BallView, Serializable {
 		return powerShot;
 	}
 
+	/**
+	 * Returns the country that launched the active power shot, or null if none.
+	 *
+	 * @return Shooting country or null
+	 */
+	public Country getPowerShotCountry() {
+		return powerShotCountry;
+	}
+
+	/**
+	 * Indicates whether the ball is currently suspended while charging a power shot.
+	 *
+	 * @return True if charging a power shot
+	 */
+	public boolean isPowerShotCharging() {
+		return powerShotCharging;
+	}
+
+	/**
+	 * Returns the normalized charge progress [0.0, 1.0] while suspended for a power shot.
+	 *
+	 * @return Charge progress in [0.0, 1.0]
+	 */
+	public double getPowerShotChargeProgress() {
+		return powerShotChargeProgress;
+	}
+
+	/**
+	 * Marks whether the ball currently carries a power shot, clearing power visual state when false.
+	 *
+	 * @param powerShot True when a power shot starts, false to clear
+	 */
 	public void setPowerShot(boolean powerShot) {
 		this.powerShot = powerShot;
+		if (!powerShot) {
+			this.powerShotCountry = null;
+			this.powerShotCharging = false;
+			this.powerShotChargeProgress = 0.0;
+		}
+	}
+
+	/**
+	 * Sets the country associated with the current power shot.
+	 *
+	 * @param country Country that fired the power shot
+	 */
+	public void setPowerShotCountry(Country country) {
+		this.powerShotCountry = country;
+	}
+
+	/**
+	 * Updates the power shot charging state and normalized progress [0.0, 1.0].
+	 *
+	 * @param charging True while suspended in windup
+	 * @param progress Charge progress clamped to [0.0, 1.0]
+	 */
+	public void setPowerShotCharging(boolean charging, double progress) {
+		this.powerShotCharging = charging;
+		this.powerShotChargeProgress = charging ? Math.max(0.0, Math.min(1.0, progress)) : 0.0;
 	}
 }

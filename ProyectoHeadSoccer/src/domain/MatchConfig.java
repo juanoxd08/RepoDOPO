@@ -16,6 +16,9 @@ public final class MatchConfig {
     private final String leftPlayerName;
     private final String rightPlayerName;
 
+    /*
+     * Constructs an immutable MatchConfig from a validated Builder instance.
+     */
     private MatchConfig(Builder builder) {
         this.modality = builder.modality;
         this.leftCountry = builder.leftCountry;
@@ -234,6 +237,9 @@ public final class MatchConfig {
             }
             if (modality == Modality.PVC && this.rightPlayerName.equals("jugador 2")) {
                 this.rightPlayerName = "COM " + machineProfile.getDisplayName();
+            }
+            if (leftPlayerName.trim().equalsIgnoreCase(rightPlayerName.trim())) {
+                throw new DOPOSoccerException(DOPOSoccerException.INVALID_MATCH_CONFIG);
             }
             return new MatchConfig(this);
         }

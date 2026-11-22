@@ -18,31 +18,68 @@ public class COMController implements Controller {
     private int randomActionTimer = 0;
     private Set<PlayerAction> bufferedRandomActions = new HashSet<>();
 
+    /**
+     * Constructs a COM controller for the given side using the default EXPERTA profile.
+     *
+     * @param side Pitch side controlled by the AI
+     */
     public COMController(Side side) {
         this(side, MachineProfile.EXPERTA);
     }
 
+    /**
+     * Constructs a COM controller for the given side and tactical profile.
+     *
+     * @param side Pitch side controlled by the AI
+     * @param profile Machine tactical profile (defaults to EXPERTA if null)
+     */
     public COMController(Side side, MachineProfile profile) {
         this.side = side;
         this.profile = (profile != null) ? profile : MachineProfile.EXPERTA;
     }
 
+    /**
+     * Returns the active machine tactical profile.
+     *
+     * @return Current MachineProfile
+     */
     public MachineProfile getProfile() {
         return profile;
     }
 
+    /**
+     * Updates the active machine tactical profile.
+     *
+     * @param profile New MachineProfile
+     */
     public void setProfile(MachineProfile profile) {
         this.profile = profile;
     }
 
+    /**
+     * Returns the pitch side controlled by this AI.
+     *
+     * @return Controlled Side
+     */
     public Side getSide() {
         return side;
     }
 
+    /**
+     * Updates the pitch side controlled by this AI.
+     *
+     * @param side New Side
+     */
     public void setSide(Side side) {
         this.side = side;
     }
 
+    /**
+     * Evaluates the current match state and computes the action set according to the active profile.
+     *
+     * @param match Read-only match view
+     * @return Set of actions to execute on this frame
+     */
     @Override
     public Set<PlayerAction> decide(MatchView match) {
         Set<PlayerAction> actions = new HashSet<>();
@@ -67,6 +104,9 @@ public class COMController implements Controller {
         }
     }
 
+    /*
+     * Selects buffered random movement and kick actions for the clumsy profile.
+     */
     private Set<PlayerAction> decideTorpe(PlayerView me, BallView ball) {
         if (randomActionTimer > 0) {
             randomActionTimer--;
@@ -93,6 +133,9 @@ public class COMController implements Controller {
         return bufferedRandomActions;
     }
 
+    /*
+     * Selects aggressive attacking actions focused on positioning behind the ball and shooting.
+     */
     private Set<PlayerAction> decideOfensiva(PlayerView me, BallView ball, PlayerView rival) {
         Set<PlayerAction> actions = new HashSet<>();
         double myX = me.getHeadShape().getX();
@@ -120,6 +163,9 @@ public class COMController implements Controller {
         return actions;
     }
 
+    /*
+     * Selects goal-guarding actions, returning to the defensive zone when the ball is far away.
+     */
     private Set<PlayerAction> decideDefensiva(PlayerView me, BallView ball, PlayerView rival) {
         Set<PlayerAction> actions = new HashSet<>();
         double myX = me.getHeadShape().getX();
@@ -146,6 +192,9 @@ public class COMController implements Controller {
         return actions;
     }
 
+    /*
+     * Adapts between offensive pressure and close-range power activation based on score and distance.
+     */
     private Set<PlayerAction> decideExperta(MatchView match, PlayerView me, BallView ball, PlayerView rival) {
         int myScore = match.getGoals(side);
         int rivalScore = match.getGoals(side.opposite());

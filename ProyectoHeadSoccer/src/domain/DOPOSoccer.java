@@ -17,7 +17,13 @@ public class DOPOSoccer {
     private final MatchRepository matchRepository;
     private final ProfileRepository profileRepository;
 
-    public DOPOSoccer(MatchRepository matchRepository, ProfileRepository profileRepository){
+    /**
+     * Creates a facade instance with the given match and profile persistence repositories.
+     *
+     * @param matchRepository Repository used to save and open matches
+     * @param profileRepository Repository used to load and persist player profiles
+     */
+    public DOPOSoccer(MatchRepository matchRepository, ProfileRepository profileRepository) {
         this.matchRepository = matchRepository;
         this.profileRepository = profileRepository;
     }
@@ -153,31 +159,44 @@ public class DOPOSoccer {
         }
     }
 
-    private void attachListeners(){
-        if(currentMatch == null) return;
-        for(MatchListener listener : listeners){
+    /*
+     * Attaches all registered listeners and the profile persistence callback to the active match.
+     */
+    private void attachListeners() {
+        if (currentMatch == null) return;
+        for (MatchListener listener : listeners) {
             currentMatch.addListener(listener);
         }
 
-        if(profileRepository != null){
+        if (profileRepository != null) {
             this.currentMatch.addListener(new MatchListener() {
                 @Override
-                public void onMatchFinished(Side winner, int winnerPoints, int loserPoints){
-                    saveProfileOnFinish();
+                public void onMatchFinished(Side winner, int winnerPoints, int loserPoints) {
+                    saveProfileOnFinish(winner, winnerPoints, loserPoints);
                 }
             });
         }
     }
 
-    private void saveProfileOnFinish(){
-        if(currentMatch == null || profileRepository == null) return;
+    /*
+     * Reloads fresh player profiles, credits earned match points, and persists both profiles.
+     */
+    private void saveProfileOnFinish(Side winner, int winnerPoints, int loserPoints) {
+        if (currentMatch == null || profileRepository == null) return;
+        int leftEarned = (winner == null || winner == Side.LEFT) ? winnerPoints : loserPoints;
+        int rightEarned = (winner == null || winner == Side.RIGHT) ? winnerPoints : loserPoints;
         try {
-            profileRepository.save(currentMatch.getProfile(Side.LEFT));
-            profileRepository.save(currentMatch.getProfile(Side.RIGHT));
+            PlayerProfile freshLeft = profileRepository.load(currentMatch.getProfile(Side.LEFT).getName());
+            PlayerProfile freshRight = profileRepository.load(currentMatch.getProfile(Side.RIGHT).getName());
+            freshLeft.addPoints(leftEarned);
+            freshRight.addPoints(rightEarned);
+            profileRepository.save(freshLeft);
+            profileRepository.save(freshRight);
         } catch (DOPOSoccerException doex) {
-            throw new IllegalStateException(doex.getMessage(), doex);
+            for (MatchListener listener : listeners) {
+                listener.onProfileSaveFailed(doex.getMessage());
+            }
         }
-       
     }
 
     /**

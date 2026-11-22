@@ -30,28 +30,45 @@ public class TimeRule implements MatchRule{
         this.tickCount = 0;
     }
 
-    @Override 
-    public void onTick(Match match){
-        if(match.getStatus() == GameStatus.PLAYING){
+    /**
+     * Advances the match countdown clock and triggers sudden death if time expires on a tie.
+     *
+     * @param match Active match instance
+     */
+    @Override
+    public void onTick(Match match) {
+        if (match.getStatus() == GameStatus.PLAYING) {
             if (timeRemaining > 0) {
                 tickCount++;
                 if (tickCount >= Physics.FPS) {
                     timeRemaining--;
                     tickCount = 0;
                 }
-            }else if(match.getScoreBoard().isTie()){
+            } else if (match.getScoreBoard().isTie()) {
                 match.setState(GameStatus.SUDDEN_DEATH);
             }
-        }   
+        }
     }
 
-    @Override 
-    public boolean isOver(Match match){
+    /**
+     * Checks whether regulation time has expired with a non-tied score.
+     *
+     * @param match Active match instance
+     * @return True if time is up and the score is not tied
+     */
+    @Override
+    public boolean isOver(Match match) {
         return timeRemaining <= 0 && !match.getScoreBoard().isTie();
     }
 
+    /**
+     * Returns the remaining match duration in seconds.
+     *
+     * @param match Active match instance
+     * @return Remaining seconds
+     */
     @Override
-    public int remainingSeconds(Match match){
+    public int remainingSeconds(Match match) {
         return timeRemaining;
     }
 }

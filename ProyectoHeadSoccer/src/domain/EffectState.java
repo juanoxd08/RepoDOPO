@@ -12,6 +12,7 @@ public class EffectState implements Serializable {
     private static final long serialVersionUID = 1L;
     private Effect currentEffect;
     private int remainingTicks;
+    private int totalTicks;
 
     /**
      * Initializes an empty effect state with no active restriction.
@@ -19,6 +20,7 @@ public class EffectState implements Serializable {
     public EffectState(){
         this.currentEffect = new NoneEffect();
         this.remainingTicks = 0;
+        this.totalTicks = 0;
     }
 
     /**
@@ -31,6 +33,7 @@ public class EffectState implements Serializable {
     public void apply(Effect effect, double duration, PlayerBody body){
         this.currentEffect = (effect != null) ? effect : new NoneEffect();
         this.remainingTicks = Physics.seconds(duration);
+        this.totalTicks = this.remainingTicks;
         this.currentEffect.onStart(body);
     }
 
@@ -56,6 +59,19 @@ public class EffectState implements Serializable {
     public void clear(){
         this.currentEffect = new NoneEffect();
         this.remainingTicks = 0;
+        this.totalTicks = 0;
+    }
+
+    /**
+     * Returns the remaining fraction of the active status effect in the range [0.0, 1.0].
+     *
+     * @return Remaining effect progress
+     */
+    public double getProgress(){
+        if (currentEffect.getType() == PlayerEffect.NONE || remainingTicks <= 0 || totalTicks <= 0) {
+            return 0.0;
+        }
+        return (double) remainingTicks / totalTicks;
     }
 
     /** @return Movement speed multiplier */

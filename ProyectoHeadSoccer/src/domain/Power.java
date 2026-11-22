@@ -97,6 +97,7 @@ public abstract class Power implements Serializable {
             this.auraActive = false;
             this.powerShotActive = true;
             ball.setPowerShot(true);
+            ball.setPowerShotCharging(true, 0.0);
             double targetY = Math.max(ball.getRadius() + 5, ball.getY() - 30);
             ball.getCircle().setY(targetY);
             holdX = ball.getX();
@@ -143,6 +144,7 @@ public abstract class Power implements Serializable {
             ball.getCircle().setY(holdY);
             ball.setHorizontalSpeed(0);
             ball.setVerticalSpeed(0);
+            ball.setPowerShotCharging(ticksPerPower > 0, 1.0 - ((double) ticksPerPower/TICKS_PER_POWER));
             if (ticksPerPower == 0 && shotSide != null) {
                 shapeShot(ball, shotSide);
             }
@@ -192,14 +194,67 @@ public abstract class Power implements Serializable {
      */
     public abstract Effect createEffect();
 
+    /**
+     * Returns the display name of this power.
+     *
+     * @return Power name
+     */
     public String getName() { return name; }
+
+    /**
+     * Returns the current charge level in [0.0, 100.0].
+     *
+     * @return Charge percentage
+     */
     public double getCharge() { return charge; }
+
+    /**
+     * Sets the power charge clamped to [0.0, 100.0].
+     *
+     * @param charge New charge value
+     */
     public void setCharge(double charge) { this.charge = Math.max(0.0, Math.min(100.0, charge)); }
+
+    /**
+     * Indicates whether the player's power aura is currently active.
+     *
+     * @return True if aura is active
+     */
     public boolean isAuraActive() { return auraActive; }
+
+    /**
+     * Enables or disables the player's power aura state.
+     *
+     * @param auraActive New aura state
+     */
     public void setAuraActive(boolean auraActive) { this.auraActive = auraActive; }
+
+    /**
+     * Indicates whether a power shot launched by this power is currently in flight.
+     *
+     * @return True if power shot is active
+     */
     public boolean isPowerShotActive() { return powerShotActive; }
+
+    /**
+     * Updates whether a power shot from this power is currently active.
+     *
+     * @param active New active state
+     */
     public void setPowerShotActive(boolean active) { this.powerShotActive = active; }
+
+    /**
+     * Returns the duration of the status effect inflicted by this power, in seconds.
+     *
+     * @return Effect duration in seconds
+     */
     public double getEffectDurationSeconds() { return effectDurationSeconds; }
+
+    /**
+     * Returns the status effect enum type inflicted by this power.
+     *
+     * @return Corresponding PlayerEffect
+     */
     public PlayerEffect getEffectType() { return createEffect().getType(); }
 
     /**

@@ -38,10 +38,10 @@ public class Body implements Serializable {
 	 * @param side Side of the field the player defends
 	 */
 	public Body(double playerX, Side side) {
-		double width = 26;
-		double height = 22;
+		double width = 18;
+		double height = 16;
 		double bodyX = playerX - (width / 2.0);
-		double bodyY = Field.HEIGHT - 38;
+		double bodyY = Field.HEIGHT - 26;
 		this.rectangle = new Rectangle(bodyX, bodyY, width, height);
 	}
 

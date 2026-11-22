@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tiro de poder de Estados Unidos: IlusiÃ³n.
- * CÃ³mo sale: El balÃ³n se divide en 8 balones idÃ©nticos; 7 son falsos y desaparecen al terminar el efecto.
- * Efecto: ConfusiÃ³n (el rival no sabe cuÃ¡l es el balÃ³n real. Los 8 balones se ven igual para ambos jugadores por 2.5 s).
- * DaÃ±oTiro: 30 (DaÃ±o real 6 * 5 = 30).
- * 
+ * United States signature power shot: Illusion.
+ * Splits the visual ball into eight identical balls (seven decoys) for 2.5 seconds,
+ * inflicting the Confused status effect and dealing 30 base power damage.
+ *
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
@@ -109,7 +108,7 @@ public class IllusionPower extends Power {
     }
 
     /**
-     * Returns the base power damage for Ilusión.
+     * Returns the base power damage for Illusion.
      *
      * @return 30.0
      */

@@ -41,8 +41,8 @@ public class Head implements Serializable {
 	 * @param side Player field side
 	 */
 	public Head(double playerX, Side side) {
-		double radius = 20;
-		double headY = Field.HEIGHT - 55;
+		double radius = 14;
+		double headY = Field.HEIGHT - 38;
 		this.circle = new Circle(playerX, headY, radius);
 	}
 

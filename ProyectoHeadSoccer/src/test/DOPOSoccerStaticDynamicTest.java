@@ -10,19 +10,17 @@ import java.util.Set;
 import static org.junit.Assert.*;
 
 /**
- * Static and Dynamic verification test suite for DOPOSoccer.
- * 
- * 1. PRUEBAS ESTÃTICAS:
- *    - VerificaciÃ³n estructural de contratos, interfaces (Collidable, Controller, ReaderMatch).
- *    - ValidaciÃ³n de firmas de mÃ©todos, modificadores y paquetes.
- *    - Cobertura e invariantes de enumeraciones (Country, Side, GameStatus, MachineProfile, PlayerEffect, MatchType, FieldResolution).
- * 
- * 2. PRUEBAS DINÃMICAS:
- *    - SimulaciÃ³n en tiempo de ejecuciÃ³n del ciclo de juego (game loop).
- *    - SimulaciÃ³n de un partido PvP con movimiento, patadas, rebotes e interacciÃ³n fÃ­sica continua.
- *    - SimulaciÃ³n de un partido PvM con reacciÃ³n autÃ³noma de los perfiles de mÃ¡quina (Torpe, Ofensiva, Defensiva, Experta).
- *    - SimulaciÃ³n del flujo de estados (Menu -> Select Players -> Select Camp -> Playing -> Goal -> Finished).
- * 
+ * Static and dynamic verification test suite for DOPOSoccer.
+ *
+ * 1. STATIC VERIFICATION:
+ *    - Structural validation of domain interfaces, contracts, method signatures, and modifiers.
+ *    - Enumeration coverage and invariants across Country, Side, GameStatus, MachineProfile,
+ *      PlayerEffect, MatchType, and FieldResolution.
+ *
+ * 2. DYNAMIC VERIFICATION:
+ *    - Runtime simulation of the game loop in both PvP and PvM modalities.
+ *    - Autonomous machine profile execution and match lifecycle state transitions.
+ *
  * @author Juan Espitia
  * @author Cristian Salamanca
  */

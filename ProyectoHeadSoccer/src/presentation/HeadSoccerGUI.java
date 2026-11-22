@@ -7,6 +7,7 @@ import persistence.SerializedProfileRepository;
 
 import javax.swing.*;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -27,10 +28,19 @@ import java.util.Set;
 public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener {
     private DOPOSoccer game;
     private PhotoHeadSoccer photo;
+    private CardLayout cardLayout;
+    private JPanel cardsPanel;
+    private SelectPlayersPanel selectPlayersPanel;
+    private SelectCampPanel selectCampPanel;
     private Timer gameLoop;
     private Set<Integer> activeKeys;
     private Screen currentScreen;
+    private UpgradesPanel upgradesPanel;
+    private Screen returnScreen = Screen.SELECT_PLAYERS;
 
+    /**
+     * Constructs the main application window with Swing menu panels and match canvas.
+     */
     public HeadSoccerGUI() {
         super("DOPOSoccer 2026-2 - Head Soccer Arcade");
         this.game = new DOPOSoccer(new SerializedMatchRepository(), new SerializedProfileRepository());
@@ -38,9 +48,38 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         this.photo = new PhotoHeadSoccer(game, this);
         this.activeKeys = new HashSet<>();
 
+        this.cardLayout = new CardLayout();
+        this.cardsPanel = new JPanel(cardLayout);
+        this.cardsPanel.setPreferredSize(photo.getPreferredSize());
+
+        MenuPanel menuPanel = new MenuPanel(
+                () -> setCurrentScreen(Screen.SELECT_PLAYERS),
+                () -> photo.openSavedMatch()
+        );
+        this.selectPlayersPanel = new SelectPlayersPanel(
+                photo,
+                () -> setCurrentScreen(Screen.MENU),
+                () -> setCurrentScreen(Screen.SELECT_CAMP),
+                () -> setCurrentScreen(Screen.UPGRADES)
+        );
+        this.selectCampPanel = new SelectCampPanel(
+                photo,
+                this::updateResolution,
+                () -> setCurrentScreen(Screen.SELECT_PLAYERS),
+                () -> photo.startConfiguredMatch()
+        );
+
+        this.upgradesPanel = new UpgradesPanel(game, photo,() -> setCurrentScreen(returnScreen));
+
+        this.cardsPanel.add(menuPanel, Screen.MENU.name());
+        this.cardsPanel.add(selectPlayersPanel, Screen.SELECT_PLAYERS.name());
+        this.cardsPanel.add(selectCampPanel, Screen.SELECT_CAMP.name());
+        this.cardsPanel.add(photo, Screen.MATCH.name());
+        this.cardsPanel.add(upgradesPanel, Screen.UPGRADES.name());
+
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLayout(new BorderLayout());
-        this.add(photo, BorderLayout.CENTER);
+        this.add(cardsPanel, BorderLayout.CENTER);
         this.pack();
         this.setLocationRelativeTo(null);
         this.setResizable(true);
@@ -56,16 +95,45 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
             }
         });
 
+        setCurrentScreen(Screen.MENU);
+
         this.gameLoop = new Timer(Physics.TICK_MS, this);
         this.gameLoop.start();
     }
 
+    /**
+     * Returns the currently displayed navigation screen.
+     *
+     * @return Active screen
+     */
     public Screen getCurrentScreen() {
         return currentScreen;
     }
 
+    /**
+     * Switches the visible Swing card to the requested navigation screen.
+     *
+     * @param screen Target screen
+     */
     public void setCurrentScreen(Screen screen) {
+        if(screen == Screen.UPGRADES){
+            returnScreen = (this.currentScreen == Screen.MATCH) ? Screen.MENU : this.currentScreen;
+        }
         this.currentScreen = screen;
+        this.activeKeys.clear();
+        if (screen == Screen.SELECT_PLAYERS && selectPlayersPanel != null) {
+            selectPlayersPanel.refreshView();
+        } else if (screen == Screen.SELECT_CAMP && selectCampPanel != null) {
+            selectCampPanel.refreshView();
+        } else if (screen == Screen.UPGRADES && upgradesPanel != null) {
+            upgradesPanel.refreshView();
+        }
+
+
+        this.cardLayout.show(cardsPanel, screen.name());
+        if (screen == Screen.MATCH) {
+            this.requestFocusInWindow();
+        }
     }
 
     /**
@@ -74,11 +142,18 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
      * @param res Selected FieldResolution
      */
     public void updateResolution(FieldResolution res) {
-        photo.setPreferredSize(new Dimension(res.getPixelWidth(), res.getPixelHeight()));
+        Dimension size = new Dimension(res.getPixelWidth(), res.getPixelHeight());
+        photo.setPreferredSize(size);
+        cardsPanel.setPreferredSize(size);
         this.pack();
         this.setLocationRelativeTo(null);
     }
 
+    /**
+     * Executes one frame of the Swing timer game loop, advancing domain physics and repainting.
+     *
+     * @param e Timer action event
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         if (currentScreen == Screen.MATCH) {
@@ -99,6 +174,9 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         photo.repaint();
     }
 
+    /*
+     * Translates currently held keyboard keys into player action sets for both sides.
+     */
     private void processContinuousKeys() {
         MatchView match = game.getMatch();
         if (match == null) return;
@@ -122,6 +200,11 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         game.setIntention(Side.RIGHT, p2Actions);
     }
 
+    /**
+     * Handles keyboard press events for navigation shortcuts, pause, restart, and continuous controls.
+     *
+     * @param e Keyboard press event
+     */
     @Override
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
@@ -129,13 +212,13 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
 
         if (currentScreen == Screen.MENU) {
             if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE) {
-                currentScreen = Screen.SELECT_PLAYERS;
+                setCurrentScreen(Screen.SELECT_PLAYERS);
             }
             return;
         }
         if (currentScreen == Screen.SELECT_PLAYERS) {
             if (code == KeyEvent.VK_ENTER) {
-                currentScreen = Screen.SELECT_CAMP;
+                setCurrentScreen(Screen.SELECT_CAMP);
             }
             return;
         }
@@ -157,31 +240,46 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
                 photo.startConfiguredMatch();
             } else if (code == KeyEvent.VK_M) {
                 game.finish();
-                currentScreen = Screen.MENU;
+                setCurrentScreen(Screen.MENU);
             }
         } else if (status == GameStatus.PAUSED) {
             if (code == KeyEvent.VK_P) {
                 game.togglePause();
             } else if (code == KeyEvent.VK_M) {
                 game.finish();
-                currentScreen = Screen.MENU;
+                setCurrentScreen(Screen.MENU);
             }
         } else if (status == GameStatus.FINISHED) {
             if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_M || code == KeyEvent.VK_SPACE) {
-                currentScreen = Screen.MENU;
+                setCurrentScreen(Screen.MENU);
             }
         }
     }
 
+    /**
+     * Removes a released key from the active continuous-input set.
+     *
+     * @param e Keyboard release event
+     */
     @Override
     public void keyReleased(KeyEvent e) {
         activeKeys.remove(e.getKeyCode());
     }
 
+    /**
+     * Unused key-typed callback required by KeyListener.
+     *
+     * @param e Keyboard typed event
+     */
     @Override
     public void keyTyped(KeyEvent e) {
     }
 
+    /**
+     * Application entry point launching the DOPOSoccer Swing window on the EDT.
+     *
+     * @param args Command-line arguments (unused)
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             HeadSoccerGUI ventana = new HeadSoccerGUI();

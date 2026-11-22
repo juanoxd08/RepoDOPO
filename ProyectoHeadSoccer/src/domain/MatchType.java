@@ -12,6 +12,9 @@ public enum MatchType {
 
     private final String displayName;
 
+    /*
+     * Constructs a match type with its localized display label.
+     */
     MatchType(String displayName) {
         this.displayName = displayName;
     }

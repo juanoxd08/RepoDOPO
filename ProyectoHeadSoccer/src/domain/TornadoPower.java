@@ -1,11 +1,10 @@
 package domain;
 
 /**
- * Tiro de poder de Nigeria: Tornado.
- * CÃ³mo sale: Remolino a ras de suelo que rebota rÃ¡pidamente.
- * Efecto: Inconsciente (es lanzado al aire y no puede moverse, saltar ni patear por 3 s).
- * DaÃ±oTiro: 40 (DaÃ±o real 8 * 5 = 40).
- * 
+ * Nigeria signature power shot: Tornado.
+ * Launches a rapid ground-bouncing vortex shot that inflicts the Knocked Out
+ * status effect for 3.0 seconds and deals 40 base power damage.
+ *
  * @author Juan Espitia
  * @author Cristian Salamanca
  */

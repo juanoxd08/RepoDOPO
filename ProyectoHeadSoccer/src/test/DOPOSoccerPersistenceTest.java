@@ -42,7 +42,11 @@ public class DOPOSoccerPersistenceTest {
         originalGame.newMatch(config);
 
         for (int i = 0; i < 65; i++) {
-            originalGame.setIntention(Side.LEFT, EnumSet.of(PlayerAction.RIGHT));
+            if (i < 15) {
+                originalGame.setIntention(Side.LEFT, EnumSet.of(PlayerAction.RIGHT));
+            } else {
+                originalGame.setIntention(Side.LEFT, EnumSet.noneOf(PlayerAction.class));
+            }
             originalGame.tick();
         }
         originalGame.pause();
@@ -281,5 +285,104 @@ public class DOPOSoccerPersistenceTest {
         assertEquals(2, view.getStat(StatType.JUMP));
         assertEquals(100, view.getPoints());
         assertEquals(1000, view.upgradeCost(StatType.JUMP));
+    }
+
+    /**
+     * Verifies that MatchConfig rejects identical names on both sides regardless of case.
+     */
+    @Test
+    public void testMatchConfigRejectsSamePlayerNames() {
+        try {
+            MatchConfig.builder()
+                    .modality(Modality.PVP)
+                    .leftPlayerName("Juan")
+                    .rightPlayerName("juan")
+                    .build();
+            fail("Expected DOPOSoccerException when both players have the same name");
+        } catch (DOPOSoccerException e) {
+            assertEquals(DOPOSoccerException.INVALID_MATCH_CONFIG, e.getMessage());
+        }
+    }
+
+    /**
+     * Verifies that finishing an older saved match adds its earned points on top of newer stored progress
+     * without overwriting points earned in other matches.
+     *
+     * @throws DOPOSoccerException if match or profile operations fail
+     * @throws IOException if creating temporary test files fails
+     */
+    @Test
+    public void testOpeningOldMatchDoesNotOverwriteNewerProfilePoints() throws DOPOSoccerException, IOException {
+        File profileFile = File.createTempFile("doposoccer_edge_profiles_", ".dat");
+        profileFile.delete();
+        profileFile.deleteOnExit();
+        File matchFile = File.createTempFile("doposoccer_edge_match_", ".dat");
+        matchFile.deleteOnExit();
+
+        ProfileRepository profileRepo = new SerializedProfileRepository(profileFile);
+        DOPOSoccer game = new DOPOSoccer(new SerializedMatchRepository(), profileRepo);
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftPlayerName("Ana")
+                .rightPlayerName("Luis")
+                .matchType(MatchType.TIME)
+                .targetValue(1)
+                .build();
+
+        game.newMatch(config);
+        game.save(matchFile);
+
+        PlayerProfile anaLater = profileRepo.load("Ana");
+        anaLater.addPoints(400);
+        profileRepo.save(anaLater);
+
+        DOPOSoccer reopened = new DOPOSoccer(new SerializedMatchRepository(), profileRepo);
+        reopened.open(matchFile);
+        reopened.finish();
+
+        ProfileView finalAna = reopened.getProfile("Ana");
+        assertEquals(425, finalAna.getPoints());
+    }
+
+    /**
+     * Verifies that a profile save failure on match completion notifies listeners via onProfileSaveFailed
+     * without crashing the match tick loop.
+     *
+     * @throws DOPOSoccerException if match setup fails
+     */
+    @Test
+    public void testProfileSaveFailureNotifiesListenerInsteadOfThrowing() throws DOPOSoccerException {
+        ProfileRepository failingRepo = new ProfileRepository() {
+            @Override
+            public PlayerProfile load(String name) {
+                return new PlayerProfile(name);
+            }
+
+            @Override
+            public void save(PlayerProfile profile) throws DOPOSoccerException {
+                throw new DOPOSoccerException(DOPOSoccerException.SAVE_ERROR);
+            }
+        };
+
+        DOPOSoccer game = new DOPOSoccer(new SerializedMatchRepository(), failingRepo);
+        AtomicBoolean notified = new AtomicBoolean(false);
+        game.addListener(new MatchListener() {
+            @Override
+            public void onProfileSaveFailed(String message) {
+                if (DOPOSoccerException.SAVE_ERROR.equals(message)) {
+                    notified.set(true);
+                }
+            }
+        });
+
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftPlayerName("Ana")
+                .rightPlayerName("Luis")
+                .build();
+        game.newMatch(config);
+        game.finish();
+
+        assertTrue(notified.get());
     }
 }

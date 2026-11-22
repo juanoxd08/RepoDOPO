@@ -19,7 +19,10 @@ public enum PlayerEffect {
 
     private final Supplier<Effect> effectFactory;
 
-    PlayerEffect(Supplier<Effect> effectFactory){
+    /*
+     * Constructs a player effect enum constant bound to its strategy factory.
+     */
+    PlayerEffect(Supplier<Effect> effectFactory) {
         this.effectFactory = effectFactory;
     }
 

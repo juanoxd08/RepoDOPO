@@ -22,6 +22,9 @@ public enum MachineProfile {
     private final String displayName;
     private final Function<Side, MachineController> factory;
 
+    /*
+     * Constructs a machine profile with its localized display label and controller factory.
+     */
     MachineProfile(String displayName, Function<Side, MachineController> factory) {
         this.displayName = displayName;
         this.factory = factory;

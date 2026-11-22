@@ -112,14 +112,23 @@ public class Match implements MatchView, Serializable {
             return;
         }
 
-       
+        boolean hadAura1 = player1.hasAura();
+        boolean hadAura2 = player2.hasAura();
         if (controller1 != null) {
             Set<PlayerAction> a1 = controller1.decide(this);
             player1.applyInput(a1, ball, player2);
+            if(!hadAura1 && player1.hasAura()) {
+                for(MatchListener listener : listeners) listener.onPowerActivated(player1.getSide());
+            }
+            
         }
         if (controller2 != null) {
             Set<PlayerAction> a2 = controller2.decide(this);
             player2.applyInput(a2, ball, player1);
+            if(!hadAura2 && player2.hasAura()) {
+                for(MatchListener listener : listeners) listener.onPowerActivated(player2.getSide());
+            }
+            
         }
 
         
@@ -156,7 +165,8 @@ public class Match implements MatchView, Serializable {
         player1.clearSupport();
         player2.clearSupport();
 
-
+        boolean hadAura1 = player1.hasAura();
+        boolean hadAura2 = player2.hasAura();
 
 
 
@@ -177,12 +187,40 @@ public class Match implements MatchView, Serializable {
         player1.collideWithPlayer(player2);
         player2.collideWithPlayer(player1);
 
-        player1.collideWithBall(ball);
-        player2.collideWithBall(ball);
+        if(player1.collideWithBall(ball)){
+            for(MatchListener listener : listeners) listener.onBallKicked(player1.getSide());
+        }
+        if(player2.collideWithBall(ball)){
+            for(MatchListener listener : listeners) listener.onBallKicked(player2.getSide());
+        }
 
+        if(hadAura1 && !player1.hasAura()){
+            for(MatchListener listener : listeners){
+                listener.onPowerShot(player1.getSide(), player1.getCountry());
+            }
+        }
 
-        player2.receiveHit(player1.powerHitOn(player2, ball));
-        player1.receiveHit(player2.powerHitOn(player1, ball));
+        if(hadAura2 && !player2.hasAura()){
+            for(MatchListener listener : listeners){
+                listener.onPowerShot(player2.getSide(), player2.getCountry());
+            }
+        }
+
+        PowerHit hit1 = player1.powerHitOn(player2, ball);
+        if (hit1 != null) {
+            player2.receiveHit(hit1);
+            for (MatchListener listener : listeners) {
+                listener.onPowerHit(player2.getSide(), hit1.getDamage());
+            }
+        }
+
+        PowerHit hit2 = player2.powerHitOn(player1, ball);
+        if (hit2 != null) {
+            player1.receiveHit(hit2);
+            for (MatchListener listener : listeners) {
+                listener.onPowerHit(player1.getSide(), hit2.getDamage());
+            }
+        }
     }
 
     /**
@@ -219,57 +257,68 @@ public class Match implements MatchView, Serializable {
         this.goalCelebrationTicks = 85; 
     }
 
+    /*
+     * Transitions the match to FINISHED, awards end-of-match points once, and notifies listeners.
+     */
     private void finishMatch() {
         if (pointsAwarded) return;
         pointsAwarded = true;
         Side winSide;
         this.state = GameStatus.FINISHED;
-        
 
         Optional<Side> winner = scoreBoard.getLeader();
-        if(winner.isPresent()){
+        if (winner.isPresent()) {
             winSide = winner.get();
-            Side loseSide = winSide.opposite();
-            if(player1.getSide() == winSide)  {
+            if (player1.getSide() == winSide) {
                 player1.addPoints(100);
                 player2.addPoints(25);
-            }
-             else {
+            } else {
                 player2.addPoints(100);
                 player1.addPoints(25);
             }
-            for(MatchListener listener: listeners) listener.onMatchFinished(winSide, 100, 25);
-        }else{
+            for (MatchListener listener : listeners) listener.onMatchFinished(winSide, 100, 25);
+        } else {
             player1.addPoints(25);
             player2.addPoints(25);
-            for(MatchListener listener: listeners) listener.onMatchFinished(null, 25, 25);
+            for (MatchListener listener : listeners) listener.onMatchFinished(null, 25, 25);
         }
-
-        
-        
     }
 
-    public void pause(){
-        if(state != GameStatus.NOT_STARTED &&
-        state != GameStatus.PAUSED &&
-        state != GameStatus.FINISHED
-        ){
+    /**
+     * Pauses the match if it is currently active and remembers the prior state.
+     */
+    public void pause() {
+        if (state != GameStatus.NOT_STARTED &&
+                state != GameStatus.PAUSED &&
+                state != GameStatus.FINISHED) {
             stateBeforePause = state;
             state = GameStatus.PAUSED;
         }
     }
 
-    public void resume(){
-        if(state == GameStatus.PAUSED){
+    /**
+     * Resumes the match from pause, restoring the state prior to pausing.
+     */
+    public void resume() {
+        if (state == GameStatus.PAUSED) {
             state = (stateBeforePause != null) ? stateBeforePause : GameStatus.PLAYING;
             stateBeforePause = null;
         }
     }
 
-    public void finish(){
+    /**
+     * Immediately concludes the match and distributes end-of-match rewards.
+     */
+    public void finish() {
         finishMatch();
     }
 
+    /**
+     * Forwards the current input action set to the controller assigned to the given side.
+     *
+     * @param side Target player side
+     * @param actions Set of actions requested on the current frame
+     */
     public void setIntention(Side side, Set<PlayerAction> actions) {
         if (side == Side.LEFT && controller1 != null) {
             controller1.receive(actions);
@@ -278,87 +327,197 @@ public class Match implements MatchView, Serializable {
         }
     }
 
+    /**
+     * Registers a listener to receive match lifecycle and gameplay events.
+     *
+     * @param listener Listener to add
+     */
     public void addListener(MatchListener listener) {
         if (listener != null && !listeners.contains(listener)) {
             listeners.add(listener);
         }
     }
 
+    /**
+     * Unregisters a previously added match listener.
+     *
+     * @param listener Listener to remove
+     */
     public void removeListener(MatchListener listener) {
         listeners.remove(listener);
     }
-    
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException{
+
+    /*
+     * Restores transient listener collections after Java deserialization.
+     */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
         listeners = new ArrayList<>();
     }
 
-
-
+    /**
+     * Returns the current lifecycle status of the match.
+     *
+     * @return Active GameStatus
+     */
     @Override
     public GameStatus getStatus() {
         return state;
     }
 
+    /**
+     * Returns the remaining regulation time in seconds, or -1 for goal-based matches.
+     *
+     * @return Remaining seconds or -1
+     */
     @Override
     public int getRemainingSeconds() {
         return rule.remainingSeconds(this);
     }
 
+    /**
+     * Indicates whether the match is currently in sudden-death golden goal mode.
+     *
+     * @return True if sudden death is active
+     */
     @Override
     public boolean isSuddenDeath() {
         return state == GameStatus.SUDDEN_DEATH;
     }
 
+    /**
+     * Returns the number of goals scored by the specified side.
+     *
+     * @param side Target side
+     * @return Goal count
+     */
     @Override
     public int getGoals(Side side) {
         return scoreBoard.getGoals(side);
     }
 
+    /**
+     * Returns a read-only view of the player on the specified side.
+     *
+     * @param side Target side
+     * @return PlayerView for the side
+     */
     @Override
     public PlayerView getPlayer(Side side) {
         return (side == Side.LEFT) ? player1 : player2;
     }
 
+    /**
+     * Returns a read-only view of the ball in play.
+     *
+     * @return BallView instance
+     */
     @Override
     public BallView getBall() {
         return ball;
     }
 
+    /**
+     * Returns the winning side according to the active match rule, if decided.
+     *
+     * @return Optional containing the winning side, or empty if undecided
+     */
     @Override
     public Optional<Side> getWinner() {
         return rule.winner(this);
     }
 
+    /**
+     * Returns the logical width of the playing field.
+     *
+     * @return Field width
+     */
     @Override
     public int getFieldWidth() {
         return Field.WIDTH;
     }
 
+    /**
+     * Returns the logical height of the playing field.
+     *
+     * @return Field height
+     */
     @Override
     public int getFieldHeight() {
         return Field.HEIGHT;
     }
 
+    /**
+     * Returns a defensive copy of the goal scoring area for the given side.
+     *
+     * @param side Goal side
+     * @return Goal area rectangle copy
+     */
     @Override
     public Rectangle getGoalArea(Side side) {
         Rectangle area = field.getGoal(side).getGoalArea();
         return new Rectangle(area.getX(), area.getY(), area.getWidth(), area.getHeight());
     }
 
+    /**
+     * Returns a defensive copy of the goal crossbar hitbox for the given side.
+     *
+     * @param side Goal side
+     * @return Crossbar rectangle copy
+     */
     @Override
     public Rectangle getCrossBar(Side side) {
         Rectangle bar = field.getGoal(side).getCrossBar();
         return new Rectangle(bar.getX(), bar.getY(), bar.getWidth(), bar.getHeight());
     }
 
-
+    /**
+     * Returns the scoreboard tracking both sides' goals.
+     *
+     * @return Match ScoreBoard
+     */
     public ScoreBoard getScoreBoard() { return scoreBoard; }
+
+    /**
+     * Updates the current lifecycle status of the match.
+     *
+     * @param state New GameStatus
+     */
     public void setState(GameStatus state) { this.state = state; }
+
+    /**
+     * Returns the remaining ticks of the active goal celebration freeze.
+     *
+     * @return Remaining celebration ticks
+     */
     public int getGoalCelebrationTicks() { return goalCelebrationTicks; }
+
+    /**
+     * Returns the controller assigned to the left player.
+     *
+     * @return Left player controller
+     */
     public Controller getController1() { return controller1; }
+
+    /**
+     * Assigns a new controller to the left player.
+     *
+     * @param controller1 Left player controller
+     */
     public void setController1(Controller controller1) { this.controller1 = controller1; }
+
+    /**
+     * Returns the controller assigned to the right player.
+     *
+     * @return Right player controller
+     */
     public Controller getController2() { return controller2; }
+
+    /**
+     * Assigns a new controller to the right player.
+     *
+     * @param controller2 Right player controller
+     */
     public void setController2(Controller controller2) { this.controller2 = controller2; }
 
     /**
@@ -371,11 +530,21 @@ public class Match implements MatchView, Serializable {
         return (side == Side.LEFT) ? player1.getProfile() : player2.getProfile();
     }
 
+    /**
+     * Returns the configured game modality for this match.
+     *
+     * @return Active Modality
+     */
     @Override
     public Modality getModality() {
         return modality;
     }
 
+    /**
+     * Returns defensive copies of all active illusion decoy balls on the field.
+     *
+     * @return List of decoy ball circles
+     */
     @Override
     public List<Circle> getFakeBalls() {
         List<Circle> fakeBalls = new ArrayList<>();
