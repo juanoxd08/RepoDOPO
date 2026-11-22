@@ -185,6 +185,12 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 - **Arreglo:** ejecutar el tiro cuando el balón toque cualquier parte del jugador con aura (cabeza, cuerpo o pie), no solo al patear.
 - **Pregunta al monitor:** cuando el tiro del rival golpea a alguien que tiene aura, ¿primero recibe el daño y el efecto (regla 5) y después responde con su propio tiro (regla 4), o solo uno de los dos? Mientras tanto, proponer: se aplica el golpe y luego el que fue golpeado ejecuta su tiro.
 
+### BUG-13 · A veces el tiro de poder toca al rival y no le hace nada
+- **Medición:** en 243 tiros simulados por país, contra el rival a distintas distancias y saltando en distintos momentos, el balón **toca al rival y no cuenta como golpe** en 36 (Corea), 36 (Camerún), 74 (Nigeria) y 61 (EE. UU.). No es solo el efecto: tampoco hay daño ni `onPowerHit`.
+- **Causa:** en `Match.resolveCollisions`, primero va `player2.collideWithBall(ball)`, que hace rebotar el balón y lo saca del cuerpo del rival, y **después** `powerHitOn(...)`, que pregunta `isHitByBall`. Para entonces el balón ya no lo toca.
+- **Arreglo (probado en la simulación: los toques sin golpe bajan a 0 en los 4 países):** en `resolveCollisions`, calcular `hit1` y `hit2` **antes** de los `collideWithBall`, y aplicar `receiveHit` y los eventos como ahora.
+- **Relacionado:** con el BUG-12 (el que tiene aura y es golpeado) hay que decidir el orden: primero el golpe y luego su tiro.
+
 ### Dash
 - **No lo pide el PDF:** los movimientos son "mover, saltar, patear y activar el poder". Es opcional, y conviene dejarlo para después de los bugs y los entregables. Si se hace: una `PlayerAction.DASH` con su tecla, un impulso horizontal de pocos ticks y un tiempo de espera, todo dentro de `PlayerBody`.
 
@@ -198,8 +204,8 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 | 1 | **GUI** (1.1 detalles → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 sonidos) | 5.5 – 7 |
 | 2 | Dominio: máquina (Cristian) y sus pruebas | 2.5 – 3.5 |
 | 3 | Entregables: pruebas de aceptación, diagramas, retrospectiva | 3 – 4 |
-| 4 | Bugs 7 a 12 (el 8 y el 12 primero: afectan la GUI y el PDF) | 3.5 – 5 |
-| | **Total** | **≈ 15 – 20.5 h** (sin el dash) |
+| 4 | Bugs 7 a 13 (el 8, el 12 y el 13 primero: afectan la GUI y el PDF) | 3.75 – 5.25 |
+| | **Total** | **≈ 14.75 – 20.25 h** (sin el dash) |
 
 **Sugerencia de reparto:** Juan, la GUI (1.2 y 1.3); Cristian, `OffensiveMachine` y `ClumsyMachine`, y después los sonidos. Si el BUG-10 molesta al dibujar la Ilusión, adelantarlo.
 
