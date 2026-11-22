@@ -205,7 +205,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 | 2 | Dominio: máquina (Cristian) y sus pruebas | 2.5 – 3.5 |
 | 3 | Entregables: pruebas de aceptación, diagramas, retrospectiva | 3 – 4 |
 | 4 | Bugs 7 a 13 (el 8, el 12 y el 13 primero: afectan la GUI y el PDF) | 3.75 – 5.25 |
-| | **Total** | **≈ 14.75 – 20.25 h** (sin el dash) |
+| | **Total** | **≈ 15 – 20 h** (sin el dash) |
 
 **Sugerencia de reparto:** Juan, la GUI (1.2 y 1.3); Cristian, `OffensiveMachine` y `ClumsyMachine`, y después los sonidos. Si el BUG-10 molesta al dibujar la Ilusión, adelantarlo.
 
