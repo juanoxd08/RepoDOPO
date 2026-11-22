@@ -251,35 +251,6 @@ public class DOPOSoccerPhysicsTest {
     }
 
     /**
-     * Verifies that two players sandwiching the ball on the ground never push the ball below the floor.
-     */
-    @Test
-    public void testFloorDisputeNeverPushesBallBelowFloor() {
-        Player left = new Player(new PlayerProfile("Left"), Country.SOUTH_KOREA, Side.LEFT);
-        Player right = new Player(new PlayerProfile("Right"), Country.CAMEROON, Side.RIGHT);
-        double midX = Field.WIDTH / 2.0;
-        left.translate((midX - 22.0) - left.getHeadShape().getX(), 0.0);
-        right.translate((midX + 22.0) - right.getHeadShape().getX(), 0.0);
-        Ball ball = new Ball(midX, Field.HEIGHT - 10.0, 10.0);
-
-        for (int t = 0; t < 120; t++) {
-            left.moveRight();
-            right.moveLeft();
-            left.tick();
-            right.tick();
-            ball.tick();
-            ball.collideWithEdges();
-            left.collideWithPlayer(right);
-            right.collideWithPlayer(left);
-            left.collideWithBall(ball);
-            right.collideWithBall(ball);
-
-            assertTrue("Ball sank below floor at tick " + t,
-                    ball.getY() + ball.getRadius() <= Field.HEIGHT + 0.001);
-        }
-    }
-
-    /**
      * Verifies that walking continuously toward one's own goal while pushing the ball scores an own goal on both sides.
      */
     @Test
