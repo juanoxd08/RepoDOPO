@@ -136,7 +136,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 ### 2.3 Casos borde del progreso · ≈ 0.5 h
 - [x] Mismo nombre en los dos lados (validado en `MatchConfig`).
 - [x] Error al guardar el perfil al terminar → `onProfileSaveFailed`.
-- [ ] **Abrir una partida vieja pisa los puntos nuevos:** al terminar, cargar el perfil actual del repositorio y **sumarle solo los puntos de este partido**, en lugar de guardar el objeto completo que viene en el archivo.
+- [x] **Abrir una partida vieja ya no pisa los puntos nuevos:** al terminar se carga el perfil actual y se le suman solo los puntos del partido (ya estaba en `fix8`).
 - [ ] Preguntas al monitor: si la **máquina acumula puntos**, si **terminar a la fuerza reparte puntos** y las **reglas de la Ilusión**.
 
 ### 2.4 Diseño (opcional) · ≈ 1 h
@@ -196,12 +196,12 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 |---|---|---|
 | 0 | Prueba que falla y archivos generados en el repositorio | 0.25 |
 | 1 | **GUI** (1.1 detalles → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 sonidos) | 5.5 – 7 |
-| 2 | Dominio: máquina (Cristian), sus pruebas, abrir partida vieja | 3 – 4 |
+| 2 | Dominio: máquina (Cristian) y sus pruebas | 2.5 – 3.5 |
 | 3 | Entregables: pruebas de aceptación, diagramas, retrospectiva | 3 – 4 |
 | 4 | Bugs 7 a 12 (el 8 y el 12 primero: afectan la GUI y el PDF) | 3.5 – 5 |
 | | **Total** | **≈ 15 – 20.5 h** (sin el dash) |
 
-**Sugerencia de reparto:** Juan, la GUI (1.2 y 1.3) y abrir partida vieja; Cristian, `OffensiveMachine` y `ClumsyMachine`, y después los sonidos. Si el BUG-10 molesta al dibujar la Ilusión, adelantarlo.
+**Sugerencia de reparto:** Juan, la GUI (1.2 y 1.3); Cristian, `OffensiveMachine` y `ClumsyMachine`, y después los sonidos. Si el BUG-10 molesta al dibujar la Ilusión, adelantarlo.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.
