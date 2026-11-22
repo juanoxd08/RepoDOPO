@@ -125,9 +125,11 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 - **Causa:** `Ball.bounceOff` solo usa la velocidad del balón; con el balón quieto, `v · n = 0` y solo se corrige la posición.
 - **Arreglo:** velocidad relativa (`vn = (vBalón − vPie) · n`) o una velocidad mínima en la dirección del empujón cuando el pie que no patea empuja el balón en el piso.
 
-### BUG-8 · El tiro de poder no termina si no golpea ni hace gol
-- `fix8` agregó la carga del tiro (balón quieto en el aire), pero el tiro sigue sin tiempo máximo: si no golpea al rival ni termina en gol, queda activo, `ball.hasPowerShot()` sigue en `true` y **el jugador no puede volver a usar el poder** hasta el siguiente gol.
-- **Arreglo:** que el fin del tiro (golpe, gol o un tiempo máximo de vuelo) desmarque el balón y llame `finishPowerShot()`.
+### BUG-8 · El balón sigue con el efecto del poder después de terminar el tiro
+- **Medición:** después de que el tiro golpea al rival, `ball.hasPowerShot()` sigue en `true` por lo menos 50 ticks después, con el balón ya quieto en el piso. La GUI lo sigue dibujando con el efecto. Solo se desmarca en `Match.resetPositions()`, es decir, con el siguiente gol.
+- **Causa:** `Power.onHitRival` termina el tiro (`powerShotActive = false`), pero nadie llama `ball.setPowerShot(false)`.
+- **Relacionado:** si el tiro no golpea al rival ni termina en gol, queda activo sin tiempo máximo y **el jugador no puede volver a usar el poder** hasta el siguiente gol.
+- **Arreglo:** en `Match.resolveCollisions`, después de aplicar el golpe, `ball.setPowerShot(false)` y `finishPowerShot()` del tirador. Además, un tiempo máximo de vuelo en `Power` (por ejemplo, 2 s después de soltar el tiro) que haga lo mismo.
 
 ### BUG-9 · Dos jugadores pegados, balón en medio, ambos patean: el balón traspasa a uno
 - **Causa:** cada jugador resuelve su contacto por separado y en orden.
@@ -136,6 +138,21 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 ### BUG-10 · Los balones falsos de la Ilusión no desaparecen si el tiro golpea al rival
 - **Causa:** se actualizan solo mientras el tiro está activo, y el golpe termina el tiro.
 - **Arreglo:** que la duración de la ilusión no dependa de que el tiro siga activo (un *hook* que `updateShot` llame en todos los ticks).
+
+### BUG-11 · El balón se comporta raro mientras se carga el tiro de poder
+- **Medición:** durante los 90 ticks (1.5 s) en que el balón queda quieto en el aire, el rival lo atraviesa caminando. En cada tick el choque mueve el balón unos píxeles y el siguiente tick `Power.updateShot` lo vuelve a poner en su sitio con velocidad 0, así que tiembla y no detiene a nadie. Si el rival lo patea, la patada no hace nada.
+- **Causa:** el balón en carga se resuelve como un balón normal (el choque mueve **al balón**), pero `updateShot` lo teletransporta de vuelta en cada tick.
+- **Arreglo:** mientras `ball.isPowerShotCharging()`, que el balón sea un obstáculo fijo: en `Player.collideWithBall`, en vez de `bounceOff`, sacar **al jugador** del círculo del balón (como `resolveCircleAgainstBar` con el arco) y no permitir patearlo. Otra opción, más simple: que en la carga el balón no choque con nadie.
+- **Después del golpe:** el balón rebota contra la cabeza del rival con el impulso de cabeza (sale a −15 px/tick de vuelta hacia el tirador). Decidir si se quiere así o si el balón debe perder velocidad al golpear.
+
+### BUG-12 · El poder solo se ejecuta pateando, y con las dos auras el rival no responde
+- **El PDF dice "toca", no "patea":** regla 4, *"Cuando el personaje con poder **toca** el balón, ejecuta su tiro de poder y el aura desaparece."* Hoy solo se ejecuta en `collideFootWithBall`, si el pie está pateando y el balón está al frente. Tocarlo con la cabeza, el cuerpo o el pie sin patear no hace nada.
+- **Medición (las dos auras activas):** el tiro de Corea golpea a Camerún, que tiene el aura; Camerún recibe 40 de daño y el empuje, **y su aura sigue igual**: no ejecuta su tiro aunque el balón lo tocó.
+- **Arreglo:** ejecutar el tiro cuando el balón toque cualquier parte del jugador con aura (cabeza, cuerpo o pie), no solo al patear.
+- **Pregunta al monitor:** cuando el tiro del rival golpea a alguien que tiene aura, ¿primero recibe el daño y el efecto (regla 5) y después responde con su propio tiro (regla 4), o solo uno de los dos? Mientras tanto, proponer: se aplica el golpe y luego el que fue golpeado ejecuta su tiro.
+
+### Dash
+- **No lo pide el PDF:** los movimientos son "mover, saltar, patear y activar el poder". Es opcional, y conviene dejarlo para después de los bugs y los entregables. Si se hace: una `PlayerAction.DASH` con su tecla, un impulso horizontal de pocos ticks y un tiempo de espera, todo dentro de `PlayerBody`.
 
 ---
 
@@ -147,8 +164,8 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 | 1 | **GUI** (1.1 detalles → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 sonidos) | 5.5 – 7 |
 | 2 | Dominio: máquina (Cristian), sus pruebas, abrir partida vieja | 3 – 4 |
 | 3 | Entregables: pruebas de aceptación, diagramas, retrospectiva | 3 – 4 |
-| 4 | Bugs 7, 8, 9 y 10 | 2.5 – 3.5 |
-| | **Total** | **≈ 14 – 19 h** |
+| 4 | Bugs 7 a 12 (el 8 y el 12 primero: afectan la GUI y el PDF) | 3.5 – 5 |
+| | **Total** | **≈ 15 – 20.5 h** (sin el dash) |
 
 **Sugerencia de reparto:** Juan, la GUI (1.2 y 1.3) y abrir partida vieja; Cristian, `OffensiveMachine` y `ClumsyMachine`, y después los sonidos. Si el BUG-10 molesta al dibujar la Ilusión, adelantarlo.
 
