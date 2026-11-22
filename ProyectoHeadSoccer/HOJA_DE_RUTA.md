@@ -76,7 +76,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-## Prioridad 1 — Interfaz gráfica · ≈ 5.5 – 7 h
+## Prioridad 1 — Interfaz gráfica · ≈ 8.5 – 10 h
 
 ### 1.0 Datos del dominio que la GUI necesita · ✅ hecho en `fix8`
 - [x] `PlayerView`: `getActiveEffect()` y `getEffectProgress()`.
@@ -91,6 +91,21 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 - [x] Filtro de extensión en el `JFileChooser`.
 - [ ] Revisar: al **abrir** una partida, que aparezca en pausa con un mensaje para continuar.
 - [ ] Mostrar el mensaje de `onProfileSaveFailed` en un diálogo (el evento ya existe).
+
+### 1.1b Reorganizar `PhotoHeadSoccer` · ≈ 3 h · *hacer antes de 1.2 y 1.3*
+`PhotoHeadSoccer` tiene 909 de las 2083 líneas de la GUI y hace cinco cosas: guarda la configuración del partido (y los otros paneles la usan como depósito), arma el `MatchConfig`, dibuja todo, maneja los clics sobre botones dibujados a mano y guarda/abre partidas. Si no se separa ahora, las caras, el giro del balón y las animaciones de los poderes terminan en la misma clase. **No cambia nada de lo que se ve en pantalla.**
+- [ ] **`MatchSetup`** (≈ 45 min): mover ahí los campos de selección (modalidad, países, nombres, tipo de partido, minutos/goles, resolución, perfil de la máquina) con sus `get`/`set`/`cycle...`, y un `toConfig()` que arme el `MatchConfig` con el `Builder`. `SelectPlayersPanel`, `SelectCampPanel` y `UpgradesPanel` reciben el `MatchSetup`, no `PhotoHeadSoccer`.
+- [ ] **Renderers** (≈ 1 – 1.5 h): cada uno con `draw(Graphics2D g, MatchView match, double escala)`:
+  - `FieldRenderer`: cancha y arcos (aquí va el arco dibujado a mano de 1.2).
+  - `PlayerRenderer`: jugadores (aquí van las caras de 1.2 y el aura/efectos de 1.3).
+  - `BallRenderer`: balón (giro, estela, anillo de carga, balones falsos).
+  - `HudRenderer`: marcador, tiempo, vida, barra de poder, banderas.
+  - `OverlayRenderer`: pausa, gol, empate y fin del partido.
+  - `PhotoHeadSoccer` queda como el panel del partido: llama a los renderers en orden y escucha los eventos.
+- [ ] **`Theme`** (≈ 30 min): colores por país, fuentes y los métodos de botones (`styleToggle`, `createStyledButton`, …) en un solo lugar. Hoy hay 73 `new Color(...)` y 40 `new Font(...)` repartidos en 6 archivos, con métodos repetidos.
+- [ ] **Teclado como mapa** (≈ 30 min): un `Map<Integer, PlayerAction>` por jugador en lugar de la cadena de `if` de `processContinuousKeys`, y que cada pantalla maneje sus propias teclas en vez del `switch` de `HeadSoccerGUI.keyPressed`.
+- [ ] *(Opcional, ≈ 45 min)* `MatchFileDialogs` para guardar y abrir, y los botones de pausa/fin como `JButton` reales en vez de comprobar a mano si el clic cayó en el rectángulo.
+- [ ] Después de cada paso: abrir el juego y probar menú → selección → partido → pausa → guardar → abrir → fin → mejoras.
 
 ### 1.2 Imágenes y dibujo · ≈ 1.5 – 2 h
 - [x] Balón (`Ball.png`) y banderas.
@@ -201,13 +216,13 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 | Orden | Qué | Horas |
 |---|---|---|
 | 0 | Prueba que falla y archivos generados en el repositorio | 0.25 |
-| 1 | **GUI** (1.1 detalles → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 sonidos) | 5.5 – 7 |
+| 1 | **GUI** (1.1 detalles → **1.1b reorganizar `PhotoHeadSoccer`** → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 sonidos) | 8.5 – 10 |
 | 2 | Dominio: máquina (Cristian) y sus pruebas | 2.5 – 3.5 |
 | 3 | Entregables: pruebas de aceptación, diagramas, retrospectiva | 3 – 4 |
 | 4 | Bugs 7 a 13 (el 8, el 12 y el 13 primero: afectan la GUI y el PDF) | 3.75 – 5.25 |
-| | **Total** | **≈ 15 – 20 h** (sin el dash) |
+| | **Total** | **≈ 18 – 23 h** (sin el dash) |
 
-**Sugerencia de reparto:** Juan, la GUI (1.2 y 1.3); Cristian, `OffensiveMachine` y `ClumsyMachine`, y después los sonidos. Si el BUG-10 molesta al dibujar la Ilusión, adelantarlo.
+**Sugerencia de reparto:** Juan, la GUI (1.1b primero, luego 1.2 y 1.3); Cristian, `OffensiveMachine` y `ClumsyMachine`, y después los sonidos. Si el BUG-10 molesta al dibujar la Ilusión, adelantarlo.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.
