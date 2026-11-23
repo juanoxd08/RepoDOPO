@@ -3,7 +3,7 @@
 Código de partida: commit **`9597810`** (`fix8` + máquinas de Cristian, 23 nov).
 Enunciado: `DOPOSoccer_2026-2.pdf`.
 
-> **Prioridad actual: la interfaz gráfica.** Después, lo que falta del dominio. **Los bugs van al final**, salvo la prueba que falla (ver "Antes de seguir").
+> **Prioridad actual: la interfaz gráfica**, con los **bugs del poder (8, 12 y 13) antes de las imágenes y las animaciones** (paso 1.1c). Después, lo que falta del dominio. **El resto de los bugs va al final.**
 
 ---
 
@@ -88,7 +88,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-## Prioridad 1 — Interfaz gráfica · ≈ 8.5 – 10 h
+## Prioridad 1 — Interfaz gráfica · ≈ 10 – 12 h
 
 ### 1.0 Datos del dominio que la GUI necesita · ✅ hecho en `fix8`
 - [x] `PlayerView`: `getActiveEffect()` y `getEffectProgress()`.
@@ -118,6 +118,27 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 - [ ] **Teclado como mapa** (≈ 30 min): un `Map<Integer, PlayerAction>` por jugador en lugar de la cadena de `if` de `processContinuousKeys`, y que cada pantalla maneje sus propias teclas en vez del `switch` de `HeadSoccerGUI.keyPressed`.
 - [ ] *(Opcional, ≈ 45 min)* `MatchFileDialogs` para guardar y abrir, y los botones de pausa/fin como `JButton` reales en vez de comprobar a mano si el clic cayó en el rectángulo.
 - [ ] Después de cada paso: abrir el juego y probar menú → selección → partido → pausa → guardar → abrir → fin → mejoras.
+
+### 1.1c Bugs del poder · ≈ 1.5 – 2 h · *hacer antes de 1.2 y 1.3*
+Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la interfaz (el balón sigue dibujado con el efecto del poder), y el 12 y el 13 no cumplen el PDF. Arreglarlos primero evita animar un comportamiento que después cambia. Orden sugerido: **13** (el más corto) → **8** → **12** (necesita decidir el orden del golpe y el tiro de respuesta).
+
+#### BUG-13 · A veces el tiro de poder toca al rival y no le hace nada
+- **Medición:** en 243 tiros simulados por país, contra el rival a distintas distancias y saltando en distintos momentos, el balón **toca al rival y no cuenta como golpe** en 36 (Corea), 36 (Camerún), 74 (Nigeria) y 61 (EE. UU.). No es solo el efecto: tampoco hay daño ni `onPowerHit`.
+- **Causa:** en `Match.resolveCollisions`, primero va `player2.collideWithBall(ball)`, que hace rebotar el balón y lo saca del cuerpo del rival, y **después** `powerHitOn(...)`, que pregunta `isHitByBall`. Para entonces el balón ya no lo toca.
+- **Arreglo (probado en la simulación: los toques sin golpe bajan a 0 en los 4 países):** en `resolveCollisions`, calcular `hit1` y `hit2` **antes** de los `collideWithBall`, y aplicar `receiveHit` y los eventos como ahora.
+- **Relacionado:** con el BUG-12 (el que tiene aura y es golpeado) hay que decidir el orden: primero el golpe y luego su tiro.
+
+#### BUG-8 · El balón sigue con el efecto del poder después de terminar el tiro
+- **Medición:** después de que el tiro golpea al rival, `ball.hasPowerShot()` sigue en `true` por lo menos 50 ticks después, con el balón ya quieto en el piso. La GUI lo sigue dibujando con el efecto. Solo se desmarca en `Match.resetPositions()`, es decir, con el siguiente gol.
+- **Causa:** `Power.onHitRival` termina el tiro (`powerShotActive = false`), pero nadie llama `ball.setPowerShot(false)`.
+- **Relacionado:** si el tiro no golpea al rival ni termina en gol, queda activo sin tiempo máximo y **el jugador no puede volver a usar el poder** hasta el siguiente gol.
+- **Arreglo:** en `Match.resolveCollisions`, después de aplicar el golpe, `ball.setPowerShot(false)` y `finishPowerShot()` del tirador. Además, un tiempo máximo de vuelo en `Power` (por ejemplo, 2 s después de soltar el tiro) que haga lo mismo.
+
+#### BUG-12 · El poder solo se ejecuta pateando, y con las dos auras el rival no responde
+- **El PDF dice "toca", no "patea":** regla 4, *"Cuando el personaje con poder **toca** el balón, ejecuta su tiro de poder y el aura desaparece."* Hoy solo se ejecuta en `collideFootWithBall`, si el pie está pateando y el balón está al frente. Tocarlo con la cabeza, el cuerpo o el pie sin patear no hace nada.
+- **Medición (las dos auras activas):** el tiro de Corea golpea a Camerún, que tiene el aura; Camerún recibe 40 de daño y el empuje, **y su aura sigue igual**: no ejecuta su tiro aunque el balón lo tocó.
+- **Arreglo:** ejecutar el tiro cuando el balón toque cualquier parte del jugador con aura (cabeza, cuerpo o pie), no solo al patear.
+- **Pregunta al monitor:** cuando el tiro del rival golpea a alguien que tiene aura, ¿primero recibe el daño y el efecto (regla 5) y después responde con su propio tiro (regla 4), o solo uno de los dos? Mientras tanto, proponer: se aplica el golpe y luego el que fue golpeado ejecuta su tiro.
 
 ### 1.2 Imágenes y dibujo · ≈ 1.5 – 2 h
 - [x] Balón (`Ball.png`) y banderas.
@@ -188,15 +209,11 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ## Prioridad 4 — Bugs (al final)
 
+Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
+
 ### BUG-7 · El balón no toma velocidad al conducirlo manteniendo D
 - **Causa:** `Ball.bounceOff` solo usa la velocidad del balón; con el balón quieto, `v · n = 0` y solo se corrige la posición.
 - **Arreglo:** velocidad relativa (`vn = (vBalón − vPie) · n`) o una velocidad mínima en la dirección del empujón cuando el pie que no patea empuja el balón en el piso.
-
-### BUG-8 · El balón sigue con el efecto del poder después de terminar el tiro
-- **Medición:** después de que el tiro golpea al rival, `ball.hasPowerShot()` sigue en `true` por lo menos 50 ticks después, con el balón ya quieto en el piso. La GUI lo sigue dibujando con el efecto. Solo se desmarca en `Match.resetPositions()`, es decir, con el siguiente gol.
-- **Causa:** `Power.onHitRival` termina el tiro (`powerShotActive = false`), pero nadie llama `ball.setPowerShot(false)`.
-- **Relacionado:** si el tiro no golpea al rival ni termina en gol, queda activo sin tiempo máximo y **el jugador no puede volver a usar el poder** hasta el siguiente gol.
-- **Arreglo:** en `Match.resolveCollisions`, después de aplicar el golpe, `ball.setPowerShot(false)` y `finishPowerShot()` del tirador. Además, un tiempo máximo de vuelo en `Power` (por ejemplo, 2 s después de soltar el tiro) que haga lo mismo.
 
 ### BUG-9 · Dos jugadores pegados, balón en medio, ambos patean: el balón traspasa a uno
 - **Causa:** cada jugador resuelve su contacto por separado y en orden.
@@ -212,18 +229,6 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 - **Arreglo:** mientras `ball.isPowerShotCharging()`, que el balón sea un obstáculo fijo: en `Player.collideWithBall`, en vez de `bounceOff`, sacar **al jugador** del círculo del balón (como `resolveCircleAgainstBar` con el arco) y no permitir patearlo. Otra opción, más simple: que en la carga el balón no choque con nadie.
 - **Después del golpe:** el balón rebota contra la cabeza del rival con el impulso de cabeza (sale a −15 px/tick de vuelta hacia el tirador). Decidir si se quiere así o si el balón debe perder velocidad al golpear.
 
-### BUG-12 · El poder solo se ejecuta pateando, y con las dos auras el rival no responde
-- **El PDF dice "toca", no "patea":** regla 4, *"Cuando el personaje con poder **toca** el balón, ejecuta su tiro de poder y el aura desaparece."* Hoy solo se ejecuta en `collideFootWithBall`, si el pie está pateando y el balón está al frente. Tocarlo con la cabeza, el cuerpo o el pie sin patear no hace nada.
-- **Medición (las dos auras activas):** el tiro de Corea golpea a Camerún, que tiene el aura; Camerún recibe 40 de daño y el empuje, **y su aura sigue igual**: no ejecuta su tiro aunque el balón lo tocó.
-- **Arreglo:** ejecutar el tiro cuando el balón toque cualquier parte del jugador con aura (cabeza, cuerpo o pie), no solo al patear.
-- **Pregunta al monitor:** cuando el tiro del rival golpea a alguien que tiene aura, ¿primero recibe el daño y el efecto (regla 5) y después responde con su propio tiro (regla 4), o solo uno de los dos? Mientras tanto, proponer: se aplica el golpe y luego el que fue golpeado ejecuta su tiro.
-
-### BUG-13 · A veces el tiro de poder toca al rival y no le hace nada
-- **Medición:** en 243 tiros simulados por país, contra el rival a distintas distancias y saltando en distintos momentos, el balón **toca al rival y no cuenta como golpe** en 36 (Corea), 36 (Camerún), 74 (Nigeria) y 61 (EE. UU.). No es solo el efecto: tampoco hay daño ni `onPowerHit`.
-- **Causa:** en `Match.resolveCollisions`, primero va `player2.collideWithBall(ball)`, que hace rebotar el balón y lo saca del cuerpo del rival, y **después** `powerHitOn(...)`, que pregunta `isHitByBall`. Para entonces el balón ya no lo toca.
-- **Arreglo (probado en la simulación: los toques sin golpe bajan a 0 en los 4 países):** en `resolveCollisions`, calcular `hit1` y `hit2` **antes** de los `collideWithBall`, y aplicar `receiveHit` y los eventos como ahora.
-- **Relacionado:** con el BUG-12 (el que tiene aura y es golpeado) hay que decidir el orden: primero el golpe y luego su tiro.
-
 ### Dash
 - **No lo pide el PDF:** los movimientos son "mover, saltar, patear y activar el poder". Es opcional, y conviene dejarlo para después de los bugs y los entregables. Si se hace: una `PlayerAction.DASH` con su tecla, un impulso horizontal de pocos ticks y un tiempo de espera, todo dentro de `PlayerBody`.
 
@@ -234,13 +239,13 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 | Orden | Qué | Horas |
 |---|---|---|
 | 0 | Prueba que falla y archivos generados en el repositorio | 0.25 |
-| 1 | **GUI** (1.1 detalles → **1.1b reorganizar `PhotoHeadSoccer`** → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 sonidos) | 8.5 – 10 |
+| 1 | **GUI** (1.1 detalles → **1.1b reorganizar `PhotoHeadSoccer`** → **1.1c bugs del poder 13, 8 y 12** → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 sonidos) | 10 – 12 |
 | 2 | Dominio: borrar `COMController`, pruebas de la máquina | 1.5 – 2 |
 | 3 | Entregables: pruebas de aceptación, diagrama de clases, planificación | 2 – 3 |
-| 4 | Bugs 7 a 13 (el 8, el 12 y el 13 primero: afectan la GUI y el PDF) | 3.75 – 5.25 |
+| 4 | Bugs 7, 9, 10 y 11 | 2.25 – 3.25 |
 | | **Total** | **≈ 16 – 20.5 h** (sin el dash) |
 
-**Sugerencia de reparto:** Juan, la GUI (1.1b primero, luego 1.2 y 1.3); Cristian, las pruebas de la máquina y borrar `COMController`, y después los sonidos. Si el BUG-10 molesta al dibujar la Ilusión, adelantarlo.
+**Sugerencia de reparto:** Juan, la GUI (1.1b, luego 1.1c, luego 1.2 y 1.3); Cristian, las pruebas de la máquina y borrar `COMController`, y después los sonidos. Si el BUG-10 molesta al dibujar la Ilusión, adelantarlo.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.
