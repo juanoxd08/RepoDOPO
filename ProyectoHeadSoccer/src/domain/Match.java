@@ -17,6 +17,7 @@ import java.util.Set;
  */
 public class Match implements MatchView, Serializable {
     private static final long serialVersionUID = 1L;
+    private static final double CROSSBAR_ROLL_SPEED = 1.5;
     protected Player player1;
     protected Player player2;
     protected Controller controller1;
@@ -176,6 +177,8 @@ public class Match implements MatchView, Serializable {
         ball.collideWithEdges();
         ball.bounceOff(field.getLeftGoal().getCrossBar(), Physics.CROSSBAR_RESTITUTION, 0.0);
         ball.bounceOff(field.getRightGoal().getCrossBar(), Physics.CROSSBAR_RESTITUTION, 0.0);
+        rollOffCrossBar(field.getLeftGoal().getCrossBar(), 1.0);
+        rollOffCrossBar(field.getRightGoal().getCrossBar(), -1.0);
 
 
 
@@ -220,6 +223,21 @@ public class Match implements MatchView, Serializable {
             for (MatchListener listener : listeners) {
                 listener.onPowerHit(player1.getSide(), hit2.getDamage());
             }
+        }
+    }
+
+    /**
+     * Gives a ball resting on top of a crossbar a small push toward the pitch, so it never stays there forever.
+     *
+     * @param bar Crossbar the ball may be resting on
+     * @param towardField Horizontal direction of the pitch from that crossbar (1 or -1)
+     */
+    private void rollOffCrossBar(Rectangle bar, double towardField) {
+        double bottom = ball.getY() + ball.getRadius();
+        boolean onTop = Math.abs(bottom - bar.getY()) <= 1.0
+                && ball.getX() >= bar.getX() && ball.getX() <= bar.getX() + bar.getWidth();
+        if (onTop && Math.abs(ball.getHorizontalSpeed()) < CROSSBAR_ROLL_SPEED) {
+            ball.setHorizontalSpeed(towardField * CROSSBAR_ROLL_SPEED);
         }
     }
 
