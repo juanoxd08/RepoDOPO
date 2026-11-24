@@ -18,7 +18,7 @@ import persistence.Log;
  */
 public class UpgradesPanel extends JPanel {
     private final DOPOSoccer game;
-    private final PhotoHeadSoccer photo;
+    private final MatchSetup setup;
     private final Runnable onBack;
     private final JLabel title;
     private final JPanel playersContainer;
@@ -31,9 +31,9 @@ public class UpgradesPanel extends JPanel {
      * @param photo Match panel holding configured player names and modality
      * @param onBack Callback executed when the user clicks Back
      */
-    public UpgradesPanel(DOPOSoccer game, PhotoHeadSoccer photo, Runnable onBack) {
+    public UpgradesPanel(DOPOSoccer game, MatchSetup setup, Runnable onBack) {
         this.game = game;
-        this.photo = photo;
+        this.setup = setup;
         this.onBack = onBack;
 
         setLayout(new GridBagLayout());
@@ -76,9 +76,9 @@ public class UpgradesPanel extends JPanel {
      */
     public void refreshView() {
         playersContainer.removeAll();
-        playersContainer.add(buildPlayerCard(photo.getLeftPlayerName()));
-        if (photo.getModality() == Modality.PVP) {
-            playersContainer.add(buildPlayerCard(photo.getRightPlayerName()));
+        playersContainer.add(buildPlayerCard(setup.getLeftPlayerName()));
+        if (setup.getModality() == Modality.PVP) {
+            playersContainer.add(buildPlayerCard(setup.getRightPlayerName()));
         }
         playersContainer.revalidate();
         playersContainer.repaint();

@@ -37,7 +37,7 @@ public class ImageAssets {
             BufferedImage flag = load("/presentation/resources/flag_" + key + ".png", FLAG_WIDTH, FLAG_HEIGHT);
             if (flag != null) flags.put(c, flag);
         }
-        this.ballImage = load("/presentation/resources/ball.png", BALL_SIZE, BALL_SIZE);
+        this.ballImage = load("/presentation/resources/Ball.png", BALL_SIZE, BALL_SIZE);
     }
 
     /*

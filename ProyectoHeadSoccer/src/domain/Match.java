@@ -190,6 +190,26 @@ public class Match implements MatchView, Serializable {
         player1.collideWithPlayer(player2);
         player2.collideWithPlayer(player1);
 
+        PowerHit hit1 = player1.powerHitOn(player2, ball);
+        if (hit1 != null) {
+            player1.finishPowerShot();
+            ball.setPowerShot(false);
+            player2.receiveHit(hit1);
+            for (MatchListener listener : listeners) {
+                listener.onPowerHit(player2.getSide(), hit1.getDamage());
+            }
+        }
+
+        PowerHit hit2 = player2.powerHitOn(player1, ball);
+        if (hit2 != null) {
+            player2.finishPowerShot();
+            ball.setPowerShot(false);
+            player1.receiveHit(hit2);
+            for (MatchListener listener : listeners) {
+                listener.onPowerHit(player1.getSide(), hit2.getDamage());
+            }
+        }
+
         if(player1.collideWithBall(ball)){
             for(MatchListener listener : listeners) listener.onBallKicked(player1.getSide());
         }
@@ -209,21 +229,7 @@ public class Match implements MatchView, Serializable {
             }
         }
 
-        PowerHit hit1 = player1.powerHitOn(player2, ball);
-        if (hit1 != null) {
-            player2.receiveHit(hit1);
-            for (MatchListener listener : listeners) {
-                listener.onPowerHit(player2.getSide(), hit1.getDamage());
-            }
-        }
 
-        PowerHit hit2 = player2.powerHitOn(player1, ball);
-        if (hit2 != null) {
-            player1.receiveHit(hit2);
-            for (MatchListener listener : listeners) {
-                listener.onPowerHit(player1.getSide(), hit2.getDamage());
-            }
-        }
     }
 
     /**

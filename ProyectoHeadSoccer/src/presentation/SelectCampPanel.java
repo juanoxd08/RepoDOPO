@@ -10,7 +10,7 @@ import java.awt.*;
  * @author Cristian Salamanca
  */
 public class SelectCampPanel extends JPanel {
-    private final PhotoHeadSoccer photo;
+    private final MatchSetup setup;
     private final JButton btnSmall;
     private final JButton btnMedium;
     private final JButton btnLarge;
@@ -24,12 +24,12 @@ public class SelectCampPanel extends JPanel {
      * @param onStart Action invoked to launch the configured match
      */
     public SelectCampPanel(
-            PhotoHeadSoccer photo,
+            MatchSetup setup,
             java.util.function.Consumer<FieldResolution> onResolutionChanged,
             Runnable onBack,
             Runnable onStart
     ) {
-        this.photo = photo;
+        this.setup = setup;
         setLayout(new GridBagLayout());
         setBackground(new Color(22, 34, 52));
 
@@ -59,17 +59,17 @@ public class SelectCampPanel extends JPanel {
         btnLarge = createResButton("Grande (1400×800)");
 
         btnSmall.addActionListener(e -> {
-            photo.setResolution(FieldResolution.SMALL);
+            setup.setResolution(FieldResolution.SMALL);
             onResolutionChanged.accept(FieldResolution.SMALL);
             refreshView();
         });
         btnMedium.addActionListener(e -> {
-            photo.setResolution(FieldResolution.MEDIUM);
+            setup.setResolution(FieldResolution.MEDIUM);
             onResolutionChanged.accept(FieldResolution.MEDIUM);
             refreshView();
         });
         btnLarge.addActionListener(e -> {
-            photo.setResolution(FieldResolution.LARGE);
+            setup.setResolution(FieldResolution.LARGE);
             onResolutionChanged.accept(FieldResolution.LARGE);
             refreshView();
         });
@@ -118,10 +118,10 @@ public class SelectCampPanel extends JPanel {
      * Highlights the currently selected field resolution button.
      */
     public final void refreshView() {
-        FieldResolution res = photo.getResolution();
-        styleToggle(btnSmall, res == FieldResolution.SMALL);
-        styleToggle(btnMedium, res == FieldResolution.MEDIUM);
-        styleToggle(btnLarge, res == FieldResolution.LARGE);
+        FieldResolution res = setup.getResolution();
+        Theme.styleToggle(btnSmall, res == FieldResolution.SMALL);
+        Theme.styleToggle(btnMedium, res == FieldResolution.MEDIUM);
+        Theme.styleToggle(btnLarge, res == FieldResolution.LARGE);
     }
 
     /*
@@ -134,13 +134,5 @@ public class SelectCampPanel extends JPanel {
         btn.setPreferredSize(new Dimension(175, 42));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
-    }
-
-    /*
-     * Applies selected or unselected visual styling to a toggle button.
-     */
-    private void styleToggle(JButton btn, boolean selected) {
-        btn.setBackground(selected ? new Color(245, 175, 25) : new Color(55, 62, 76));
-        btn.setForeground(selected ? Color.BLACK : Color.WHITE);
     }
 }

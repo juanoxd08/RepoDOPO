@@ -98,6 +98,12 @@ public class IllusionPower extends Power {
         return copies;
     }
 
+    @Override
+    protected void onShotFinished(){
+        this.illusionTicksRemaining = 0;
+        this.fakeBalls.clear();
+    }
+
     /**
      * Checks whether illusion decoy balls are currently active.
      *

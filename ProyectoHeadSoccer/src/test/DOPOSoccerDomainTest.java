@@ -530,5 +530,90 @@ public class DOPOSoccerDomainTest {
         assertEquals(1, powerHitCount.get());
         assertEquals(Side.RIGHT, hitVictim.get());
         assertTrue(hitDamage.get() > 0.0);
+        assertFalse(game.getMatch().getBall().hasPowerShot());
+    }
+
+    /**
+     * Verifies that an active power shot expires and clears the ball power flag after MAX_FLIGHT_TICKS without a hit.
+     */
+    @Test
+    public void testPowerShotExpiresAfterMaxFlightTicks() {
+        AuraAzulPower power = new AuraAzulPower();
+        power.setCharge(100.0);
+        power.activateAura();
+        power.executePowerShot(ball, Side.LEFT);
+
+        for (int i = 0; i < Power.TICKS_PER_POWER + Power.MAX_FLIGHT_TICKS; i++) {
+            power.updateShot(ball);
+        }
+
+        assertFalse(power.isPowerShotActive());
+        assertFalse(ball.hasPowerShot());
+    }
+
+    /**
+     * Verifies that touching the ball with the head while aura is active executes the power shot without kicking.
+     */
+    @Test
+    public void testPowerShotTriggersOnHeadContactWithoutKicking() {
+        AuraAzulPower power = new AuraAzulPower();
+        Player header = new Player("Jugador 1", Country.SOUTH_KOREA, Side.LEFT, power, new PlayerStats());
+        power.setCharge(100.0);
+        header.activatePower();
+
+        Circle head = header.getHeadShape();
+        Ball fallingBall = new Ball(head.getX(), head.getY() - head.getRadius() - 4.0, 8.0);
+        fallingBall.setVerticalSpeed(4.0);
+
+        header.collideWithBall(fallingBall);
+
+        assertFalse(header.hasAura());
+        assertTrue(power.isPowerShotActive());
+        assertTrue(fallingBall.hasPowerShot());
+    }
+
+    /**
+     * Verifies that when a power shot hits an opponent who has an active aura, the opponent
+     * receives damage and immediately counter-triggers their own power shot on ball contact.
+     *
+     * @throws DOPOSoccerException if match configuration is invalid
+     */
+    @Test
+    public void testPowerShotAgainstRivalWithAuraAppliesHitAndTriggersCounterShot() throws DOPOSoccerException {
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftCountry(Country.SOUTH_KOREA)
+                .rightCountry(Country.CAMEROON)
+                .matchType(MatchType.TIME)
+                .targetValue(1)
+                .build();
+        Match match = new Match(config);
+        PlayerView pLeft = match.getPlayer(Side.LEFT);
+        PlayerView pRight = match.getPlayer(Side.RIGHT);
+
+        for (int i = 0; i < 600; i++) {
+            match.tick();
+        }
+        match.setIntention(Side.LEFT, EnumSet.of(PlayerAction.POWER));
+        match.setIntention(Side.RIGHT, EnumSet.of(PlayerAction.POWER));
+        match.tick();
+        assertTrue(pLeft.hasAura());
+        assertTrue(pRight.hasAura());
+
+        for (int i = 0; i < 120 && pLeft.hasAura(); i++) {
+            match.setIntention(Side.LEFT, EnumSet.of(PlayerAction.RIGHT, PlayerAction.KICK));
+            match.tick();
+        }
+        assertFalse(pLeft.hasAura());
+
+        double rightInitialLife = pRight.getLife();
+        for (int i = 0; i < Power.TICKS_PER_POWER + 60 && pRight.getLife() == rightInitialLife; i++) {
+            match.setIntention(Side.LEFT, EnumSet.noneOf(PlayerAction.class));
+            match.setIntention(Side.RIGHT, EnumSet.noneOf(PlayerAction.class));
+            match.tick();
+        }
+
+        assertTrue("Opponent with aura should take power shot damage", pRight.getLife() < rightInitialLife);
+        assertFalse("Opponent's aura should trigger counter-shot on ball contact", pRight.hasAura());
     }
 }

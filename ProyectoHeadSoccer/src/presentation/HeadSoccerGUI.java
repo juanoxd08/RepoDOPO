@@ -15,7 +15,9 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -38,6 +40,22 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
     private UpgradesPanel upgradesPanel;
     private Screen returnScreen = Screen.SELECT_PLAYERS;
 
+    private static final Map<Integer, PlayerAction> P1_KEY_MAP = Map.of(
+            KeyEvent.VK_A, PlayerAction.LEFT,
+            KeyEvent.VK_D, PlayerAction.RIGHT,
+            KeyEvent.VK_W, PlayerAction.JUMP,
+            KeyEvent.VK_S, PlayerAction.KICK,
+            KeyEvent.VK_Q, PlayerAction.POWER
+    );
+
+    private static final Map<Integer, PlayerAction> P2_KEY_MAP = Map.of(
+            KeyEvent.VK_LEFT, PlayerAction.LEFT,
+            KeyEvent.VK_RIGHT, PlayerAction.RIGHT,
+            KeyEvent.VK_UP, PlayerAction.JUMP,
+            KeyEvent.VK_DOWN, PlayerAction.KICK,
+            KeyEvent.VK_CONTROL, PlayerAction.POWER
+    );
+
     /**
      * Constructs the main application window with Swing menu panels and match canvas.
      */
@@ -57,19 +75,19 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
                 () -> photo.openSavedMatch()
         );
         this.selectPlayersPanel = new SelectPlayersPanel(
-                photo,
+                photo.getSetup(),
                 () -> setCurrentScreen(Screen.MENU),
                 () -> setCurrentScreen(Screen.SELECT_CAMP),
                 () -> setCurrentScreen(Screen.UPGRADES)
         );
         this.selectCampPanel = new SelectCampPanel(
-                photo,
+                photo.getSetup(),
                 this::updateResolution,
                 () -> setCurrentScreen(Screen.SELECT_PLAYERS),
                 () -> photo.startConfiguredMatch()
         );
 
-        this.upgradesPanel = new UpgradesPanel(game, photo,() -> setCurrentScreen(returnScreen));
+        this.upgradesPanel = new UpgradesPanel(game, photo.getSetup(), () -> setCurrentScreen(returnScreen));
 
         this.cardsPanel.add(menuPanel, Screen.MENU.name());
         this.cardsPanel.add(selectPlayersPanel, Screen.SELECT_PLAYERS.name());
@@ -183,21 +201,22 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         GameStatus status = match.getStatus();
         if (status != GameStatus.PLAYING && status != GameStatus.SUDDEN_DEATH) return;
 
-        Set<PlayerAction> p1Actions = new HashSet<>();
-        if (activeKeys.contains(KeyEvent.VK_A)) p1Actions.add(PlayerAction.LEFT);
-        if (activeKeys.contains(KeyEvent.VK_D)) p1Actions.add(PlayerAction.RIGHT);
-        if (activeKeys.contains(KeyEvent.VK_W)) p1Actions.add(PlayerAction.JUMP);
-        if (activeKeys.contains(KeyEvent.VK_S)) p1Actions.add(PlayerAction.KICK);
-        if (activeKeys.contains(KeyEvent.VK_Q)) p1Actions.add(PlayerAction.POWER);
-        game.setIntention(Side.LEFT, p1Actions);
+        game.setIntention(Side.LEFT, collectActions(P1_KEY_MAP));
+        game.setIntention(Side.RIGHT, collectActions(P2_KEY_MAP));
+    }
 
-        Set<PlayerAction> p2Actions = new HashSet<>();
-        if (activeKeys.contains(KeyEvent.VK_LEFT)) p2Actions.add(PlayerAction.LEFT);
-        if (activeKeys.contains(KeyEvent.VK_RIGHT)) p2Actions.add(PlayerAction.RIGHT);
-        if (activeKeys.contains(KeyEvent.VK_UP)) p2Actions.add(PlayerAction.JUMP);
-        if (activeKeys.contains(KeyEvent.VK_DOWN)) p2Actions.add(PlayerAction.KICK);
-        if (activeKeys.contains(KeyEvent.VK_CONTROL)) p2Actions.add(PlayerAction.POWER);
-        game.setIntention(Side.RIGHT, p2Actions);
+    /*
+     * Collects all mapped actions whose key codes are currently pressed.
+     */
+    private Set<PlayerAction> collectActions(Map<Integer, PlayerAction> actions) {
+        Set<PlayerAction> playerActions = EnumSet.noneOf(PlayerAction.class);
+        if (actions == null) return playerActions;
+        for (Map.Entry<Integer, PlayerAction> entry : actions.entrySet()) {
+            if (activeKeys.contains(entry.getKey())) {
+                playerActions.add(entry.getValue());
+            }
+        }
+        return playerActions;
     }
 
     /**
@@ -241,6 +260,8 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
             } else if (code == KeyEvent.VK_M) {
                 game.finish();
                 setCurrentScreen(Screen.MENU);
+            } else if (code == KeyEvent.VK_N) {
+                photo.toggleMute();
             }
         } else if (status == GameStatus.PAUSED) {
             if (code == KeyEvent.VK_P) {
@@ -248,6 +269,8 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
             } else if (code == KeyEvent.VK_M) {
                 game.finish();
                 setCurrentScreen(Screen.MENU);
+            } else if (code == KeyEvent.VK_N) {
+                photo.toggleMute();
             }
         } else if (status == GameStatus.FINISHED) {
             if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_M || code == KeyEvent.VK_SPACE) {

@@ -38,10 +38,10 @@ public class MenuPanel extends JPanel {
         JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 24, 0));
         buttonRow.setOpaque(false);
 
-        JButton btnNewGame = createStyledButton("NEW GAME", new Color(245, 175, 25), Color.BLACK, 20);
+        JButton btnNewGame = Theme.createStyledButton("NEW GAME", Theme.ACCENT_GOLD, Color.BLACK, 20);
         btnNewGame.addActionListener(e -> onNewGame.run());
 
-        JButton btnOpen = createStyledButton("ABRIR PARTIDA", new Color(70, 150, 220), Color.WHITE, 18);
+        JButton btnOpen = Theme.createStyledButton("ABRIR PARTIDA", Theme.ACTION_BLUE, Color.WHITE, 18);
         btnOpen.addActionListener(e -> onOpenMatch.run());
 
         buttonRow.add(btnNewGame);
@@ -83,20 +83,6 @@ public class MenuPanel extends JPanel {
         content.add(controlsBox);
 
         add(content);
-    }
-
-    /*
-     * Creates a styled primary menu button with consistent typography and hand cursor.
-     */
-    private JButton createStyledButton(String text, Color bg, Color fg, int fontSize) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("Arial", Font.BOLD, fontSize));
-        btn.setBackground(bg);
-        btn.setForeground(fg);
-        btn.setFocusPainted(false);
-        btn.setPreferredSize(new Dimension(230, 52));
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return btn;
     }
 
     /**

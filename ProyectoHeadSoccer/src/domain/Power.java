@@ -27,7 +27,8 @@ public abstract class Power implements Serializable {
     protected Side shotSide;
     protected double holdX;
     protected  double holdY;
-
+    public static final int MAX_FLIGHT_TICKS = Physics.seconds(2);
+    protected int flightRemainingTicks;
 
     /**
      * Constructs a special power with its display name and effect duration.
@@ -119,6 +120,7 @@ public abstract class Power implements Serializable {
     public final PowerHit onHitRival(double kickMultiplier) {
         if (!powerShotActive || ticksPerPower > 0) return null;
         this.powerShotActive = false;
+        onShotFinished();
         return new PowerHit(kickMultiplier * getBaseDamage(), createEffect(), effectDurationSeconds);
     }
 
@@ -126,9 +128,11 @@ public abstract class Power implements Serializable {
      * Resets shot state if ball enters goal or effect expires without hitting rival.
      */
     public final void finishPowerShot() {
+        this.flightRemainingTicks = 0;
         this.powerShotActive = false;
         this.ticksPerPower = 0;
         this.shotSide = null;
+        onShotFinished();
     }
 
     /**
@@ -147,9 +151,15 @@ public abstract class Power implements Serializable {
             ball.setPowerShotCharging(ticksPerPower > 0, 1.0 - ((double) ticksPerPower/TICKS_PER_POWER));
             if (ticksPerPower == 0 && shotSide != null) {
                 shapeShot(ball, shotSide);
+                flightRemainingTicks = MAX_FLIGHT_TICKS;
             }
         } else if (powerShotActive) {
+            flightRemainingTicks--;
             updateActiveShot(ball);
+            if(flightRemainingTicks <= 0){
+                finishPowerShot();
+                ball.setPowerShot(false);
+            }
         }
     }
 
@@ -161,15 +171,19 @@ public abstract class Power implements Serializable {
     protected void updateActiveShot(Ball ball) {
     }
 
+    protected void onShotFinished(){}
+
     /**
      * Resets power to empty uncharged state.
      */
     public final void reset() {
+        this.flightRemainingTicks = 0;
         this.charge = 0.0;
         this.auraActive = false;
         this.powerShotActive = false;
         this.ticksPerPower = 0;
         this.shotSide = null;
+        onShotFinished();
     }
 
     /**

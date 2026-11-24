@@ -22,19 +22,12 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
     private DOPOSoccer game;
     private HeadSoccerGUI parentFrame;
     private final ImageAssets assets = new ImageAssets();
-
-    private Modality modality = Modality.PVP;
-    private Country leftCountry = Country.SOUTH_KOREA;
-    private Country rightCountry = Country.CAMEROON;
-
-    private String leftPlayerName = "jugador 1";
-    private String rightPlayerName = "jugador 2";
-    
-    private MatchType matchType = MatchType.TIME;
-    private int matchDurationMinutes = 2;
-    private int targetGoals = 3;
-    private FieldResolution resolution = FieldResolution.MEDIUM;
-    private MachineProfile machineProfile = MachineProfile.EXPERTA;
+    private final MatchSetup setup = new MatchSetup();
+    private final FieldRenderer fieldRenderer = new FieldRenderer();
+    private final PlayerRenderer playerRenderer = new PlayerRenderer();
+    private final BallRenderer ballRenderer = new BallRenderer(assets);
+    private final HudRenderer hudRenderer = new HudRenderer(assets);
+    private final SoundPlayer soundPlayer = new SoundPlayer();
 
     private String lastScorerText = "¡Anotación!";
     private String winnerNotification = "Fin del juego";
@@ -42,192 +35,22 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
     public final java.awt.Rectangle btnSaveGame = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnMenu = new java.awt.Rectangle(0, 0, 0, 0);
     public final java.awt.Rectangle btnUpgrades = new java.awt.Rectangle(0, 0, 0, 0);
+    private final OverlayRenderer overlayRenderer = new OverlayRenderer(btnSaveGame, btnMenu, btnUpgrades);
 
     /**
-     * Returns the configured display name for the left player.
+     * Returns the match configuration model shared with setup screens.
      *
-     * @return Left player name
+     * @return MatchSetup instance
      */
-    public String getLeftPlayerName() {
-        return leftPlayerName;
+    public MatchSetup getSetup() {
+        return setup;
     }
 
     /**
-     * Returns the configured display name for the right player.
-     *
-     * @return Right player name
+     * Toggles global match sound effects on or off.
      */
-    public String getRightPlayerName() {
-        return rightPlayerName;
-    }
-
-    /**
-     * Updates the configured display name for the left player.
-     *
-     * @param n Left player name
-     */
-    public void setLeftPlayerName(String n) {
-        leftPlayerName = n;
-    }
-
-    /**
-     * Updates the configured display name for the right player.
-     *
-     * @param n Right player name
-     */
-    public void setRight(String n) {
-        rightPlayerName = n;
-    }
-
-    /**
-     * Returns the currently selected match modality.
-     *
-     * @return Match modality
-     */
-    public Modality getModality() {
-        return modality;
-    }
-
-    /**
-     * Sets the match modality.
-     *
-     * @param modality Target modality
-     */
-    public void setModality(Modality modality) {
-        if (modality != null) {
-            this.modality = modality;
-        }
-    }
-
-    /**
-     * Returns the selected country for the left player.
-     *
-     * @return Left country
-     */
-    public Country getLeftCountry() {
-        return leftCountry;
-    }
-
-    /**
-     * Cycles the left player's country to the next available option.
-     */
-    public void cycleLeftCountry() {
-        Country[] countries = Country.values();
-        leftCountry = countries[(leftCountry.ordinal() + 1) % countries.length];
-    }
-
-    /**
-     * Returns the selected country for the right player.
-     *
-     * @return Right country
-     */
-    public Country getRightCountry() {
-        return rightCountry;
-    }
-
-    /**
-     * Cycles the right player's country to the next available option.
-     */
-    public void cycleRightCountry() {
-        Country[] countries = Country.values();
-        rightCountry = countries[(rightCountry.ordinal() + 1) % countries.length];
-    }
-
-    /**
-     * Returns the selected machine AI profile.
-     *
-     * @return Machine profile
-     */
-    public MachineProfile getMachineProfile() {
-        return machineProfile;
-    }
-
-    /**
-     * Cycles the machine AI profile to the next available option.
-     */
-    public void cycleMachineProfile() {
-        MachineProfile[] profiles = MachineProfile.values();
-        machineProfile = profiles[(machineProfile.ordinal() + 1) % profiles.length];
-    }
-
-    /**
-     * Returns the selected match rule type.
-     *
-     * @return Match type
-     */
-    public MatchType getMatchType() {
-        return matchType;
-    }
-
-    /**
-     * Returns the configured duration in minutes for time-based matches.
-     *
-     * @return Duration in minutes
-     */
-    public int getMatchDurationMinutes() {
-        return matchDurationMinutes;
-    }
-
-    /**
-     * Returns the configured goal target for goal-based matches.
-     *
-     * @return Goal target
-     */
-    public int getTargetGoals() {
-        return targetGoals;
-    }
-
-    /**
-     * Selects time-based mode and cycles the duration between 1, 2, and 3 minutes.
-     */
-    public void selectOrCycleTimeMatch() {
-        if (matchType == MatchType.TIME) {
-            matchDurationMinutes = (matchDurationMinutes % 3) + 1;
-        } else {
-            matchType = MatchType.TIME;
-        }
-    }
-
-    /**
-     * Selects goal-based mode and cycles the goal target between 3, 5, and 7 goals.
-     */
-    public void selectOrCycleGoalsMatch() {
-        if (matchType == MatchType.GOALS) {
-            targetGoals = (targetGoals == 3) ? 5 : (targetGoals == 5 ? 7 : 3);
-        } else {
-            matchType = MatchType.GOALS;
-        }
-    }
-
-    /**
-     * Returns the selected window resolution.
-     *
-     * @return Field resolution
-     */
-    public FieldResolution getResolution() {
-        return resolution;
-    }
-
-    /**
-     * Sets the window resolution preference.
-     *
-     * @param resolution Target field resolution
-     */
-    public void setResolution(FieldResolution resolution) {
-        if (resolution != null) {
-            this.resolution = resolution;
-        }
-    }
-
-    /**
-     * Sets the right player display name for PVP matches.
-     *
-     * @param rightPlayerName Right player display name
-     */
-    public void setRightPlayerName(String rightPlayerName) {
-        if (rightPlayerName != null && !rightPlayerName.trim().isEmpty()) {
-            this.rightPlayerName = rightPlayerName.trim();
-        }
+    public void toggleMute() {
+        soundPlayer.toggleMute();
     }
 
     /**
@@ -240,8 +63,8 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         this.game = game;
         this.parentFrame = parentFrame;
         this.game.addListener(this);
-        int screenW = resolution.getPixelWidth();
-        int screenH = resolution.getPixelHeight();
+        int screenW = setup.getResolution().getPixelWidth();
+        int screenH = setup.getResolution().getPixelHeight();
         this.setPreferredSize(new Dimension(screenW, screenH));
         this.setBackground(new Color(135, 206, 235));
     }
@@ -250,22 +73,8 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
      * Builds a MatchConfig from the current UI selections and starts a new match.
      */
     public void startConfiguredMatch() {
-        int target = (matchType == MatchType.TIME) ? matchDurationMinutes : targetGoals;
         try {
-            MatchConfig.Builder builder = MatchConfig.builder()
-                    .modality(modality)
-                    .leftCountry(leftCountry)
-                    .rightCountry(rightCountry)
-                    .matchType(matchType)
-                    .targetValue(target)
-                    .machineProfile(machineProfile)
-                    .leftPlayerName(leftPlayerName);
-                    
-
-            if (modality == Modality.PVP) {
-                builder.rightPlayerName(rightPlayerName);
-            }
-            MatchConfig config = builder.build();
+            MatchConfig config = setup.toConfig();
             this.lastScorerText = "¡Anotación!";
             this.winnerNotification = "Fin del juego";
             game.newMatch(config);
@@ -283,6 +92,7 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
      */
     @Override
     public void onGoal(Side scorer) {
+        soundPlayer.play(Sound.GOAL);
         MatchView match = game.getMatch();
         if (match != null && match.getPlayer(scorer) != null) {
             lastScorerText = "¡GOL DE " + match.getPlayer(scorer).getName().toUpperCase() + "!";
@@ -298,6 +108,7 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
      */
     @Override
     public void onStunned(Side victim) {
+        soundPlayer.play(Sound.STUNNED);
         lastScorerText = "¡JUGADOR ATURDIDO!";
     }
 
@@ -310,6 +121,7 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
      */
     @Override
     public void onMatchFinished(Side winner, int winnerPoints, int loserPoints) {
+        soundPlayer.play(Sound.FINISH);
         if (winner == null) {
             winnerNotification = "¡EMPATE TÉCNICO! (+" + winnerPoints + " PUNTOS)";
             return;
@@ -319,6 +131,48 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
                 ? match.getPlayer(winner).getName().toUpperCase()
                 : winner.name();
         winnerNotification = "¡GANADOR: " + name + "! (+" + winnerPoints + " PUNTOS)";
+    }
+
+    /**
+     * Plays the ball kick sound effect when a player kicks the ball.
+     *
+     * @param kicker Side of the kicking player
+     */
+    @Override
+    public void onBallKicked(Side kicker) {
+        soundPlayer.play(Sound.KICK);
+    }
+
+    /**
+     * Plays the power aura sound effect when a player activates their power.
+     *
+     * @param side Side of the player activating power
+     */
+    @Override
+    public void onPowerActivated(Side side) {
+        soundPlayer.play(Sound.POWER_AURA);
+    }
+
+    /**
+     * Plays the power-shot launch sound effect when a power shot begins.
+     *
+     * @param shooter Side of the shooting player
+     * @param country Country of the shooting player
+     */
+    @Override
+    public void onPowerShot(Side shooter, Country country) {
+        soundPlayer.play(Sound.POWER_SHOT);
+    }
+
+    /**
+     * Plays the power-hit sound effect when a power shot hits an opponent.
+     *
+     * @param victim Side of the hit opponent
+     * @param damage Health damage dealt
+     */
+    @Override
+    public void onPowerHit(Side victim, double damage) {
+        soundPlayer.play(Sound.POWER_HIT);
     }
 
     /**
@@ -332,7 +186,7 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
                 this,
                 "No se pudo guardar el progreso: " + message,
                 "Error al guardar progreso",
-                JOptionPane.WARNING_MESSAGE
+                JOptionPane.ERROR_MESSAGE
         );
     }
 
@@ -378,467 +232,18 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
         gField.translate(offsetX, offsetY);
         gField.scale(currentScale, currentScale);
 
-        drawField(gField, match);
+        fieldRenderer.draw(gField, match);
 
         PlayerView left = match.getPlayer(Side.LEFT);
         PlayerView right = match.getPlayer(Side.RIGHT);
-        if (left != null) drawPlayer(gField, left);
-        if (right != null) drawPlayer(gField, right);
-        drawBall(gField, match);
+        if (left != null) playerRenderer.draw(gField, left);
+        if (right != null) playerRenderer.draw(gField, right);
+        ballRenderer.draw(gField, match);
 
         gField.dispose();
 
-        drawHUD(g2d, match);
-
-        GameStatus status = match.getStatus();
-        if (status == GameStatus.PAUSED) {
-            drawPauseOverlay(g2d);
-        } else if (status == GameStatus.GOAL_SCORED) {
-            drawGoalOverlay(g2d);
-        } else if (status == GameStatus.SUDDEN_DEATH) {
-            drawDrawOverlay(g2d);
-        } else if (status == GameStatus.FINISHED) {
-            drawFinishedOverlay(g2d);
-        }
-    }
-
-    /**
-     * Renders the soccer pitch, stadium banner, lower green turf, field lines, and both goals.
-     *
-     * @param g Graphics context scaled to field coordinates
-     * @param match Read-only match view
-     */
-    public void drawField(Graphics g, MatchView match) {
-        Graphics2D g2d = (Graphics2D) g;
-        int fieldW = match.getFieldWidth();
-        int fieldH = match.getFieldHeight();
-        int turfTop = fieldH - 40;
-        int bannerTop = turfTop - 12;
-
-        g2d.setColor(new Color(62, 92, 128));
-        g2d.fillRect(0, 0, fieldW, bannerTop);
-
-        g2d.setColor(new Color(74, 104, 140));
-        for (int row = 20; row < bannerTop - 8; row += 16) {
-            g2d.fillRect(0, row, fieldW, 6);
-        }
-
-        g2d.setColor(new Color(30, 34, 42));
-        g2d.fillRect(0, bannerTop, fieldW, 12);
-        g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Arial", Font.BOLD, 6));
-        g2d.drawString("DOPOSoccer 2026-2  •  HEAD SOCCER", 16, bannerTop + 8);
-        g2d.drawString("ESCUELA COLOMBIANA DE INGENIERÍA", 192, bannerTop + 8);
-
-        g2d.setColor(new Color(46, 139, 87));
-        g2d.fillRect(0, turfTop, fieldW, fieldH - turfTop);
-
-        g2d.setColor(new Color(56, 155, 98));
-        for (int i = 0; i < fieldW; i += 28) {
-            g2d.fillRect(i, turfTop, 14, fieldH - turfTop);
-        }
-
-        g2d.setColor(Color.WHITE);
-        g2d.setStroke(new BasicStroke(1.0f));
-        g2d.drawLine(0, turfTop, fieldW, turfTop);
-        g2d.drawLine(0, fieldH - 1, fieldW, fieldH - 1);
-        g2d.drawLine(fieldW / 2, turfTop, fieldW / 2, fieldH);
-        g2d.drawOval(fieldW / 2 - 22, turfTop + 6, 44, 28);
-
-        drawGoal(g2d, match, Side.LEFT);
-        drawGoal(g2d, match, Side.RIGHT);
-    }
-
-    /*
-     * Renders the goal net, thin horizontal crossbar, and vertical goalpost for the specified side.
-     */
-    private void drawGoal(Graphics2D g2d, MatchView match, Side side) {
-        domain.Rectangle area = match.getGoalArea(side);
-        domain.Rectangle bar = match.getCrossBar(side);
-
-        if (area != null) {
-            int rx = (int) area.getX();
-            int ry = (int) area.getY();
-            int rw = (int) area.getWidth();
-            int rh = (int) area.getHeight();
-
-            g2d.setColor(new Color(245, 245, 245, 95));
-            g2d.fillRect(rx, ry, rw, rh);
-            g2d.setColor(new Color(210, 215, 225, 190));
-            g2d.setStroke(new BasicStroke(0.6f));
-            for (int x = rx; x <= rx + rw; x += 5) g2d.drawLine(x, ry, x, ry + rh);
-            for (int y = ry; y <= ry + rh; y += 6) g2d.drawLine(rx, y, rx + rw, y);
-
-            int postW = 3;
-            int frontPostX = (side == Side.LEFT) ? (rx + rw - postW) : rx;
-            int backPostX = (side == Side.LEFT) ? rx : (rx + rw - 2);
-
-            g2d.setColor(new Color(220, 225, 230));
-            g2d.fillRect(backPostX, ry, 2, rh);
-
-            g2d.setColor(Color.WHITE);
-            g2d.fillRect(frontPostX, ry, postW, rh);
-            g2d.setColor(new Color(90, 95, 105));
-            g2d.setStroke(new BasicStroke(0.7f));
-            g2d.drawRect(frontPostX, ry, postW, rh);
-        }
-
-        if (bar != null) {
-            int bx = (int) bar.getX();
-            int by = (int) bar.getY();
-            int bw = (int) bar.getWidth();
-            int bh = (int) bar.getHeight();
-
-            g2d.setColor(Color.WHITE);
-            g2d.fillRect(bx, by, bw, bh);
-            g2d.setColor(new Color(90, 95, 105));
-            g2d.setStroke(new BasicStroke(0.8f));
-            g2d.drawRect(bx, by, bw, bh);
-        }
-    }
-
-    /**
-     * Renders a player's limbs, active power aura, and status effect indicator.
-     *
-     * @param g Graphics context scaled to field coordinates
-     * @param p Read-only player view
-     */
-    public void drawPlayer(Graphics g, PlayerView p) {
-        if (p == null || p.getHeadShape() == null) return;
-        Graphics2D g2d = (Graphics2D) g;
-
-        Circle hc = p.getHeadShape();
-        int hx = (int) hc.getX();
-        int hy = (int) hc.getY();
-        int hr = (int) hc.getRadius();
-
-        Color baseColor = getColorByCountry(p.getCountry());
-
-        if (p.hasAura()) {
-            g2d.setColor(new Color(255, 220, 50, 90));
-            g2d.fillOval(hx - hr - 10, hy - hr - 10, (hr + 10) * 2, (hr + 10) * 2);
-            g2d.setColor(new Color(255, 160, 0, 140));
-            g2d.setStroke(new BasicStroke(2f));
-            g2d.drawOval(hx - hr - 6, hy - hr - 6, (hr + 6) * 2, (hr + 6) * 2);
-        }
-
-        String effectName = p.getActiveEffectName();
-        if (p.isStunned() || (effectName != null && !effectName.isEmpty())) {
-            g2d.setColor(new Color(255, 255, 255, 180));
-            g2d.setFont(new Font("Arial", Font.BOLD, 7));
-            String tag = (effectName != null && !effectName.isEmpty()) ? effectName : "STUN";
-            g2d.drawString("★ " + tag + " ★", hx - 14, hy - hr - 8);
-        }
-
-        domain.Rectangle br = p.getBodyShape();
-        if (br != null) {
-            g2d.setColor(baseColor.darker());
-            g2d.fillRoundRect((int) br.getX(), (int) br.getY(), (int) br.getWidth(), (int) br.getHeight(), 5, 5);
-            g2d.setColor(Color.BLACK);
-            g2d.setStroke(new BasicStroke(1f));
-            g2d.drawRoundRect((int) br.getX(), (int) br.getY(), (int) br.getWidth(), (int) br.getHeight(), 5, 5);
-        }
-
-        g2d.setColor(baseColor);
-        g2d.fillOval(hx - hr, hy - hr, hr * 2, hr * 2);
-        g2d.setColor(Color.BLACK);
-        g2d.setStroke(new BasicStroke(1.2f));
-        g2d.drawOval(hx - hr, hy - hr, hr * 2, hr * 2);
-
-        g2d.setColor(Color.WHITE);
-        int eyeX = (p.getSide() == Side.LEFT) ? hx + hr / 3 : hx - hr / 3;
-        g2d.fillOval(eyeX - 2, hy - 2, 4, 5);
-        g2d.setColor(Color.BLACK);
-        g2d.fillOval(eyeX - (p.getSide() == Side.LEFT ? 1 : 2), hy - 1, 2, 3);
-
-        Circle fc = p.getFootShape();
-        if (fc != null) {
-            int fx = (int) fc.getX();
-            int fy = (int) fc.getY();
-            int fr = (int) fc.getRadius();
-            g2d.setColor(Color.DARK_GRAY);
-            g2d.fillOval(fx - fr, fy - fr, fr * 2, fr * 2);
-            g2d.setColor(Color.BLACK);
-            g2d.drawOval(fx - fr, fy - fr, fr * 2, fr * 2);
-        }
-    }
-
-    /*
-     * Resolves the display color associated with a playable country.
-     */
-    private Color getColorByCountry(Country c) {
-        if (c == null) return Color.RED;
-        switch (c) {
-            case SOUTH_KOREA: return new Color(230, 60, 60);
-            case CAMEROON: return new Color(30, 160, 80);
-            case NIGERIA: return new Color(20, 130, 60);
-            case USA: return new Color(60, 100, 220);
-            default: return Color.ORANGE;
-        }
-    }
-
-    /**
-     * Renders the soccer ball and its power-shot glow when active.
-     *
-     * @param g Graphics context scaled to field coordinates
-     * @param match Read-only match view
-     */
-    public void drawBall(Graphics g, MatchView match) {
-        BallView ball = match.getBall();
-        if (ball == null) return;
-        Graphics2D g2d = (Graphics2D) g;
-
-        int bx = (int) ball.getX();
-        int by = (int) ball.getY();
-        int r = (int) ball.getRadius();
-
-        boolean isPower = ball.hasPowerShot();
-
-        if (isPower) {
-            g2d.setColor(new Color(255, 200, 0, 120));
-            g2d.fillOval(bx - r - 6, by - r - 6, (r + 6) * 2, (r + 6) * 2);
-        }
-
-        BufferedImage ballImg = assets.getBall();
-        if (ballImg != null) {
-            g2d.drawImage(ballImg, bx - r, by - r, r * 2, r * 2, null);
-        } else {
-            g2d.setColor(isPower ? new Color(255, 240, 200) : Color.WHITE);
-            g2d.fillOval(bx - r, by - r, r * 2, r * 2);
-            g2d.setColor(isPower ? new Color(255, 120, 0) : Color.BLACK);
-            g2d.setStroke(new BasicStroke(isPower ? 1.8f : 1.2f));
-            g2d.drawOval(bx - r, by - r, r * 2, r * 2);
-            g2d.drawLine(bx - r + 2, by, bx + r - 2, by);
-            g2d.drawLine(bx, by - r + 2, bx, by + r - 2);
-        }
-    }
-
-    /**
-     * Renders the top HUD including scoreboard, timer or goal target, and player bars.
-     *
-     * @param g2d Screen-space graphics context
-     * @param match Read-only match view
-     */
-    public void drawHUD(Graphics2D g2d, MatchView match) {
-        int w = getWidth();
-
-        g2d.setColor(new Color(15, 20, 25, 230));
-        g2d.fillRoundRect(w / 2 - 160, 10, 320, 74, 14, 14);
-        g2d.setColor(new Color(245, 195, 35));
-        g2d.setStroke(new BasicStroke(1.5f));
-        g2d.drawRoundRect(w / 2 - 160, 10, 320, 74, 14, 14);
-
-        g2d.setFont(new Font("Arial", Font.BOLD, 11));
-        g2d.setColor(new Color(180, 220, 255));
-        String modeTag = (match.getModality() == Modality.PVC)
-                ? "PvM • " + machineProfile.getDisplayName()
-                : "PvP";
-        g2d.drawString(modeTag, w / 2 - g2d.getFontMetrics().stringWidth(modeTag) / 2, 23);
-
-        int leftGoals = match.getGoals(Side.LEFT);
-        int rightGoals = match.getGoals(Side.RIGHT);
-        g2d.setFont(new Font("Impact", Font.PLAIN, 36));
-        g2d.setColor(Color.WHITE);
-        String scoreText = leftGoals + "  -  " + rightGoals;
-        FontMetrics fm = g2d.getFontMetrics();
-        g2d.drawString(scoreText, w / 2 - fm.stringWidth(scoreText) / 2, 48);
-
-        g2d.setFont(new Font("Monospaced", Font.BOLD, 14));
-        g2d.setColor(Color.GREEN);
-        String centerInfo;
-        if (match.isSuddenDeath()) {
-            centerInfo = "GOL DE ORO";
-            g2d.setColor(Color.YELLOW);
-        } else if (match.getRemainingSeconds() < 0) {
-            centerInfo = "META: " + targetGoals + " GOLES";
-        } else {
-            int sec = match.getRemainingSeconds();
-            centerInfo = String.format("%02d:%02d", sec / 60, sec % 60);
-        }
-        g2d.drawString(centerInfo, w / 2 - g2d.getFontMetrics().stringWidth(centerInfo) / 2, 68);
-
-        PlayerView p1 = match.getPlayer(Side.LEFT);
-        if (p1 != null) {
-            drawPlayerHUD(g2d, p1, 25, 14, 220);
-        }
-
-        PlayerView p2 = match.getPlayer(Side.RIGHT);
-        if (p2 != null) {
-            drawPlayerHUD(g2d, p2, w - 245, 14, 220);
-        }
-    }
-
-    /*
-     * Renders a single player's name, health bar, and power gauge in the HUD.
-     */
-    private void drawPlayerHUD(Graphics2D g2d, PlayerView p, int x, int y, int barW) {
-        int textX = x;
-        BufferedImage flagImg = assets.getFlag(p.getCountry());
-        if (flagImg != null) {
-            g2d.drawImage(flagImg, x, y + 1, 20, 13, null);
-            textX = x + 25;
-        }
-        g2d.setFont(new Font("Arial", Font.BOLD, 13));
-        g2d.setColor(Color.WHITE);
-        String name = p.getName() + " (" + p.getCountry().getDisplayName() + ")";
-        g2d.drawString(name, textX, y + 12);
-
-        int hpY = y + 18;
-        g2d.setColor(Color.BLACK);
-        g2d.fillRect(x, hpY, barW, 14);
-
-        double hpRatio = Math.max(0.0, Math.min(1.0, p.getLife() / p.getMaxLife()));
-        Color hpColor = (hpRatio > 0.5) ? new Color(40, 200, 40) : (hpRatio > 0.25 ? Color.ORANGE : Color.RED);
-        g2d.setColor(hpColor);
-        g2d.fillRect(x + 1, hpY + 1, (int) ((barW - 2) * hpRatio), 12);
-        g2d.setColor(Color.WHITE);
-        g2d.drawRect(x, hpY, barW, 14);
-
-        g2d.setFont(new Font("Arial", Font.BOLD, 10));
-        String hpText = (int) p.getLife() + "/" + (int) p.getMaxLife() + " HP";
-        g2d.drawString(hpText, x + barW / 2 - g2d.getFontMetrics().stringWidth(hpText) / 2, hpY + 11);
-
-        int powY = hpY + 16;
-        g2d.setColor(Color.BLACK);
-        g2d.fillRect(x, powY, barW, 10);
-
-        double powRatio = Math.max(0.0, Math.min(1.0, p.getPowerProgress() / 100.0));
-        g2d.setColor(powRatio >= 1.0 ? Color.YELLOW : new Color(240, 140, 0));
-        g2d.fillRect(x + 1, powY + 1, (int) ((barW - 2) * powRatio), 8);
-        g2d.setColor(Color.GRAY);
-        g2d.drawRect(x, powY, barW, 10);
-
-        if (p.hasAura()) {
-            g2d.setFont(new Font("Arial", Font.BOLD, 9));
-            g2d.setColor(Color.YELLOW);
-            g2d.drawString("⚡ AURA ACTIVA ⚡", x + barW / 2 - 40, powY + 9);
-        }
-    }
-
-
-    /*
-     * Renders the pause overlay with resume, menu, and save match controls.
-     */
-    private void drawPauseOverlay(Graphics2D g2d) {
-        int w = getWidth();
-        int h = getHeight();
-        g2d.setColor(new Color(0, 0, 0, 160));
-        g2d.fillRect(0, 0, w, h);
-
-        g2d.setColor(Color.YELLOW);
-        g2d.setFont(new Font("Impact", Font.BOLD, 54));
-        String text = "PAUSE";
-        g2d.drawString(text, w / 2 - g2d.getFontMetrics().stringWidth(text) / 2, h / 2 - 30);
-
-        g2d.setFont(new Font("Arial", Font.BOLD, 18));
-        g2d.setColor(Color.WHITE);
-        String s1 = "Presiona 'P' para continuar jugando";
-        String s2 = "Presiona 'M' para salir al Menú Principal";
-        g2d.drawString(s1, w / 2 - g2d.getFontMetrics().stringWidth(s1) / 2, h / 2 + 15);
-        g2d.drawString(s2, w / 2 - g2d.getFontMetrics().stringWidth(s2) / 2, h / 2 + 45);
-
-        btnSaveGame.setBounds(w / 2 - 130, h / 2 + 75, 260, 48);
-        drawGlossyButton(g2d, btnSaveGame, "GUARDAR PARTIDA", new Color(40, 170, 80), Color.WHITE, 18);
-    }
-
-    /*
-     * Renders the goal celebration banner overlay.
-     */
-    private void drawGoalOverlay(Graphics2D g2d) {
-        int w = getWidth();
-        int h = getHeight();
-        g2d.setColor(new Color(20, 140, 20, 180));
-        g2d.fillRect(0, h / 2 - 90, w, 180);
-
-        g2d.setColor(Color.YELLOW);
-        g2d.setFont(new Font("Impact", Font.BOLD, 68));
-        String goal = "¡¡¡ GOOOOOL !!!";
-        g2d.drawString(goal, w / 2 - g2d.getFontMetrics().stringWidth(goal) / 2, h / 2 - 10);
-
-        g2d.setFont(new Font("Arial", Font.BOLD, 22));
-        g2d.setColor(Color.WHITE);
-        String desc = (lastScorerText != null && !lastScorerText.isEmpty()) ? lastScorerText : "¡Anotación!";
-        g2d.drawString(desc, w / 2 - g2d.getFontMetrics().stringWidth(desc) / 2, h / 2 + 40);
-    }
-
-    /*
-     * Renders the sudden-death golden goal banner overlay.
-     */
-    private void drawDrawOverlay(Graphics2D g2d) {
-        int w = getWidth();
-        int h = getHeight();
-        g2d.setColor(new Color(200, 120, 20, 190));
-        g2d.fillRect(0, h / 2 - 80, w, 160);
-
-        g2d.setColor(Color.YELLOW);
-        g2d.setFont(new Font("Impact", Font.BOLD, 54));
-        String title = "¡EMPATE! - GOL DE ORO";
-        g2d.drawString(title, w / 2 - g2d.getFontMetrics().stringWidth(title) / 2, h / 2);
-
-        g2d.setFont(new Font("Arial", Font.BOLD, 20));
-        g2d.setColor(Color.WHITE);
-        String sub = "Muerte súbita: El primer jugador que marque gana el partido";
-        g2d.drawString(sub, w / 2 - g2d.getFontMetrics().stringWidth(sub) / 2, h / 2 + 45);
-    }
-
-    /*
-     * Renders the match-finished overlay with winner announcement and return-to-menu button.
-     */
-    private void drawFinishedOverlay(Graphics2D g2d) {
-        int w = getWidth();
-        int h = getHeight();
-        g2d.setColor(new Color(0, 0, 0, 210));
-        g2d.fillRect(0, 0, w, h);
-
-        g2d.setColor(Color.YELLOW);
-        g2d.setFont(new Font("Impact", Font.BOLD, 52));
-        String title = "PARTIDO FINALIZADO";
-        g2d.drawString(title, w / 2 - g2d.getFontMetrics().stringWidth(title) / 2, h / 2 - 60);
-
-        g2d.setFont(new Font("Arial", Font.BOLD, 24));
-        g2d.setColor(new Color(100, 255, 100));
-        String winner = (winnerNotification != null && !winnerNotification.isEmpty()) ? winnerNotification : "Fin del juego";
-        g2d.drawString(winner, w / 2 - g2d.getFontMetrics().stringWidth(winner) / 2, h / 2 - 10);
-
-        g2d.setFont(new Font("Arial", Font.PLAIN, 16));
-        g2d.setColor(Color.WHITE);
-        String pts = "Recompensa: Ganador +100 puntos | Perdedor +25 puntos";
-        g2d.drawString(pts, w / 2 - g2d.getFontMetrics().stringWidth(pts) / 2, h / 2 + 25);
-
-        MatchView match = game.getMatch();
-        if (match != null && match.getPlayer(Side.LEFT) != null && match.getPlayer(Side.RIGHT) != null) {
-            PlayerView p1 = match.getPlayer(Side.LEFT);
-            PlayerView p2 = match.getPlayer(Side.RIGHT);
-            String totals = p1.getName() + ": " + p1.getPoints() + " pts totales  |  "
-                    + p2.getName() + ": " + p2.getPoints() + " pts totales";
-            g2d.setFont(new Font("Arial", Font.BOLD, 15));
-            g2d.setColor(new Color(255, 225, 120));
-            g2d.drawString(totals, w / 2 - g2d.getFontMetrics().stringWidth(totals) / 2, h / 2 + 52);
-        }
-
-        btnUpgrades.setBounds(w / 2 - 235, h / 2 + 78, 220, 48);
-        drawGlossyButton(g2d, btnUpgrades, "MEJORAR STATS", new Color(70, 150, 220), Color.WHITE, 17);
-
-        btnMenu.setBounds(w / 2 + 15, h / 2 + 78, 220, 48);
-        drawGlossyButton(g2d, btnMenu, "VOLVER AL MENÚ", new Color(245, 175, 25), Color.BLACK, 17);
-    }
-
-    /*
-     * Renders a rounded action button with centered label text.
-     */
-    private void drawGlossyButton(Graphics2D g2d, java.awt.Rectangle r, String text, Color bg, Color fg, int fontSize) {
-        g2d.setColor(bg);
-        g2d.fillRoundRect(r.x, r.y, r.width, r.height, 16, 16);
-        g2d.setColor(Color.WHITE);
-        g2d.setStroke(new BasicStroke(2));
-        g2d.drawRoundRect(r.x, r.y, r.width, r.height, 16, 16);
-
-        g2d.setFont(new Font("Arial", Font.BOLD, fontSize));
-        g2d.setColor(fg);
-        FontMetrics fm = g2d.getFontMetrics();
-        int tx = r.x + (r.width - fm.stringWidth(text)) / 2;
-        int ty = r.y + ((r.height - fm.getHeight()) / 2) + fm.getAscent();
-        g2d.drawString(text, tx, ty);
+        hudRenderer.draw(g2d, match, setup, w);
+        overlayRenderer.draw(g2d, match, w, h, lastScorerText, winnerNotification);
     }
 
     /**
@@ -906,4 +311,5 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
             }
         }
     }
+
 }

@@ -134,6 +134,9 @@ public class Ball implements BallView, Serializable {
 			}
 		}
 		this.circle.translate(normal.getX() * c.getPenetration(), normal.getY() * c.getPenetration());
+		if (this.circle.getY() + this.circle.getRadius() > Field.HEIGHT) {
+            this.circle.setY(Field.HEIGHT - this.circle.getRadius());
+		}
 
 		Vector2 v = new Vector2(horizontalSpeed, verticalSpeed);
 		double vn = v.dot(normal);

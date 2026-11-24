@@ -15,7 +15,7 @@ import java.awt.*;
  * @author Cristian Salamanca
  */
 public class SelectPlayersPanel extends JPanel {
-    private final PhotoHeadSoccer photo;
+    private final MatchSetup setup;
 
     private final JButton btnPvP;
     private final JButton btnPvM;
@@ -42,8 +42,8 @@ public class SelectPlayersPanel extends JPanel {
      * @param onBack Action invoked to return to the main menu
      * @param onContinue Action invoked to proceed to field resolution selection
      */
-    public SelectPlayersPanel(PhotoHeadSoccer photo, Runnable onBack, Runnable onContinue, Runnable onUpgrades) {
-        this.photo = photo;
+    public SelectPlayersPanel(MatchSetup setup, Runnable onBack, Runnable onContinue, Runnable onUpgrades) {
+        this.setup = setup;
         setLayout(new GridBagLayout());
         setBackground(new Color(22, 34, 52));
 
@@ -69,15 +69,15 @@ public class SelectPlayersPanel extends JPanel {
         btnNextProfile = createOptionButton("");
 
         btnPvP.addActionListener(e -> {
-            photo.setModality(Modality.PVP);
+            setup.setModality(Modality.PVP);
             refreshView();
         });
         btnPvM.addActionListener(e -> {
-            photo.setModality(Modality.PVC);
+            setup.setModality(Modality.PVC);
             refreshView();
         });
         btnNextProfile.addActionListener(e -> {
-            photo.cycleMachineProfile();
+            setup.cycleMachineProfile();
             refreshView();
         });
 
@@ -96,11 +96,11 @@ public class SelectPlayersPanel extends JPanel {
         lblP1Power = createLabel("", 14, false, new Color(255, 220, 120));
         JButton btnP1Country = createActionButton("Cambiar Personaje ↻", new Color(70, 130, 180), Color.WHITE);
         btnP1Country.addActionListener(e -> {
-            photo.cycleLeftCountry();
+            setup.cycleLeftCountry();
             refreshView();
         });
         p1Box.add(lblP1Title);
-        txtP1Name = new JTextField(photo.getLeftPlayerName(), 14);
+        txtP1Name = new JTextField(setup.getLeftPlayerName(), 14);
         txtP1Name.setMaximumSize(new Dimension(220, 28));
         p1Box.add(Box.createVerticalStrut(8));
         p1Box.add(txtP1Name);
@@ -117,11 +117,11 @@ public class SelectPlayersPanel extends JPanel {
         lblP2Power = createLabel("", 14, false, new Color(255, 220, 120));
         JButton btnP2Country = createActionButton("Cambiar Personaje ↻", new Color(70, 130, 180), Color.WHITE);
         btnP2Country.addActionListener(e -> {
-            photo.cycleRightCountry();
+            setup.cycleRightCountry();
             refreshView();
         });
         p2Box.add(lblP2Title);
-        txtP2Name = new JTextField(photo.getRightPlayerName(), 14);
+        txtP2Name = new JTextField(setup.getRightPlayerName(), 14);
         txtP2Name.setMaximumSize(new Dimension(220, 28));
         p2Box.add(Box.createVerticalStrut(8));
         p2Box.add(txtP2Name);
@@ -142,11 +142,11 @@ public class SelectPlayersPanel extends JPanel {
         btnTypeGoals = createOptionButton("");
 
         btnTypeTime.addActionListener(e -> {
-            photo.selectOrCycleTimeMatch();
+            setup.selectOrCycleTimeMatch();
             refreshView();
         });
         btnTypeGoals.addActionListener(e -> {
-            photo.selectOrCycleGoalsMatch();
+            setup.selectOrCycleGoalsMatch();
             refreshView();
         });
 
@@ -197,31 +197,31 @@ public class SelectPlayersPanel extends JPanel {
      * Synchronizes button states and labels with the current configuration in {@link PhotoHeadSoccer}.
      */
     public final void refreshView() {
-        boolean vsMachine = photo.getModality() == Modality.PVC;
-        styleToggle(btnPvP, !vsMachine);
-        styleToggle(btnPvM, vsMachine);
+        boolean vsMachine = setup.getModality() == Modality.PVC;
+        Theme.styleToggle(btnPvP, !vsMachine);
+        Theme.styleToggle(btnPvM, vsMachine);
 
         lblProfileTitle.setVisible(vsMachine);
         btnNextProfile.setVisible(vsMachine);
-        MachineProfile profile = photo.getMachineProfile();
+        MachineProfile profile = setup.getMachineProfile();
         btnNextProfile.setText(profile.getDisplayName() + " ↻");
-        styleToggle(btnNextProfile, true);
+        Theme.styleToggle(btnNextProfile, true);
 
-        Country left = photo.getLeftCountry();
-        Country right = photo.getRightCountry();
+        Country left = setup.getLeftCountry();
+        Country right = setup.getRightCountry();
         lblP1Country.setText("País: " + left.getDisplayName());
         lblP1Power.setText("Poder: " + left.getPowerName());
 
         lblP2Title.setText(vsMachine ? "MÁQUINA (Derecha)" : "JUGADOR 2 (Derecha)");
         txtP2Name.setEnabled(!vsMachine);
-        txtP2Name.setText(vsMachine ? ("COM " + profile.getDisplayName()) : photo.getRightPlayerName());
+        txtP2Name.setText(vsMachine ? ("COM " + profile.getDisplayName()) : setup.getRightPlayerName());
         lblP2Country.setText("País: " + right.getDisplayName());
         lblP2Power.setText("Poder: " + right.getPowerName());
 
-        btnTypeTime.setText("Por Tiempo (" + photo.getMatchDurationMinutes() + " min) ↻");
-        btnTypeGoals.setText("Por Goles (" + photo.getTargetGoals() + " goles) ↻");
-        styleToggle(btnTypeTime, photo.getMatchType() == MatchType.TIME);
-        styleToggle(btnTypeGoals, photo.getMatchType() == MatchType.GOALS);
+        btnTypeTime.setText("Por Tiempo (" + setup.getMatchDurationMinutes() + " min) ↻");
+        btnTypeGoals.setText("Por Goles (" + setup.getTargetGoals() + " goles) ↻");
+        Theme.styleToggle(btnTypeTime, setup.getMatchType() == MatchType.TIME);
+        Theme.styleToggle(btnTypeGoals, setup.getMatchType() == MatchType.GOALS);
     }
 
     /*
@@ -273,22 +273,14 @@ public class SelectPlayersPanel extends JPanel {
     }
 
     /*
-     * Applies selected or unselected visual styling to an option button.
-     */
-    private void styleToggle(JButton btn, boolean selected) {
-        btn.setBackground(selected ? new Color(245, 175, 25) : new Color(55, 62, 76));
-        btn.setForeground(selected ? Color.BLACK : Color.WHITE);
-    }
-
-    /*
      * Copies non-blank player names from the text fields into the shared configuration holder.
      */
     private void savePlayerNames() {
         String n1 = txtP1Name.getText().trim();
-        if (!n1.isEmpty()) photo.setLeftPlayerName(n1);
-        if (photo.getModality() == Modality.PVP) {
+        if (!n1.isEmpty()) setup.setLeftPlayerName(n1);
+        if (setup.getModality() == Modality.PVP) {
             String n2 = txtP2Name.getText().trim();
-            if (!n2.isEmpty()) photo.setRightPlayerName(n2);
+            if (!n2.isEmpty()) setup.setRightPlayerName(n2);
         }
     }
 }

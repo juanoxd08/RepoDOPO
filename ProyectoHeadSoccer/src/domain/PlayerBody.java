@@ -178,15 +178,20 @@ public class PlayerBody implements Serializable {
      */
     public boolean collideWithBall(Ball ball, Power power){
         boolean collide;
+        boolean hitHead;
+        boolean hitBody;
         if(ball == null) return false;
         if(foot.isKicking()){
             collide = collideFootWithBall(ball, power);
-            ball.bounceOff(head.getCircle(), Physics.HEAD_RESTITUTION, Physics.HEAD_IMPULSE);
-            ball.bounceOff(body.getRectangle(), Physics.BODY_RESTITUTION, 0.0);
+            hitHead = ball.bounceOff(head.getCircle(), Physics.HEAD_RESTITUTION, Physics.HEAD_IMPULSE);
+            hitBody = ball.bounceOff(body.getRectangle(), Physics.BODY_RESTITUTION, 0.0);
         }else{
-            ball.bounceOff(head.getCircle(), Physics.HEAD_RESTITUTION, Physics.HEAD_IMPULSE);
-            ball.bounceOff(body.getRectangle(), Physics.BODY_RESTITUTION, 0.0); 
+            hitHead = ball.bounceOff(head.getCircle(), Physics.HEAD_RESTITUTION, Physics.HEAD_IMPULSE);
+            hitBody= ball.bounceOff(body.getRectangle(), Physics.BODY_RESTITUTION, 0.0); 
             collide = collideFootWithBall(ball, power);          
+        }
+        if((hitHead || hitBody) && power != null && power.isAuraActive()){
+            power.executePowerShot(ball, side);
         }
         return collide;
     }
@@ -195,6 +200,7 @@ public class PlayerBody implements Serializable {
      * Resolves foot-to-ball contact, launching a kick or power shot when kicking in front of the ball.
      */
     private boolean collideFootWithBall(Ball ball, Power power) {
+        boolean hitFoot = false;
         Circle footCircle = this.foot.getCircle();
         Optional<Contact> contact = footCircle.contactWith(ball.getCircle());
         if(contact.isEmpty()) return false;
@@ -213,7 +219,11 @@ public class PlayerBody implements Serializable {
                 return true;
             }
         }
-        ball.bounceOff(footCircle, Physics.FOOT_RESTITUTION, 0.0);
+        hitFoot = ball.bounceOff(footCircle, Physics.FOOT_RESTITUTION, 0.0);
+        if (hitFoot && power != null && power.isAuraActive()) {
+            power.executePowerShot(ball, side);
+        }
+
         return false;
     }
 
