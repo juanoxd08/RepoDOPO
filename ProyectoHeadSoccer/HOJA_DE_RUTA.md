@@ -62,7 +62,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-## Prioridad 1 — Interfaz gráfica · ≈ 5.25 – 6 h
+## Prioridad 1 — Interfaz gráfica · ≈ 3 – 3.5 h
 
 ### 1.0 Datos del dominio que la GUI necesita · ✅ hecho en `fix8`
 - [x] `PlayerView`: `getActiveEffect()` y `getEffectProgress()`.
@@ -126,14 +126,38 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 - [ ] Revisar las 3 resoluciones: todo se escala desde las medidas del dominio, nunca con píxeles fijos. Con las figuras más pequeñas de `fix8`, revisar que se lea bien.
 - [ ] `CREDITOS.txt` con la fuente de cada imagen.
 
-### 1.3 Animación de los poderes · ≈ 2.5 – 3 h
-- [ ] Contador de frames propio de la vista, para animar (pulsos con `Math.sin`).
-- [ ] **Barra llena** que parpadea; **aura** del color de cada país que pulsa (`onPowerActivated`).
-- [ ] **Tiro sostenido:** anillo de energía que se cierra alrededor del balón (`isPowerShotCharging()` y su progreso).
-- [ ] **Tiro en vuelo:** estela del color del país (`getPowerShotCountry()`; la GUI guarda las últimas 6-8 posiciones); recto (Corea), zigzag eléctrico (Camerún), espiral (Nigeria).
-- [ ] **Ilusión:** dibujar los 7 balones falsos con `getFakeBalls()`, idénticos al real (hoy la GUI no los dibuja). ⚠️ Ver BUG-10.
-- [ ] **Efecto sobre el rival:** ícono animado y barrita de duración con `getActiveEffect()` y `getEffectProgress()`.
-- [ ] **Golpe al rival:** destello y el daño flotando (`onPowerHit`).
+### 1.3 Animación de los poderes · una animación sencilla por estado · ≈ 45 min – 1 h
+**Decisión del equipo:** sin estela del tiro. Cada estado se muestra con un **tono de color opaco sobre la cabeza** que pulsa, un **símbolo corto** encima y una **barrita** de duración. Así se cumple el PDF: *"el aura del poder activo y los efectos sobre el rival deben ser visibles"*.
+
+**Ya hecho en `fix9`:**
+- [x] Contador de frames en `PlayerRenderer` para animar.
+- [x] **Aura** del color de cada país que pulsa (`drawAura`).
+- [x] **Anillo de carga** que se cierra alrededor del balón (`BallRenderer.drawChargingRing`, con `isPowerShotCharging()` y su progreso).
+- [x] **Balones falsos** de la Ilusión (`getFakeBalls()`).
+- [x] Etiqueta del efecto y barrita de duración (`drawStatusEffect`, con `getEffectProgress()`).
+
+**Falta (todo en `PlayerRenderer.drawStatusEffect`):**
+- [ ] **Tono sobre la cabeza que pulsa:** un `fillOval` del tamaño de la cabeza, con el color del efecto y transparencia que sube y baja:
+  ```java
+  double pulse = 0.5 + 0.5 * Math.sin(animFrame * 0.2);
+  int alpha = (int) (90 + 60 * pulse);
+  g2d.setColor(new Color(ec.getRed(), ec.getGreen(), ec.getBlue(), alpha));
+  g2d.fillOval(hx - hr, hy - hr, hr * 2, hr * 2);
+  ```
+- [ ] **Símbolo corto** en lugar del texto `★ NOMBRE ★` (que es largo y se sale de la cabeza a esta escala):
+
+  | Estado | Color | Símbolo |
+  |---|---|---|
+  | Empujado (Corea, 1.5 s) | Azul | `>>` o `<<`, hacia su propio arco |
+  | Electrocutado (Camerún, 3 s) | Amarillo | zigzag de 3 líneas, o `!!` |
+  | Inconsciente (Nigeria, 3 s) | Gris o morado | `Z z` |
+  | Confundido (EE. UU., 2.5 s) | Rosado | `?` |
+  | Aturdido (vida en 0, 3 s) | Blanco | `***` o 3 puntos girando |
+
+- [ ] **Aturdido:** hoy usa blanco por defecto y la etiqueta `STUN`; darle su propio tono y símbolo de la tabla.
+- [ ] Mover los colores de `getPowerColor` y `getEffectColor` a `Theme`, en un `EnumMap<Country, Color>` y un `EnumMap<PlayerEffect, Color>` (va junto con el punto de `Theme` de 1.1b).
+- [ ] *(Opcional)* **Pose de poder** mientras el jugador carga su tiro, cuando se arregle el BUG-15 (`isChargingPower()`): por ejemplo, el aura más grande.
+- [ ] *(Opcional)* **Golpe al rival:** un destello de 10 ticks sobre la cabeza con `onPowerHit`.
 
 ### 1.4 Sonidos · código hecho en `fix9` · faltan los archivos ≈ 30 min
 - [x] Clase `SoundPlayer` en `presentation`: `javax.sound.sampled.Clip`, archivos **WAV**, cargados una sola vez en un `Map`.
@@ -218,13 +242,13 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 | Orden | Qué | Horas |
 |---|---|---|
 | 0 | Sacar los archivos generados del repositorio | 0.1 |
-| 1 | **GUI** (1.1 detalles → 1.1b `Theme` → 1.1c BUG-14 y BUG-15 → 1.2 revisar resoluciones y créditos → 1.3 animaciones → 1.4 archivos de sonido) | 5.25 – 6 |
+| 1 | **GUI** (1.1 detalles → 1.1b `Theme` → 1.1c BUG-14 y BUG-15 → 1.2 revisar resoluciones y créditos → 1.3 tono y símbolo por estado → 1.4 archivos de sonido) | 3 – 3.5 |
 | 2 | Dominio: borrar `COMController`, pruebas de la máquina | 1.5 – 2 |
 | 3 | Entregables: pruebas de aceptación, diagrama de clases, planificación | 2 – 3 |
 | 4 | Bugs 7, 9 y 11 | 1.75 – 2.75 |
-| | **Total** | **≈ 11 – 14 h** (sin el dash) |
+| | **Total** | **≈ 8.5 – 11.5 h** (sin el dash) |
 
-**Sugerencia de reparto:** Juan, la GUI (BUG-14 y 15, y las animaciones de 1.3); Cristian, los archivos de sonido, las pruebas de la máquina y borrar `COMController`.
+**Sugerencia de reparto:** Juan, la GUI (BUG-14 y 15, y el tono y símbolo por estado de 1.3); Cristian, los archivos de sonido, las pruebas de la máquina y borrar `COMController`.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.
