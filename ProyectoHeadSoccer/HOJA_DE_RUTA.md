@@ -62,7 +62,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-## Prioridad 1 — Interfaz gráfica · ≈ 6.5 – 7.5 h
+## Prioridad 1 — Interfaz gráfica · ≈ 5.25 – 6 h
 
 ### 1.0 Datos del dominio que la GUI necesita · ✅ hecho en `fix8`
 - [x] `PlayerView`: `getActiveEffect()` y `getEffectProgress()`.
@@ -118,12 +118,12 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 - **Arreglo:** ejecutar el tiro cuando el balón toque cualquier parte del jugador con aura (cabeza, cuerpo o pie), no solo al patear.
 - **Pregunta al monitor:** cuando el tiro del rival golpea a alguien que tiene aura, ¿primero recibe el daño y el efecto (regla 5) y después responde con su propio tiro (regla 4), o solo uno de los dos? Mientras tanto, proponer: se aplica el golpe y luego el que fue golpeado ejecuta su tiro.
 
-### 1.2 Imágenes y dibujo · ≈ 1.5 – 2 h
+### 1.2 Imágenes y dibujo · casi terminado · ≈ 15 – 30 min
 - [x] Balón (`Ball.png`) y banderas.
-- [ ] **Giro del balón:** acumular un ángulo con la velocidad horizontal (`angulo += getHorizontalSpeed() / getRadius()`) y dibujar la imagen con `g2d.rotate(angulo, cx, cy)`, restaurando la transformación después.
-- [ ] **Arcos dibujados a mano** con Java2D sobre `getGoalArea(side)` y `getCrossBar(side)` escalados: red con líneas semitransparentes y travesaño/poste blancos. Con el travesaño de 5 px, revisar que se vea a la resolución elegida.
-- [ ] **Caras:** como no se encontraron PNG, dibujarlas por código: una cuadrícula de 16 × 16 caracteres (piel, pelo, ojos, boca...) con una paleta de colores por país, pintada dentro del círculo de la cabeza y espejada según el lado. Otra opción es hacerlas en Piskel (gratis) y exportarlas como PNG.
-- [ ] Re-ajustar tamaños según la resolución: todo se escala desde las medidas del dominio, nunca con píxeles fijos. Con las figuras más pequeñas de `fix8`, revisar que se lea bien.
+- [x] **Giro del balón** (`BallRenderer`, con `g2d.rotate`).
+- [x] **Arcos dibujados a mano** (`FieldRenderer`: red, travesaño y poste sobre `getGoalArea` y `getCrossBar`).
+- [x] **Caras:** se dejan como están (cabeza de color con ojo, dibujada por código). Decisión del equipo.
+- [ ] Revisar las 3 resoluciones: todo se escala desde las medidas del dominio, nunca con píxeles fijos. Con las figuras más pequeñas de `fix8`, revisar que se lea bien.
 - [ ] `CREDITOS.txt` con la fuente de cada imagen.
 
 ### 1.3 Animación de los poderes · ≈ 2.5 – 3 h
@@ -218,13 +218,13 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 | Orden | Qué | Horas |
 |---|---|---|
 | 0 | Sacar los archivos generados del repositorio | 0.1 |
-| 1 | **GUI** (1.1 detalles → 1.1b `Theme` → 1.1c BUG-14 y BUG-15 → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 archivos de sonido) | 6.5 – 7.5 |
+| 1 | **GUI** (1.1 detalles → 1.1b `Theme` → 1.1c BUG-14 y BUG-15 → 1.2 revisar resoluciones y créditos → 1.3 animaciones → 1.4 archivos de sonido) | 5.25 – 6 |
 | 2 | Dominio: borrar `COMController`, pruebas de la máquina | 1.5 – 2 |
 | 3 | Entregables: pruebas de aceptación, diagrama de clases, planificación | 2 – 3 |
 | 4 | Bugs 7, 9 y 11 | 1.75 – 2.75 |
-| | **Total** | **≈ 12 – 15.5 h** (sin el dash) |
+| | **Total** | **≈ 11 – 14 h** (sin el dash) |
 
-**Sugerencia de reparto:** Juan, la GUI (1.2 y 1.3); Cristian, los archivos de sonido, las pruebas de la máquina y borrar `COMController`.
+**Sugerencia de reparto:** Juan, la GUI (BUG-14 y 15, y las animaciones de 1.3); Cristian, los archivos de sonido, las pruebas de la máquina y borrar `COMController`.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.
