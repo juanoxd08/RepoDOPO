@@ -1,9 +1,9 @@
 # DOPOSoccer 2026-2 — Hoja de ruta
 
-Código de partida: commit **`9597810`** (`fix8` + máquinas de Cristian, 23 nov).
+Código de partida: commit **`fix9`** (`b2ccc9b`, 24 nov).
 Enunciado: `DOPOSoccer_2026-2.pdf`.
 
-> **Prioridad actual: la interfaz gráfica**, con los **bugs del poder (8, 12 y 13) antes de las imágenes y las animaciones** (paso 1.1c). Después, lo que falta del dominio. **El resto de los bugs va al final.**
+> **Prioridad actual: la interfaz gráfica**, con la reorganización y los bugs del poder ya hechos en `fix9`; siguen **las imágenes, las animaciones y los archivos de sonido**. Después, lo que falta del dominio. **El resto de los bugs va al final.**
 
 ---
 
@@ -17,51 +17,25 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-## Antes de seguir · ≈ 15 min
+## Antes de seguir · ≈ 5 min
 
-- [ ] **Una prueba fallaba y se quitó temporalmente:** `DOPOSoccerPhysicsTest.testFloorDisputeNeverPushesBallBelowFloor`. Hoy pasan las 55 que quedan. **Después de aplicar el arreglo de abajo, volver a ponerla** (el código está al final de este punto). No es un problema de la prueba: con las figuras más pequeñas de `fix8`, el balón queda debajo de la cabeza entre los dos cuerpos, la cabeza lo empuja hacia abajo y en el tick 4 **queda 10 px debajo del piso**. `bounceOff` solo corrige la normal cuando el balón **ya** toca el piso, no cuando el empujón lo mete en él. Arreglo (probado: quedan las 56 en verde), en `Ball.bounceOff`, justo después del `translate`:
-  ```java
-  if(this.circle.getY() + this.circle.getRadius() > Field.HEIGHT){
-      this.circle.setY(Field.HEIGHT - this.circle.getRadius());
-  }
-  ```
-  <details><summary>Prueba quitada (pegarla de nuevo en <code>DOPOSoccerPhysicsTest</code>, después de <code>testKickBallCloseToFootNeverEndsBehindPlayer</code>)</summary>
-
-  ```java
-      /**
-       * Verifies that two players sandwiching the ball on the ground never push the ball below the floor.
-       */
-      @Test
-      public void testFloorDisputeNeverPushesBallBelowFloor() {
-          Player left = new Player(new PlayerProfile("Left"), Country.SOUTH_KOREA, Side.LEFT);
-          Player right = new Player(new PlayerProfile("Right"), Country.CAMEROON, Side.RIGHT);
-          double midX = Field.WIDTH / 2.0;
-          left.translate((midX - 22.0) - left.getHeadShape().getX(), 0.0);
-          right.translate((midX + 22.0) - right.getHeadShape().getX(), 0.0);
-          Ball ball = new Ball(midX, Field.HEIGHT - 10.0, 10.0);
-
-          for (int t = 0; t < 120; t++) {
-              left.moveRight();
-              right.moveLeft();
-              left.tick();
-              right.tick();
-              ball.tick();
-              ball.collideWithEdges();
-              left.collideWithPlayer(right);
-              right.collideWithPlayer(left);
-              left.collideWithBall(ball);
-              right.collideWithBall(ball);
-
-              assertTrue("Ball sank below floor at tick " + t,
-                      ball.getY() + ball.getRadius() <= Field.HEIGHT + 0.001);
-          }
-      }
-  ```
-  </details>
-
-- [ ] **Se subieron archivos generados:** `DOPOSoccer.log` y `profiles.dat`. Agregarlos a `.gitignore` y sacarlos del repositorio sin borrarlos del disco (`git rm --cached ProyectoHeadSoccer/DOPOSoccer.log ProyectoHeadSoccer/profiles.dat`). Si no, cada partido cambia esos archivos y genera conflictos entre los dos.
+- [x] **Prueba del piso:** arreglo aplicado en `Ball.bounceOff` y la prueba `testFloorDisputeNeverPushesBallBelowFloor` de vuelta (`fix9`).
+- [ ] **Siguen subidos archivos generados** (en `fix9` volvieron a cambiar): `DOPOSoccer.log` y `profiles.dat`. Agregarlos a `.gitignore` y sacarlos del repositorio sin borrarlos del disco (`git rm --cached ProyectoHeadSoccer/DOPOSoccer.log ProyectoHeadSoccer/profiles.dat`). Si no, cada partido cambia esos archivos y genera conflictos entre los dos.
 
 ---
+
+## Cambios en `fix9` (verificado)
+
+- Compila; **59 de 59 pruebas pasan**; ningún comentario `//`.
+- **Bugs del poder arreglados** (paso 1.1c), comprobados con simulación en partidos reales:
+  - **BUG-13:** el golpe se calcula antes de los rebotes. Tiros que tocan al rival sin contar: **0** en los 4 países (antes 36 a 74 de 243).
+  - **BUG-8:** al golpear, el balón se desmarca y el tiro termina; un tiro que no golpea a nadie termina a los **2 s de vuelo** (`Power.MAX_FLIGHT_TICKS`).
+  - **BUG-12:** el tiro sale al tocar el balón con la cabeza, el cuerpo o el pie. Con las dos auras, el golpeado recibe el daño y el efecto y **responde con su propio tiro**.
+  - **BUG-10:** los balones falsos se borran al terminar el tiro (`Power.onShotFinished`, *hook* que redefine `IllusionPower`).
+  - Pruebas nuevas: `testPowerShotExpiresAfterMaxFlightTicks`, `testPowerShotTriggersOnHeadContactWithoutKicking`, `testPowerShotAgainstRivalWithAuraAppliesHitAndTriggersCounterShot` y la del piso.
+- **Reorganización de la GUI** (paso 1.1b): `MatchSetup`, `FieldRenderer`, `PlayerRenderer`, `BallRenderer`, `HudRenderer`, `OverlayRenderer`, `Theme` y teclado como `Map<Integer, PlayerAction>`. `PhotoHeadSoccer` bajó de 909 a 315 líneas.
+- **Sonidos** (paso 1.4): `Sound` y `SoundPlayer` conectados a los 7 eventos, con opción de silenciar. **Faltan los archivos `.wav`** en `presentation/resources/sounds/`: hoy el juego queda en silencio y registra en el log los 7 que no encuentra.
+- Probado abriendo el juego (pantalla virtual): menú, selección, cancha, partido con gol, pausa, fin con puntos y mejoras se ven bien.
 
 ## Cambios del 23 nov (commit `9597810`, verificado)
 
@@ -88,7 +62,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-## Prioridad 1 — Interfaz gráfica · ≈ 10 – 12 h
+## Prioridad 1 — Interfaz gráfica · ≈ 6 – 7 h
 
 ### 1.0 Datos del dominio que la GUI necesita · ✅ hecho en `fix8`
 - [x] `PlayerView`: `getActiveEffect()` y `getEffectProgress()`.
@@ -104,37 +78,40 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 - [ ] Revisar: al **abrir** una partida, que aparezca en pausa con un mensaje para continuar.
 - [ ] Mostrar el mensaje de `onProfileSaveFailed` en un diálogo (el evento ya existe).
 
-### 1.1b Reorganizar `PhotoHeadSoccer` · ≈ 3 h · *hacer antes de 1.2 y 1.3*
+### 1.1b Reorganizar `PhotoHeadSoccer` · ✅ casi todo hecho en `fix9` · falta ≈ 30 min
 `PhotoHeadSoccer` tiene 909 de las 2083 líneas de la GUI y hace cinco cosas: guarda la configuración del partido (y los otros paneles la usan como depósito), arma el `MatchConfig`, dibuja todo, maneja los clics sobre botones dibujados a mano y guarda/abre partidas. Si no se separa ahora, las caras, el giro del balón y las animaciones de los poderes terminan en la misma clase. **No cambia nada de lo que se ve en pantalla.**
-- [ ] **`MatchSetup`** (≈ 45 min): mover ahí los campos de selección (modalidad, países, nombres, tipo de partido, minutos/goles, resolución, perfil de la máquina) con sus `get`/`set`/`cycle...`, y un `toConfig()` que arme el `MatchConfig` con el `Builder`. `SelectPlayersPanel`, `SelectCampPanel` y `UpgradesPanel` reciben el `MatchSetup`, no `PhotoHeadSoccer`.
-- [ ] **Renderers** (≈ 1 – 1.5 h): cada uno con `draw(Graphics2D g, MatchView match, double escala)`:
+- [x] **`MatchSetup`** (≈ 45 min): mover ahí los campos de selección (modalidad, países, nombres, tipo de partido, minutos/goles, resolución, perfil de la máquina) con sus `get`/`set`/`cycle...`, y un `toConfig()` que arme el `MatchConfig` con el `Builder`. `SelectPlayersPanel`, `SelectCampPanel` y `UpgradesPanel` reciben el `MatchSetup`, no `PhotoHeadSoccer`.
+- [x] **Renderers** (≈ 1 – 1.5 h): cada uno con `draw(Graphics2D g, MatchView match, double escala)`:
   - `FieldRenderer`: cancha y arcos (aquí va el arco dibujado a mano de 1.2).
   - `PlayerRenderer`: jugadores (aquí van las caras de 1.2 y el aura/efectos de 1.3).
   - `BallRenderer`: balón (giro, estela, anillo de carga, balones falsos).
   - `HudRenderer`: marcador, tiempo, vida, barra de poder, banderas.
   - `OverlayRenderer`: pausa, gol, empate y fin del partido.
   - `PhotoHeadSoccer` queda como el panel del partido: llama a los renderers en orden y escucha los eventos.
-- [ ] **`Theme`** (≈ 30 min): colores por país, fuentes y los métodos de botones (`styleToggle`, `createStyledButton`, …) en un solo lugar. Hoy hay 73 `new Color(...)` y 40 `new Font(...)` repartidos en 6 archivos, con métodos repetidos.
-- [ ] **Teclado como mapa** (≈ 30 min): un `Map<Integer, PlayerAction>` por jugador en lugar de la cadena de `if` de `processContinuousKeys`, y que cada pantalla maneje sus propias teclas en vez del `switch` de `HeadSoccerGUI.keyPressed`.
+- [ ] **`Theme`** (≈ 30 min): la clase existe, pero todavía hay 89 `new Color(...)` y 40 `new Font(...)` repartidos en los demás archivos. Moverlos a `Theme`.
+- [x] **Teclado como mapa** (≈ 30 min): un `Map<Integer, PlayerAction>` por jugador en lugar de la cadena de `if` de `processContinuousKeys`, y que cada pantalla maneje sus propias teclas en vez del `switch` de `HeadSoccerGUI.keyPressed`.
 - [ ] *(Opcional, ≈ 45 min)* `MatchFileDialogs` para guardar y abrir, y los botones de pausa/fin como `JButton` reales en vez de comprobar a mano si el clic cayó en el rectángulo.
 - [ ] Después de cada paso: abrir el juego y probar menú → selección → partido → pausa → guardar → abrir → fin → mejoras.
 
-### 1.1c Bugs del poder · ≈ 1.5 – 2 h · *hacer antes de 1.2 y 1.3*
+### 1.1c Bugs del poder · ✅ hecho en `fix9` (falta el BUG-14, ≈ 15 min)
+- [x] BUG-13, BUG-8 y BUG-12 (detalle abajo, y medición en "Cambios en `fix9`").
+- [ ] **BUG-14 · Un rival con aura que toca el balón mientras se carga otro tiro le "roba" el tiro.** Medición: Corea carga su tiro; Nigeria, con aura, camina hacia el balón quieto en el aire, lo toca y ejecuta su propio tiro. Desde ahí los dos poderes sostienen el balón al mismo tiempo, el tiro de Corea se pierde y sale solo el de Nigeria. **Arreglo:** en `PlayerBody`, no ejecutar el tiro por contacto mientras `ball.isPowerShotCharging()` (o resolverlo junto con el BUG-11).
+
 Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la interfaz (el balón sigue dibujado con el efecto del poder), y el 12 y el 13 no cumplen el PDF. Arreglarlos primero evita animar un comportamiento que después cambia. Orden sugerido: **13** (el más corto) → **8** → **12** (necesita decidir el orden del golpe y el tiro de respuesta).
 
-#### BUG-13 · A veces el tiro de poder toca al rival y no le hace nada
+#### ✅ BUG-13 · A veces el tiro de poder toca al rival y no le hace nada
 - **Medición:** en 243 tiros simulados por país, contra el rival a distintas distancias y saltando en distintos momentos, el balón **toca al rival y no cuenta como golpe** en 36 (Corea), 36 (Camerún), 74 (Nigeria) y 61 (EE. UU.). No es solo el efecto: tampoco hay daño ni `onPowerHit`.
 - **Causa:** en `Match.resolveCollisions`, primero va `player2.collideWithBall(ball)`, que hace rebotar el balón y lo saca del cuerpo del rival, y **después** `powerHitOn(...)`, que pregunta `isHitByBall`. Para entonces el balón ya no lo toca.
 - **Arreglo (probado en la simulación: los toques sin golpe bajan a 0 en los 4 países):** en `resolveCollisions`, calcular `hit1` y `hit2` **antes** de los `collideWithBall`, y aplicar `receiveHit` y los eventos como ahora.
 - **Relacionado:** con el BUG-12 (el que tiene aura y es golpeado) hay que decidir el orden: primero el golpe y luego su tiro.
 
-#### BUG-8 · El balón sigue con el efecto del poder después de terminar el tiro
+#### ✅ BUG-8 · El balón sigue con el efecto del poder después de terminar el tiro
 - **Medición:** después de que el tiro golpea al rival, `ball.hasPowerShot()` sigue en `true` por lo menos 50 ticks después, con el balón ya quieto en el piso. La GUI lo sigue dibujando con el efecto. Solo se desmarca en `Match.resetPositions()`, es decir, con el siguiente gol.
 - **Causa:** `Power.onHitRival` termina el tiro (`powerShotActive = false`), pero nadie llama `ball.setPowerShot(false)`.
 - **Relacionado:** si el tiro no golpea al rival ni termina en gol, queda activo sin tiempo máximo y **el jugador no puede volver a usar el poder** hasta el siguiente gol.
 - **Arreglo:** en `Match.resolveCollisions`, después de aplicar el golpe, `ball.setPowerShot(false)` y `finishPowerShot()` del tirador. Además, un tiempo máximo de vuelo en `Power` (por ejemplo, 2 s después de soltar el tiro) que haga lo mismo.
 
-#### BUG-12 · El poder solo se ejecuta pateando, y con las dos auras el rival no responde
+#### ✅ BUG-12 · El poder solo se ejecuta pateando, y con las dos auras el rival no responde
 - **El PDF dice "toca", no "patea":** regla 4, *"Cuando el personaje con poder **toca** el balón, ejecuta su tiro de poder y el aura desaparece."* Hoy solo se ejecuta en `collideFootWithBall`, si el pie está pateando y el balón está al frente. Tocarlo con la cabeza, el cuerpo o el pie sin patear no hace nada.
 - **Medición (las dos auras activas):** el tiro de Corea golpea a Camerún, que tiene el aura; Camerún recibe 40 de daño y el empuje, **y su aura sigue igual**: no ejecuta su tiro aunque el balón lo tocó.
 - **Arreglo:** ejecutar el tiro cuando el balón toque cualquier parte del jugador con aura (cabeza, cuerpo o pie), no solo al patear.
@@ -157,11 +134,11 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 - [ ] **Efecto sobre el rival:** ícono animado y barrita de duración con `getActiveEffect()` y `getEffectProgress()`.
 - [ ] **Golpe al rival:** destello y el daño flotando (`onPowerHit`).
 
-### 1.4 Sonidos · ≈ 1 – 1.5 h
-- [ ] Clase `SoundPlayer` en `presentation`: `javax.sound.sampled.Clip`, archivos **WAV**, cargados una sola vez en un `Map`.
-- [ ] Gol, aturdido, fin, patada, aura, tiro y golpe, cada uno con su evento (ya existen todos).
-- [ ] Opción de silenciar. Si un sonido falta o no hay audio, el juego sigue sin sonido (registrarlo en el log).
-- [ ] Fuentes libres: Kenney.nl (CC0), Freesound.org, OpenGameArt.org.
+### 1.4 Sonidos · código hecho en `fix9` · faltan los archivos ≈ 30 min
+- [x] Clase `SoundPlayer` en `presentation`: `javax.sound.sampled.Clip`, archivos **WAV**, cargados una sola vez en un `Map`.
+- [x] Gol, aturdido, fin, patada, aura, tiro y golpe, cada uno con su evento (ya existen todos).
+- [x] Opción de silenciar. Si un sonido falta o no hay audio, el juego sigue sin sonido (registrarlo en el log).
+- [ ] **Agregar los 7 `.wav`** (16 bits, 44.1 kHz) en `src/presentation/resources/sounds/`: `goal.wav`, `stunned.wav`, `finish.wav`, `kick.wav`, `power_aura.wav`, `power_shot.wav`, `power_hit.wav`. Fuentes: sfxr.me (sin licencia), Kenney.nl (CC0), Freesound.org (filtrar CC0). Los CC-BY van en `CREDITOS.txt`.
 
 **Listo cuando:** se puede configurar, jugar, mejorar estadísticas y guardar/abrir sin tocar código, y cada poder se distingue a simple vista.
 
@@ -219,11 +196,12 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 - **Causa:** cada jugador resuelve su contacto por separado y en orden.
 - **Arreglo:** si el balón toca a los dos en el mismo tick, que salga hacia arriba; y nunca dejarlo dentro de un cuerpo después de todas las correcciones.
 
-### BUG-10 · Los balones falsos de la Ilusión no desaparecen si el tiro golpea al rival
+### ✅ BUG-10 · Los balones falsos de la Ilusión no desaparecen si el tiro golpea al rival (arreglado en `fix9`)
+- **Ojo:** ahora los falsos desaparecen **en cuanto** el tiro golpea o vence (máximo 2 s). El PDF dice que *"desaparecen al terminar el efecto"* (2.5 s). Preguntar al monitor si está bien así.
 - **Causa:** se actualizan solo mientras el tiro está activo, y el golpe termina el tiro.
 - **Arreglo:** que la duración de la ilusión no dependa de que el tiro siga activo (un *hook* que `updateShot` llame en todos los ticks).
 
-### BUG-11 · El balón se comporta raro mientras se carga el tiro de poder
+### BUG-11 · El balón se comporta raro mientras se carga el tiro de poder (ver también BUG-14)
 - **Medición:** durante los 90 ticks (1.5 s) en que el balón queda quieto en el aire, el rival lo atraviesa caminando. En cada tick el choque mueve el balón unos píxeles y el siguiente tick `Power.updateShot` lo vuelve a poner en su sitio con velocidad 0, así que tiembla y no detiene a nadie. Si el rival lo patea, la patada no hace nada.
 - **Causa:** el balón en carga se resuelve como un balón normal (el choque mueve **al balón**), pero `updateShot` lo teletransporta de vuelta en cada tick.
 - **Arreglo:** mientras `ball.isPowerShotCharging()`, que el balón sea un obstáculo fijo: en `Player.collideWithBall`, en vez de `bounceOff`, sacar **al jugador** del círculo del balón (como `resolveCircleAgainstBar` con el arco) y no permitir patearlo. Otra opción, más simple: que en la carga el balón no choque con nadie.
@@ -238,14 +216,14 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 
 | Orden | Qué | Horas |
 |---|---|---|
-| 0 | Prueba que falla y archivos generados en el repositorio | 0.25 |
-| 1 | **GUI** (1.1 detalles → **1.1b reorganizar `PhotoHeadSoccer`** → **1.1c bugs del poder 13, 8 y 12** → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 sonidos) | 10 – 12 |
+| 0 | Sacar los archivos generados del repositorio | 0.1 |
+| 1 | **GUI** (1.1 detalles → 1.1b `Theme` → 1.1c BUG-14 → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 archivos de sonido) | 6 – 7 |
 | 2 | Dominio: borrar `COMController`, pruebas de la máquina | 1.5 – 2 |
 | 3 | Entregables: pruebas de aceptación, diagrama de clases, planificación | 2 – 3 |
-| 4 | Bugs 7, 9, 10 y 11 | 2.25 – 3.25 |
-| | **Total** | **≈ 16 – 20.5 h** (sin el dash) |
+| 4 | Bugs 7, 9 y 11 | 1.75 – 2.75 |
+| | **Total** | **≈ 11.5 – 15 h** (sin el dash) |
 
-**Sugerencia de reparto:** Juan, la GUI (1.1b, luego 1.1c, luego 1.2 y 1.3); Cristian, las pruebas de la máquina y borrar `COMController`, y después los sonidos. Si el BUG-10 molesta al dibujar la Ilusión, adelantarlo.
+**Sugerencia de reparto:** Juan, la GUI (1.2 y 1.3); Cristian, los archivos de sonido, las pruebas de la máquina y borrar `COMController`.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.
