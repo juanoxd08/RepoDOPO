@@ -62,7 +62,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-## Prioridad 1 — Interfaz gráfica · ≈ 6 – 7 h
+## Prioridad 1 — Interfaz gráfica · ≈ 6.5 – 7.5 h
 
 ### 1.0 Datos del dominio que la GUI necesita · ✅ hecho en `fix8`
 - [x] `PlayerView`: `getActiveEffect()` y `getEffectProgress()`.
@@ -93,9 +93,10 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 - [ ] *(Opcional, ≈ 45 min)* `MatchFileDialogs` para guardar y abrir, y los botones de pausa/fin como `JButton` reales en vez de comprobar a mano si el clic cayó en el rectángulo.
 - [ ] Después de cada paso: abrir el juego y probar menú → selección → partido → pausa → guardar → abrir → fin → mejoras.
 
-### 1.1c Bugs del poder · ✅ hecho en `fix9` (falta el BUG-14, ≈ 15 min)
+### 1.1c Bugs del poder · 13, 8 y 12 ✅ en `fix9` · faltan el BUG-14 y el BUG-15, ≈ 35 min
 - [x] BUG-13, BUG-8 y BUG-12 (detalle abajo, y medición en "Cambios en `fix9`").
 - [ ] **BUG-14 · Un rival con aura que toca el balón mientras se carga otro tiro le "roba" el tiro.** Medición: Corea carga su tiro; Nigeria, con aura, camina hacia el balón quieto en el aire, lo toca y ejecuta su propio tiro. Desde ahí los dos poderes sostienen el balón al mismo tiempo, el tiro de Corea se pierde y sale solo el de Nigeria. **Arreglo:** en `PlayerBody`, no ejecutar el tiro por contacto mientras `ball.isPowerShotCharging()` (o resolverlo junto con el BUG-11).
+- [ ] **BUG-15 · El que tira el poder sigue caminando durante la carga y atraviesa el balón.** Medición (Corea con aura, caminando a la derecha hacia el balón): al tocarlo, el balón sube y queda quieto en el aire 90 ticks (1.5 s), pero el jugador **sigue avanzando**: pasa a través del balón (13 de los 90 ticks está metido dentro de él) y termina 72 px **delante** del balón. Cuando el tiro sale, el balón parte desde atrás del jugador. **Comportamiento esperado:** mientras se carga su tiro, el jugador se queda quieto (no camina, no salta, no patea), como una animación de ejecución del poder. **Arreglo (≈ 20 min):** en `Power`, un método `isChargingShot()` (`ticksPerPower > 0`), y en `Player.isDisabled()` agregar `|| (power != null && power.isChargingShot())`; así `moveLeft`, `moveRight`, `jump` y `kick` quedan bloqueados solos. Prueba: con aura, caminar hacia el balón; durante la carga la posición del jugador no cambia. Para la GUI: `PlayerView` puede exponer `isChargingPower()` para dibujar la pose del poder (1.3).
 
 Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la interfaz (el balón sigue dibujado con el efecto del poder), y el 12 y el 13 no cumplen el PDF. Arreglarlos primero evita animar un comportamiento que después cambia. Orden sugerido: **13** (el más corto) → **8** → **12** (necesita decidir el orden del golpe y el tiro de respuesta).
 
@@ -201,7 +202,7 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 - **Causa:** se actualizan solo mientras el tiro está activo, y el golpe termina el tiro.
 - **Arreglo:** que la duración de la ilusión no dependa de que el tiro siga activo (un *hook* que `updateShot` llame en todos los ticks).
 
-### BUG-11 · El balón se comporta raro mientras se carga el tiro de poder (ver también BUG-14)
+### BUG-11 · El balón se comporta raro mientras se carga el tiro de poder (ver también BUG-14 y BUG-15)
 - **Medición:** durante los 90 ticks (1.5 s) en que el balón queda quieto en el aire, el rival lo atraviesa caminando. En cada tick el choque mueve el balón unos píxeles y el siguiente tick `Power.updateShot` lo vuelve a poner en su sitio con velocidad 0, así que tiembla y no detiene a nadie. Si el rival lo patea, la patada no hace nada.
 - **Causa:** el balón en carga se resuelve como un balón normal (el choque mueve **al balón**), pero `updateShot` lo teletransporta de vuelta en cada tick.
 - **Arreglo:** mientras `ball.isPowerShotCharging()`, que el balón sea un obstáculo fijo: en `Player.collideWithBall`, en vez de `bounceOff`, sacar **al jugador** del círculo del balón (como `resolveCircleAgainstBar` con el arco) y no permitir patearlo. Otra opción, más simple: que en la carga el balón no choque con nadie.
@@ -217,11 +218,11 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 | Orden | Qué | Horas |
 |---|---|---|
 | 0 | Sacar los archivos generados del repositorio | 0.1 |
-| 1 | **GUI** (1.1 detalles → 1.1b `Theme` → 1.1c BUG-14 → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 archivos de sonido) | 6 – 7 |
+| 1 | **GUI** (1.1 detalles → 1.1b `Theme` → 1.1c BUG-14 y BUG-15 → 1.2 giro, arcos, caras → 1.3 animaciones → 1.4 archivos de sonido) | 6.5 – 7.5 |
 | 2 | Dominio: borrar `COMController`, pruebas de la máquina | 1.5 – 2 |
 | 3 | Entregables: pruebas de aceptación, diagrama de clases, planificación | 2 – 3 |
 | 4 | Bugs 7, 9 y 11 | 1.75 – 2.75 |
-| | **Total** | **≈ 11.5 – 15 h** (sin el dash) |
+| | **Total** | **≈ 12 – 15.5 h** (sin el dash) |
 
 **Sugerencia de reparto:** Juan, la GUI (1.2 y 1.3); Cristian, los archivos de sonido, las pruebas de la máquina y borrar `COMController`.
 
