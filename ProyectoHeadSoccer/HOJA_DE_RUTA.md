@@ -1,9 +1,9 @@
 # DOPOSoccer 2026-2 — Hoja de ruta
 
-Código de partida: commit **`fix9`** (`b2ccc9b`, 24 nov).
+Código de partida: commit **`fix10`** (`c668a70`, 25 nov).
 Enunciado: `DOPOSoccer_2026-2.pdf`.
 
-> **Prioridad actual: la interfaz gráfica**, con la reorganización y los bugs del poder ya hechos en `fix9`; siguen **las imágenes, las animaciones y los archivos de sonido**. Después, lo que falta del dominio. **El resto de los bugs va al final.**
+> **Estado:** todos los bugs medidos están arreglados. Falta **pulido** (archivos de sonido, `Theme`), **pruebas de la máquina** y **entregables** (pruebas de aceptación, diagrama de clases, planificación).
 
 ---
 
@@ -20,9 +20,23 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 ## Antes de seguir · ≈ 5 min
 
 - [x] **Prueba del piso:** arreglo aplicado en `Ball.bounceOff` y la prueba `testFloorDisputeNeverPushesBallBelowFloor` de vuelta (`fix9`).
-- [ ] **Siguen subidos archivos generados** (en `fix9` volvieron a cambiar): `DOPOSoccer.log` y `profiles.dat`. Agregarlos a `.gitignore` y sacarlos del repositorio sin borrarlos del disco (`git rm --cached ProyectoHeadSoccer/DOPOSoccer.log ProyectoHeadSoccer/profiles.dat`). Si no, cada partido cambia esos archivos y genera conflictos entre los dos.
+- [ ] **Siguen subidos archivos generados** (en `fix10` el log creció 770 líneas): `DOPOSoccer.log` y `profiles.dat`. Agregarlos a `.gitignore` y sacarlos del repositorio sin borrarlos del disco (`git rm --cached ProyectoHeadSoccer/DOPOSoccer.log ProyectoHeadSoccer/profiles.dat`). Si no, cada partido cambia esos archivos y genera conflictos entre los dos.
 
 ---
+
+## Cambios en `fix10` (verificado)
+
+- Compila; **63 de 63 pruebas pasan**; ningún comentario `//`.
+- **Bugs arreglados** (comprobados con simulación):
+  - **BUG-15:** mientras se carga su tiro, el jugador queda quieto (`Power.isChargingShot()` dentro de `Player.isDisabled()`).
+  - **BUG-14 y BUG-11:** mientras el balón carga un tiro, nadie choca con él ni puede ejecutar otro tiro (`PlayerBody.collideWithBall` y `Power.executePowerShot` lo ignoran). El tiro del que cargó sale completo aunque el rival tenga aura.
+  - **BUG-9:** si el balón queda apretado entre los dos jugadores, sale hacia arriba y nunca queda dentro de ninguno (`Match.escapeBallFromPinch`).
+  - **BUG-7:** conducir el balón le da velocidad (1.5 veces el paso del jugador; `PlayerBody.moveHorizontally` y `DRIBBLE_SPEED_FACTOR`).
+  - Pruebas nuevas: `testShooterStaysStillWhileChargingPowerShot`, `testRivalWithAuraCannotStealOrDisturbChargingPowerShot`, `testSimultaneousKickPinchPopsBallUpwardAndLeavesNoOverlap` y `testWalkingIntoStationaryBallImpartsDribbleSpeed`.
+- **`COMController` borrado**; su prueba ahora usa `MachineProfile.create(...)`.
+- **Máquinas:** la Defensiva cubre más cancha (`DEFEND_ZONE_RADIUS` 130 → 170) y la Experta ataca si el rival tiene **cualquier** efecto, no solo inconsciente.
+- **Salto más bajo:** `Physics.BASE_JUMP_IMPULSE` = 7 (antes 12.8). La altura máxima del salto baja de ~82 a ~25 px. ⚠️ Confirmar que es intencional: un jugador ya no alcanza un balón apoyado sobre el travesaño (lo resuelve `rollOffCrossBar`, que lo hace rodar).
+- **Animación por estado (1.3):** tono de color que pulsa sobre la cabeza, símbolo corto (`<<`/`>>`, `!!`, `Z z`, `?`, `***`) y barrita de duración; colores por país y por efecto en `Theme` con `EnumMap`. Probado con capturas: se ve bien.
 
 ## Cambios en `fix9` (verificado)
 
@@ -62,7 +76,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-## Prioridad 1 — Interfaz gráfica · ≈ 3 – 3.5 h
+## Prioridad 1 — Interfaz gráfica · ≈ 1.5 – 2 h
 
 ### 1.0 Datos del dominio que la GUI necesita · ✅ hecho en `fix8`
 - [x] `PlayerView`: `getActiveEffect()` y `getEffectProgress()`.
@@ -70,13 +84,13 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 - [x] `MatchListener`: `onBallKicked`, `onPowerActivated`, `onPowerShot`, `onPowerHit` (y `onProfileSaveFailed`).
 - [x] Pruebas de los eventos.
 
-### 1.1 Lo que pide el PDF · casi terminado · ≈ 0.5 h
+### 1.1 Lo que pide el PDF · casi terminado · ≈ 15 min
 - [x] Nombres de los jugadores en la pantalla de selección.
 - [x] Pantalla de mejoras con puntos, niveles, precio y botón "+".
 - [x] Fin del partido con los puntos totales de cada jugador.
 - [x] Filtro de extensión en el `JFileChooser`.
 - [ ] Revisar: al **abrir** una partida, que aparezca en pausa con un mensaje para continuar.
-- [ ] Mostrar el mensaje de `onProfileSaveFailed` en un diálogo (el evento ya existe).
+- [x] Mostrar el mensaje de `onProfileSaveFailed` en un diálogo.
 
 ### 1.1b Reorganizar `PhotoHeadSoccer` · ✅ casi todo hecho en `fix9` · falta ≈ 30 min
 `PhotoHeadSoccer` tiene 909 de las 2083 líneas de la GUI y hace cinco cosas: guarda la configuración del partido (y los otros paneles la usan como depósito), arma el `MatchConfig`, dibuja todo, maneja los clics sobre botones dibujados a mano y guarda/abre partidas. Si no se separa ahora, las caras, el giro del balón y las animaciones de los poderes terminan en la misma clase. **No cambia nada de lo que se ve en pantalla.**
@@ -88,15 +102,15 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
   - `HudRenderer`: marcador, tiempo, vida, barra de poder, banderas.
   - `OverlayRenderer`: pausa, gol, empate y fin del partido.
   - `PhotoHeadSoccer` queda como el panel del partido: llama a los renderers en orden y escucha los eventos.
-- [ ] **`Theme`** (≈ 30 min): la clase existe, pero todavía hay 89 `new Color(...)` y 40 `new Font(...)` repartidos en los demás archivos. Moverlos a `Theme`.
+- [ ] **`Theme`** (≈ 30 min): ya tiene los colores por país y por efecto; todavía quedan 84 `new Color(...)` y 40 `new Font(...)` en los demás archivos (paneles y renderers). Opcional: moverlos a `Theme`.
 - [x] **Teclado como mapa** (≈ 30 min): un `Map<Integer, PlayerAction>` por jugador en lugar de la cadena de `if` de `processContinuousKeys`, y que cada pantalla maneje sus propias teclas en vez del `switch` de `HeadSoccerGUI.keyPressed`.
 - [ ] *(Opcional, ≈ 45 min)* `MatchFileDialogs` para guardar y abrir, y los botones de pausa/fin como `JButton` reales en vez de comprobar a mano si el clic cayó en el rectángulo.
 - [ ] Después de cada paso: abrir el juego y probar menú → selección → partido → pausa → guardar → abrir → fin → mejoras.
 
-### 1.1c Bugs del poder · 13, 8 y 12 ✅ en `fix9` · faltan el BUG-14 y el BUG-15, ≈ 35 min
+### 1.1c Bugs del poder · ✅ todos hechos (13, 8 y 12 en `fix9`; 14 y 15 en `fix10`)
 - [x] BUG-13, BUG-8 y BUG-12 (detalle abajo, y medición en "Cambios en `fix9`").
-- [ ] **BUG-14 · Un rival con aura que toca el balón mientras se carga otro tiro le "roba" el tiro.** Medición: Corea carga su tiro; Nigeria, con aura, camina hacia el balón quieto en el aire, lo toca y ejecuta su propio tiro. Desde ahí los dos poderes sostienen el balón al mismo tiempo, el tiro de Corea se pierde y sale solo el de Nigeria. **Arreglo:** en `PlayerBody`, no ejecutar el tiro por contacto mientras `ball.isPowerShotCharging()` (o resolverlo junto con el BUG-11).
-- [ ] **BUG-15 · El que tira el poder sigue caminando durante la carga y atraviesa el balón.** Medición (Corea con aura, caminando a la derecha hacia el balón): al tocarlo, el balón sube y queda quieto en el aire 90 ticks (1.5 s), pero el jugador **sigue avanzando**: pasa a través del balón (13 de los 90 ticks está metido dentro de él) y termina 72 px **delante** del balón. Cuando el tiro sale, el balón parte desde atrás del jugador. **Comportamiento esperado:** mientras se carga su tiro, el jugador se queda quieto (no camina, no salta, no patea), como una animación de ejecución del poder. **Arreglo (≈ 20 min):** en `Power`, un método `isChargingShot()` (`ticksPerPower > 0`), y en `Player.isDisabled()` agregar `|| (power != null && power.isChargingShot())`; así `moveLeft`, `moveRight`, `jump` y `kick` quedan bloqueados solos. Prueba: con aura, caminar hacia el balón; durante la carga la posición del jugador no cambia. Para la GUI: `PlayerView` puede exponer `isChargingPower()` para dibujar la pose del poder (1.3).
+- [x] **BUG-14 · Un rival con aura que toca el balón mientras se carga otro tiro le "roba" el tiro.** Medición: Corea carga su tiro; Nigeria, con aura, camina hacia el balón quieto en el aire, lo toca y ejecuta su propio tiro. Desde ahí los dos poderes sostienen el balón al mismo tiempo, el tiro de Corea se pierde y sale solo el de Nigeria. **Arreglo:** en `PlayerBody`, no ejecutar el tiro por contacto mientras `ball.isPowerShotCharging()` (o resolverlo junto con el BUG-11).
+- [x] **BUG-15 · El que tira el poder sigue caminando durante la carga y atraviesa el balón.** Medición (Corea con aura, caminando a la derecha hacia el balón): al tocarlo, el balón sube y queda quieto en el aire 90 ticks (1.5 s), pero el jugador **sigue avanzando**: pasa a través del balón (13 de los 90 ticks está metido dentro de él) y termina 72 px **delante** del balón. Cuando el tiro sale, el balón parte desde atrás del jugador. **Comportamiento esperado:** mientras se carga su tiro, el jugador se queda quieto (no camina, no salta, no patea), como una animación de ejecución del poder. **Arreglo (≈ 20 min):** en `Power`, un método `isChargingShot()` (`ticksPerPower > 0`), y en `Player.isDisabled()` agregar `|| (power != null && power.isChargingShot())`; así `moveLeft`, `moveRight`, `jump` y `kick` quedan bloqueados solos. Prueba: con aura, caminar hacia el balón; durante la carga la posición del jugador no cambia. Para la GUI: `PlayerView` puede exponer `isChargingPower()` para dibujar la pose del poder (1.3).
 
 Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la interfaz (el balón sigue dibujado con el efecto del poder), y el 12 y el 13 no cumplen el PDF. Arreglarlos primero evita animar un comportamiento que después cambia. Orden sugerido: **13** (el más corto) → **8** → **12** (necesita decidir el orden del golpe y el tiro de respuesta).
 
@@ -126,38 +140,13 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 - [ ] Revisar las 3 resoluciones: todo se escala desde las medidas del dominio, nunca con píxeles fijos. Con las figuras más pequeñas de `fix8`, revisar que se lea bien.
 - [ ] `CREDITOS.txt` con la fuente de cada imagen.
 
-### 1.3 Animación de los poderes · una animación sencilla por estado · ≈ 45 min – 1 h
-**Decisión del equipo:** sin estela del tiro. Cada estado se muestra con un **tono de color opaco sobre la cabeza** que pulsa, un **símbolo corto** encima y una **barrita** de duración. Así se cumple el PDF: *"el aura del poder activo y los efectos sobre el rival deben ser visibles"*.
-
-**Ya hecho en `fix9`:**
-- [x] Contador de frames en `PlayerRenderer` para animar.
-- [x] **Aura** del color de cada país que pulsa (`drawAura`).
-- [x] **Anillo de carga** que se cierra alrededor del balón (`BallRenderer.drawChargingRing`, con `isPowerShotCharging()` y su progreso).
-- [x] **Balones falsos** de la Ilusión (`getFakeBalls()`).
-- [x] Etiqueta del efecto y barrita de duración (`drawStatusEffect`, con `getEffectProgress()`).
-
-**Falta (todo en `PlayerRenderer.drawStatusEffect`):**
-- [ ] **Tono sobre la cabeza que pulsa:** un `fillOval` del tamaño de la cabeza, con el color del efecto y transparencia que sube y baja:
-  ```java
-  double pulse = 0.5 + 0.5 * Math.sin(animFrame * 0.2);
-  int alpha = (int) (90 + 60 * pulse);
-  g2d.setColor(new Color(ec.getRed(), ec.getGreen(), ec.getBlue(), alpha));
-  g2d.fillOval(hx - hr, hy - hr, hr * 2, hr * 2);
-  ```
-- [ ] **Símbolo corto** en lugar del texto `★ NOMBRE ★` (que es largo y se sale de la cabeza a esta escala):
-
-  | Estado | Color | Símbolo |
-  |---|---|---|
-  | Empujado (Corea, 1.5 s) | Azul | `>>` o `<<`, hacia su propio arco |
-  | Electrocutado (Camerún, 3 s) | Amarillo | zigzag de 3 líneas, o `!!` |
-  | Inconsciente (Nigeria, 3 s) | Gris o morado | `Z z` |
-  | Confundido (EE. UU., 2.5 s) | Rosado | `?` |
-  | Aturdido (vida en 0, 3 s) | Blanco | `***` o 3 puntos girando |
-
-- [ ] **Aturdido:** hoy usa blanco por defecto y la etiqueta `STUN`; darle su propio tono y símbolo de la tabla.
-- [ ] Mover los colores de `getPowerColor` y `getEffectColor` a `Theme`, en un `EnumMap<Country, Color>` y un `EnumMap<PlayerEffect, Color>` (va junto con el punto de `Theme` de 1.1b).
-- [ ] *(Opcional)* **Pose de poder** mientras el jugador carga su tiro, cuando se arregle el BUG-15 (`isChargingPower()`): por ejemplo, el aura más grande.
-- [ ] *(Opcional)* **Golpe al rival:** un destello de 10 ticks sobre la cabeza con `onPowerHit`.
+### 1.3 Animación de los poderes · ✅ hecho en `fix10`
+- [x] Aura que pulsa, anillo de carga del balón y balones falsos (`fix9`).
+- [x] Tono de color que pulsa sobre la cabeza, símbolo corto por estado y barrita de duración (`PlayerRenderer.drawStatusEffect`).
+- [x] Colores por país y por efecto en `Theme` (`EnumMap`).
+- [ ] *(Opcional)* Barrita también para el aturdimiento: hoy muestra `***` pero no cuánto le queda (haría falta un `getStunProgress()` en `PlayerView`).
+- [ ] *(Opcional)* El balón en carga queda pegado a la cara del que tira (se sube 30 px, justo a la altura de la cabeza). Se vería mejor delante de la cabeza: `holdX = cabeza.x + lado × (radioCabeza + radioBalón + 4)`.
+- [ ] *(Opcional)* Destello al golpear al rival (`onPowerHit`).
 
 ### 1.4 Sonidos · código hecho en `fix9` · faltan los archivos ≈ 30 min
 - [x] Clase `SoundPlayer` en `presentation`: `javax.sound.sampled.Clip`, archivos **WAV**, cargados una sola vez en un `Map`.
@@ -169,14 +158,14 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 
 ---
 
-## Prioridad 2 — Lo que falta del dominio · ≈ 2 – 2.5 h
+## Prioridad 2 — Lo que falta del dominio · ≈ 1 – 1.5 h
 
-### 2.1 Jugador contra máquina · *Cristian* · ≈ 0.5 h (falta lo de abajo)
+### 2.1 Jugador contra máquina · ✅ hecho
 - [x] **`OffensiveMachine`** (primero: la Experta delega en ella cuando va empatando o perdiendo): ubicarse detrás del balón respecto al arco rival, saltar si viene alto, patear si está al alcance, activar el poder cuando va a tocar el balón. Constantes con nombre, como en `DefensiveMachine`.
 - [x] **`ClumsyMachine`**: acciones al azar con su `Random`, **mantenidas unos ticks** (si cambian en cada tick, solo tiembla).
-- [ ] Borrar **`COMController`** y pasar su prueba de `DOPOSoccerStaticDynamicTest` a los perfiles nuevos.
-- [ ] Con las figuras más pequeñas, revisar los alcances de `DefensiveMachine` (distancias pensadas para los tamaños anteriores).
-- [ ] La defensa de la Experta contra el tiro de poder usa `ball.hasPowerShot()`, que hoy queda en `true` hasta el siguiente gol (BUG-8): hasta arreglarlo, puede quedarse defendiendo de más.
+- [x] Borrar **`COMController`** y pasar su prueba de `DOPOSoccerStaticDynamicTest` a los perfiles nuevos.
+- [x] Con las figuras más pequeñas, revisar los alcances de `DefensiveMachine` (zona de defensa a 170 en `fix10`) (distancias pensadas para los tamaños anteriores).
+- [x] La defensa de la Experta contra el tiro de poder ya funciona bien: desde `fix9` el balón se desmarca al terminar el tiro (BUG-8).
 
 ### 2.2 Pruebas de la máquina · ≈ 1 h
 - [ ] Defensiva: balón cerca de su arco → queda entre el balón y el arco; balón lejos → vuelve a su posición.
@@ -209,15 +198,15 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 
 ---
 
-## Prioridad 4 — Bugs (al final)
+## Prioridad 4 — Bugs · ✅ todos los medidos están arreglados
 
 Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 
-### BUG-7 · El balón no toma velocidad al conducirlo manteniendo D
+### ✅ BUG-7 · El balón no toma velocidad al conducirlo manteniendo D (arreglado en `fix10`)
 - **Causa:** `Ball.bounceOff` solo usa la velocidad del balón; con el balón quieto, `v · n = 0` y solo se corrige la posición.
 - **Arreglo:** velocidad relativa (`vn = (vBalón − vPie) · n`) o una velocidad mínima en la dirección del empujón cuando el pie que no patea empuja el balón en el piso.
 
-### BUG-9 · Dos jugadores pegados, balón en medio, ambos patean: el balón traspasa a uno
+### ✅ BUG-9 · Dos jugadores pegados, balón en medio, ambos patean: el balón traspasa a uno (arreglado en `fix10`)
 - **Causa:** cada jugador resuelve su contacto por separado y en orden.
 - **Arreglo:** si el balón toca a los dos en el mismo tick, que salga hacia arriba; y nunca dejarlo dentro de un cuerpo después de todas las correcciones.
 
@@ -226,7 +215,7 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 - **Causa:** se actualizan solo mientras el tiro está activo, y el golpe termina el tiro.
 - **Arreglo:** que la duración de la ilusión no dependa de que el tiro siga activo (un *hook* que `updateShot` llame en todos los ticks).
 
-### BUG-11 · El balón se comporta raro mientras se carga el tiro de poder (ver también BUG-14 y BUG-15)
+### ✅ BUG-11 · El balón se comporta raro mientras se carga el tiro de poder (arreglado en `fix10`: en la carga el balón no choca con nadie)
 - **Medición:** durante los 90 ticks (1.5 s) en que el balón queda quieto en el aire, el rival lo atraviesa caminando. En cada tick el choque mueve el balón unos píxeles y el siguiente tick `Power.updateShot` lo vuelve a poner en su sitio con velocidad 0, así que tiembla y no detiene a nadie. Si el rival lo patea, la patada no hace nada.
 - **Causa:** el balón en carga se resuelve como un balón normal (el choque mueve **al balón**), pero `updateShot` lo teletransporta de vuelta en cada tick.
 - **Arreglo:** mientras `ball.isPowerShotCharging()`, que el balón sea un obstáculo fijo: en `Player.collideWithBall`, en vez de `bounceOff`, sacar **al jugador** del círculo del balón (como `resolveCircleAgainstBar` con el arco) y no permitir patearlo. Otra opción, más simple: que en la carga el balón no choque con nadie.
@@ -242,13 +231,12 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 | Orden | Qué | Horas |
 |---|---|---|
 | 0 | Sacar los archivos generados del repositorio | 0.1 |
-| 1 | **GUI** (1.1 detalles → 1.1b `Theme` → 1.1c BUG-14 y BUG-15 → 1.2 revisar resoluciones y créditos → 1.3 tono y símbolo por estado → 1.4 archivos de sonido) | 3 – 3.5 |
-| 2 | Dominio: borrar `COMController`, pruebas de la máquina | 1.5 – 2 |
-| 3 | Entregables: pruebas de aceptación, diagrama de clases, planificación | 2 – 3 |
-| 4 | Bugs 7, 9 y 11 | 1.75 – 2.75 |
-| | **Total** | **≈ 8.5 – 11.5 h** (sin el dash) |
+| 1 | **GUI:** revisar abrir partida en pausa, revisar las 3 resoluciones, `CREDITOS.txt`, **archivos de sonido** (y opcionales: `Theme`, barrita del aturdido, posición del balón en carga) | 1.5 – 2 |
+| 2 | **Dominio:** pruebas de la máquina (2.2) | 1 – 1.5 |
+| 3 | **Entregables:** pruebas de aceptación, diagrama de clases, planificación | 2 – 3 |
+| | **Total** | **≈ 4.5 – 6.5 h** (sin opcionales ni dash) |
 
-**Sugerencia de reparto:** Juan, la GUI (BUG-14 y 15, y el tono y símbolo por estado de 1.3); Cristian, los archivos de sonido, las pruebas de la máquina y borrar `COMController`.
+**Sugerencia de reparto:** Juan, los entregables (pruebas de aceptación y diagrama de clases); Cristian, los archivos de sonido y las pruebas de la máquina.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.
