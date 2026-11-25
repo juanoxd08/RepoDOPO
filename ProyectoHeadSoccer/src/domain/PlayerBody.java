@@ -23,7 +23,8 @@ public class PlayerBody implements Serializable {
     private boolean onTop;
     private double lastHorizontalMove;
     private static final double DRIBBLE_SPEED_FACTOR = 1.5;
-    private static final double KICK_LIFT_VARIANCE = 0.30;
+    private static final double KICK_LIFT_HIGHEST = -1.45;
+    private static final double KICK_LIFT_LOWEST = -0.45;
     private final Random kickRandom;
 
     /*
@@ -309,7 +310,7 @@ public class PlayerBody implements Serializable {
             boolean inFront = (ball.getX() - footCircle.getX()) * side.dir() >= -ball.getRadius();
             if (inFront) {
                 ball.getCircle().translate(side.dir() * c.getPenetration(), 0);
-                double lift = Physics.KICK_LIFT_FACTOR + (kickRandom.nextDouble() * 2.0 - 1.0) * KICK_LIFT_VARIANCE;
+                double lift = KICK_LIFT_HIGHEST + kickRandom.nextDouble() * (KICK_LIFT_LOWEST - KICK_LIFT_HIGHEST);
                 Vector2 vel = new Vector2(side.dir(), lift).normalized().scale(foot.getPowerKicking());
                 ball.setHorizontalSpeed(vel.getX());
                 ball.setVerticalSpeed(vel.getY());

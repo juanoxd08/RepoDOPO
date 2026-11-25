@@ -34,6 +34,10 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
   - **Mala práctica:** `Math.random()` dentro del dominio no se puede controlar en las pruebas. Mejor un `Random` inyectable (como en `ClumsyMachine`), o quitar la variación si no se necesita.
 - Siguen bien: BUG-13 (0 tiros que tocan al rival sin contar, en los 4 países) y las 4 máquinas.
 
+**Ajustes de juego (después de `fix12`, en la rama `claude/brave-newton-pne4dc`):**
+- [x] **Patada que puede salir más baja:** la inclinación ahora varía entre **24° y 55°** (antes entre 40° y 55°), con `KICK_LIFT_HIGHEST` = −1.45 y `KICK_LIFT_LOWEST` = −0.45 en `PlayerBody`. Las más bajas suben unos 27 px y entran al arco por debajo del travesaño. Se borró `Physics.KICK_LIFT_FACTOR`, que quedó sin uso.
+- [x] **Salto un poco más alto:** `Physics.BASE_JUMP_IMPULSE` de 7 a **8** (de ~28 a ~36 px). Ahora la cabeza alcanza a tocar el travesaño desde abajo y rebota; se ajustó `testJumpingUnderCrossbarDoesNotTrapHeadInside` para contar penetración real (más de 0.5 px) y no el simple contacto. También `testLeftAndRightPhysicsSymmetry`, que ahora mide la velocidad vertical más alta del balón durante los 10 ticks.
+
 **Detalles menores (arreglados después de `fix12`, en la rama `claude/brave-newton-pne4dc`):**
 - [x] **`onPowerHit` ya no se avisa si el aura protegió al rival:** `Match.applyPowerHit` (un solo método para los dos jugadores, en lugar del código repetido) aplica el golpe y solo avisa si el rival no tenía aura. Prueba: `testPowerShotOnRivalWithAuraDoesNotNotifyPowerHit` (falla con el código de `fix12` y pasa con el arreglo).
 - [x] **`Math.random()` reemplazado por un `Random` inyectable:** `PlayerBody(Side)` crea uno nuevo y `PlayerBody(Side, Random)` permite pasar uno con semilla fija. Prueba: `testSeededKickIsReproducibleAndMirrored` (con la misma semilla, la patada izquierda y la derecha salen exactamente espejadas).

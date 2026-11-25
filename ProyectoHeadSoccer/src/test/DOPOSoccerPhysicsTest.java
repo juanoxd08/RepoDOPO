@@ -4,6 +4,7 @@ import domain.AuraAzulPower;
 import domain.Ball;
 import domain.BallView;
 import domain.Circle;
+import domain.Contact;
 import domain.Country;
 import domain.DOPOSoccerException;
 import domain.Field;
@@ -128,7 +129,9 @@ public class DOPOSoccerPhysicsTest {
             player.collideWithEdges();
             player.collideWithGoal(leftGoal);
 
-            if (bar.detectCollisionWithCircle(player.getHeadShape())) {
+            double penetration = bar.contactWith(player.getHeadShape())
+                    .map(Contact::getPenetration).orElse(0.0);
+            if (penetration > 0.5) {
                 consecutiveInsideTicks++;
                 maxConsecutiveInside = Math.max(maxConsecutiveInside, consecutiveInsideTicks);
             } else {
@@ -352,6 +355,8 @@ public class DOPOSoccerPhysicsTest {
 
         left.kick();
         right.kick();
+        double leftMinVerticalSpeed = 0.0;
+        double rightMinVerticalSpeed = 0.0;
         for (int t = 0; t < 10; t++) {
             left.tick();
             right.tick();
@@ -361,12 +366,14 @@ public class DOPOSoccerPhysicsTest {
             rightBall.collideWithEdges();
             left.collideWithBall(leftBall);
             right.collideWithBall(rightBall);
+            leftMinVerticalSpeed = Math.min(leftMinVerticalSpeed, leftBall.getVerticalSpeed());
+            rightMinVerticalSpeed = Math.min(rightMinVerticalSpeed, rightBall.getVerticalSpeed());
         }
 
         assertTrue("Left player kick should launch ball right", leftBall.getHorizontalSpeed() > 5.0);
         assertTrue("Right player kick should launch ball left", rightBall.getHorizontalSpeed() < -5.0);
-        assertTrue("Left player kick should lift ball upward", leftBall.getVerticalSpeed() < 0.0);
-        assertTrue("Right player kick should lift ball upward", rightBall.getVerticalSpeed() < 0.0);
+        assertTrue("Left player kick should lift ball upward", leftMinVerticalSpeed < 0.0);
+        assertTrue("Right player kick should lift ball upward", rightMinVerticalSpeed < 0.0);
     }
 
     /**
