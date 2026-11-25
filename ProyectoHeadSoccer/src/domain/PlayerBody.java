@@ -22,6 +22,7 @@ public class PlayerBody implements Serializable {
     private boolean onTop;
     private double lastHorizontalMove;
     private static final double DRIBBLE_SPEED_FACTOR = 1.5;
+    private static final double KICK_LIFT_VARIANCE = 0.30;
 
     /*
      * Synchronizes head, torso, and foot collision shapes with the current anchor and kick offsets.
@@ -193,7 +194,16 @@ public class PlayerBody implements Serializable {
         boolean collide;
         boolean hitHead = false;
         boolean hitBody = false;
-        if (ball == null || ball.isPowerShotCharging()) return false;
+        if (ball == null) return false;
+
+        if (ball.isPowerShotCharging()) {
+            if (power == null || !power.isChargingShot()) {
+                pushOutOfChargingBall(ball.getCircle());
+            }
+            this.lastHorizontalMove = 0.0;
+            return false;
+        }
+
         if (foot.isKicking()) {
             collide = collideFootWithBall(ball, power);
             if (!ball.isPowerShotCharging()) {
@@ -210,6 +220,55 @@ public class PlayerBody implements Serializable {
         }
         this.lastHorizontalMove = 0.0;
         return collide;
+    }
+
+    /*
+     * Pushes all limbs horizontally out of a suspended charging ball so opponents cannot walk through it.
+     */
+    private void pushOutOfChargingBall(Circle ballCircle) {
+        if (ballCircle == null) return;
+        pushCircleOutHorizontally(this.head.getCircle(), ballCircle);
+        pushCircleOutHorizontally(this.foot.getCircle(), ballCircle);
+        pushBodyOutHorizontally(this.body.getRectangle(), ballCircle);
+        collideWithEdges();
+    }
+
+    /*
+     * Separates a circular limb horizontally from a stationary charging ball using exact circle clearance.
+     */
+    private void pushCircleOutHorizontally(Circle circle, Circle ballCircle) {
+        double dy = circle.getY() - ballCircle.getY();
+        double sumRad = circle.getRadius() + ballCircle.getRadius();
+        if (Math.abs(dy) >= sumRad) return;
+        double minDx = Math.sqrt(sumRad * sumRad - dy * dy);
+        double dx = circle.getX() - ballCircle.getX();
+        if (Math.abs(dx) < minDx) {
+            double pushDir = (dx != 0.0) ? Math.signum(dx) : -side.dir();
+            translate(pushDir * (minDx - Math.abs(dx) + 0.05), 0.0);
+        }
+    }
+
+    /*
+     * Separates the rectangular torso horizontally from a stationary charging ball.
+     */
+    private void pushBodyOutHorizontally(Rectangle br, Circle ballCircle) {
+        if (!br.detectCollisionWithCircle(ballCircle)) return;
+        double closestY = Math.max(br.top(), Math.min(ballCircle.getY(), br.bottom()));
+        double dy = ballCircle.getY() - closestY;
+        double r = ballCircle.getRadius();
+        if (Math.abs(dy) >= r) return;
+        double clearanceX = Math.sqrt(r * r - dy * dy);
+        if (anchor.getX() >= ballCircle.getX()) {
+            double targetLeft = ballCircle.getX() + clearanceX + 0.05;
+            if (br.left() < targetLeft) {
+                translate(targetLeft - br.left(), 0.0);
+            }
+        } else {
+            double targetRight = ballCircle.getX() - clearanceX - 0.05;
+            if (br.right() > targetRight) {
+                translate(targetRight - br.right(), 0.0);
+            }
+        }
     }
 
     /*
@@ -236,7 +295,8 @@ public class PlayerBody implements Serializable {
             boolean inFront = (ball.getX() - footCircle.getX()) * side.dir() >= -ball.getRadius();
             if (inFront) {
                 ball.getCircle().translate(side.dir() * c.getPenetration(), 0);
-                Vector2 vel = new Vector2(side.dir(), Physics.KICK_LIFT_FACTOR).normalized().scale(foot.getPowerKicking());
+                double lift = Physics.KICK_LIFT_FACTOR + (Math.random() * 2.0 - 1.0) * KICK_LIFT_VARIANCE;
+                Vector2 vel = new Vector2(side.dir(), lift).normalized().scale(foot.getPowerKicking());
                 ball.setHorizontalSpeed(vel.getX());
                 ball.setVerticalSpeed(vel.getY());
                 triggerPowerShot(ball, power);

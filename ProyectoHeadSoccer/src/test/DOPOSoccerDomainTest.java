@@ -661,14 +661,17 @@ public class DOPOSoccerDomainTest {
         assertFalse(pLeft.hasAura());
 
         double rightInitialLife = pRight.getLife();
-        for (int i = 0; i < Power.TICKS_PER_POWER + 60 && pRight.getLife() == rightInitialLife; i++) {
+        for (int i = 0; i < Power.TICKS_PER_POWER + 60 && pRight.hasAura(); i++) {
             match.setIntention(Side.LEFT, EnumSet.noneOf(PlayerAction.class));
             match.setIntention(Side.RIGHT, EnumSet.noneOf(PlayerAction.class));
             match.tick();
         }
 
-        assertTrue("Opponent with aura should take power shot damage", pRight.getLife() < rightInitialLife);
+        assertEquals("Opponent with aura must not lose life from rival power shot",
+                rightInitialLife, pRight.getLife(), 0.001);
         assertFalse("Opponent's aura should trigger counter-shot on ball contact", pRight.hasAura());
+        assertEquals("Opponent with aura must not receive rival status effect",
+                PlayerEffect.NONE, pRight.getActiveEffect());
     }
 
     /**
@@ -954,6 +957,58 @@ public class DOPOSoccerDomainTest {
             eff.canKick();
             eff.isConfused();
             assertTrue(eff.speedFactor() > 0.0);
+        }
+    }
+
+    /**
+     * Verifies BUG-18: while a power shot is charging, an opponent walking into the ball
+     * from either side cannot pass through or remain overlapping the charging ball.
+     *
+     * @throws DOPOSoccerException if match configuration is invalid
+     */
+    @Test
+    public void testRivalCannotWalkThroughChargingBallFromEitherSide() throws DOPOSoccerException {
+        for (Side shooterSide : Side.values()) {
+            Side rivalSide = shooterSide.opposite();
+            MatchConfig config = MatchConfig.builder()
+                    .modality(Modality.PVP)
+                    .leftCountry(Country.SOUTH_KOREA)
+                    .rightCountry(Country.CAMEROON)
+                    .matchType(MatchType.TIME)
+                    .targetValue(1)
+                    .build();
+            Match match = new Match(config);
+            BallView ball = match.getBall();
+            PlayerView rival = match.getPlayer(rivalSide);
+
+            for (int i = 0; i < 600; i++) {
+                match.tick();
+            }
+            match.setIntention(shooterSide, EnumSet.of(PlayerAction.POWER));
+            match.tick();
+
+            PlayerAction shooterWalk = (shooterSide == Side.LEFT) ? PlayerAction.RIGHT : PlayerAction.LEFT;
+            for (int i = 0; i < 120 && !ball.isPowerShotCharging(); i++) {
+                match.setIntention(shooterSide, EnumSet.of(shooterWalk));
+                match.setIntention(rivalSide, EnumSet.noneOf(PlayerAction.class));
+                match.tick();
+            }
+            assertTrue("Shooter should start charging power shot for " + shooterSide, ball.isPowerShotCharging());
+
+            double ballX = ball.getX();
+            PlayerAction rivalWalk = (rivalSide == Side.LEFT) ? PlayerAction.RIGHT : PlayerAction.LEFT;
+            for (int i = 0; i < Power.TICKS_PER_POWER - 5 && ball.isPowerShotCharging(); i++) {
+                match.setIntention(shooterSide, EnumSet.noneOf(PlayerAction.class));
+                match.setIntention(rivalSide, EnumSet.of(rivalWalk));
+                match.tick();
+
+                double rivalHeadX = rival.getHeadShape().getX();
+                if (rivalSide == Side.RIGHT) {
+                    assertTrue("Right rival must not cross behind left-charging ball", rivalHeadX > ballX);
+                } else {
+                    assertTrue("Left rival must not cross behind right-charging ball", rivalHeadX < ballX);
+                }
+            }
         }
     }
 }

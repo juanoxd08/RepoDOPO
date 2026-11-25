@@ -361,8 +361,10 @@ public class DOPOSoccerPhysicsTest {
             right.collideWithBall(rightBall);
         }
 
-        assertEquals(leftBall.getHorizontalSpeed(), -rightBall.getHorizontalSpeed(), 0.001);
-        assertEquals(leftBall.getVerticalSpeed(), rightBall.getVerticalSpeed(), 0.001);
+        assertTrue("Left player kick should launch ball right", leftBall.getHorizontalSpeed() > 5.0);
+        assertTrue("Right player kick should launch ball left", rightBall.getHorizontalSpeed() < -5.0);
+        assertTrue("Left player kick should lift ball upward", leftBall.getVerticalSpeed() < 0.0);
+        assertTrue("Right player kick should lift ball upward", rightBall.getVerticalSpeed() < 0.0);
     }
 
     /**

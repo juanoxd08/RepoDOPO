@@ -344,7 +344,7 @@ public class Player implements PlayerView, Serializable {
 	 * @param hit Power hit payload to apply
 	 */
 	public void receiveHit(PowerHit hit) {
-		if (hit == null) return;
+		if (hit == null || hasAura()) return;
 		if (hit.getDamage() > 0) {
 			takeDamage(hit.getDamage());
 		}
