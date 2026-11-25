@@ -1,6 +1,26 @@
 package test;
 
-import domain.*;
+import domain.AuraAzulPower;
+import domain.Ball;
+import domain.BallView;
+import domain.Circle;
+import domain.Country;
+import domain.DOPOSoccerException;
+import domain.Field;
+import domain.Foot;
+import domain.Goal;
+import domain.LightningPower;
+import domain.Match;
+import domain.MatchConfig;
+import domain.MatchType;
+import domain.Modality;
+import domain.Player;
+import domain.PlayerAction;
+import domain.PlayerProfile;
+import domain.PlayerStats;
+import domain.PlayerView;
+import domain.Rectangle;
+import domain.Side;
 import java.util.EnumSet;
 import org.junit.Test;
 import static org.junit.Assert.*;

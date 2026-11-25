@@ -89,12 +89,8 @@ public class OffensiveMachine extends MachineController {
         return actions;
     }
 
-    /**
+    /*
      * Checks whether the ball is lying on top of either crossbar, where it cannot be kicked.
-     *
-     * @param match Read-only match view
-     * @param ball Read-only ball view
-     * @return True if the ball rests above one of the crossbars
      */
     private boolean isBallOnCrossBar(MatchView match, BallView ball) {
         for (Side s : Side.values()) {

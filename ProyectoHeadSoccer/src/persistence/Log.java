@@ -39,7 +39,7 @@ public class Log {
             }
             logger.log(Level.SEVERE, e.getMessage(), e);
         } catch (IOException io) {
-            io.printStackTrace();
+            System.err.println("Could not write to DOPOSoccer.log: " + io.getMessage());
         }
     }
 }

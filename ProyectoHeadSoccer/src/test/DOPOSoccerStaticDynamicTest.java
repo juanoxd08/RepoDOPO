@@ -1,6 +1,29 @@
 package test;
 
-import domain.*;
+import domain.Ball;
+import domain.BallView;
+import domain.Controller;
+import domain.Country;
+import domain.DOPOSoccer;
+import domain.DOPOSoccerException;
+import domain.Field;
+import domain.Figure;
+import domain.GameStatus;
+import domain.MachineController;
+import domain.MachineProfile;
+import domain.Match;
+import domain.MatchConfig;
+import domain.MatchListener;
+import domain.MatchRule;
+import domain.MatchType;
+import domain.MatchView;
+import domain.Modality;
+import domain.Physics;
+import domain.PlayerAction;
+import domain.PlayerView;
+import domain.Power;
+import domain.Rectangle;
+import domain.Side;
 import presentation.FieldResolution;
 import org.junit.Test;
 import java.lang.reflect.Method;
@@ -169,7 +192,7 @@ public class DOPOSoccerStaticDynamicTest {
      * @throws DOPOSoccerException if match configuration is invalid
      */
     @Test
-    public void testDynamicBallPhysicsAndGoalSequence() throws DOPOSoccerException {
+    public void testDynamicBallPhysicsAndGoalSequence() throws Exception {
         MatchConfig config = MatchConfig.builder()
                 .modality(Modality.PVP)
                 .leftCountry(Country.SOUTH_KOREA)
@@ -186,7 +209,13 @@ public class DOPOSoccerStaticDynamicTest {
         }
         assertTrue("El balon debe descender debido a la gravedad", match.getBall().getY() > startY);
 
-        match.onGoal(Side.LEFT);
+        Rectangle leftGoal = match.getGoalArea(Side.LEFT);
+        java.lang.reflect.Field ballField = Match.class.getDeclaredField("ball");
+        ballField.setAccessible(true);
+        Ball rawBall = (Ball) ballField.get(match);
+
+        rawBall.reset(leftGoal.getX() + leftGoal.getWidth() / 2.0, leftGoal.getY() + leftGoal.getHeight() / 2.0);
+        match.tick();
         assertEquals(GameStatus.GOAL_SCORED, match.getStatus());
         assertEquals(1, match.getGoals(Side.RIGHT));
 
@@ -196,7 +225,8 @@ public class DOPOSoccerStaticDynamicTest {
         }
         assertEquals(GameStatus.PLAYING, match.getStatus());
 
-        match.onGoal(Side.LEFT);
+        rawBall.reset(leftGoal.getX() + leftGoal.getWidth() / 2.0, leftGoal.getY() + leftGoal.getHeight() / 2.0);
+        match.tick();
         assertEquals(GameStatus.FINISHED, match.getStatus());
         assertEquals(Optional.of(Side.RIGHT), match.getWinner());
     }

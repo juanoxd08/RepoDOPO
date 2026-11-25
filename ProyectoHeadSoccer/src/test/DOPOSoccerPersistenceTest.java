@@ -1,6 +1,23 @@
 package test;
 
-import domain.*;
+import domain.Country;
+import domain.DOPOSoccer;
+import domain.DOPOSoccerException;
+import domain.GameStatus;
+import domain.MachineProfile;
+import domain.Match;
+import domain.MatchConfig;
+import domain.MatchListener;
+import domain.MatchType;
+import domain.MatchView;
+import domain.Modality;
+import domain.PlayerAction;
+import domain.PlayerProfile;
+import domain.PlayerStats;
+import domain.ProfileRepository;
+import domain.ProfileView;
+import domain.Side;
+import domain.StatType;
 import org.junit.Test;
 import persistence.SerializedMatchRepository;
 import persistence.SerializedProfileRepository;
@@ -384,5 +401,81 @@ public class DOPOSoccerPersistenceTest {
         game.finish();
 
         assertTrue(notified.get());
+    }
+
+    /**
+     * Verifies that SerializedProfileRepository rejects corrupt storage files with OPEN_ERROR
+     * and rejects null or blank player names with NULL_ARGUMENT.
+     *
+     * @throws IOException if temporary file creation fails
+     */
+    @Test
+    public void testSerializedProfileRepositoryHandlesCorruptFileAndBlankName() throws IOException {
+        File corrupt = File.createTempFile("doposoccer_corrupt_profiles_", ".dat");
+        corrupt.deleteOnExit();
+        try (FileWriter writer = new FileWriter(corrupt)) {
+            writer.write("corrupted profile bytes");
+        }
+        SerializedProfileRepository repo = new SerializedProfileRepository(corrupt);
+
+        try {
+            repo.load("Ana");
+            fail("Expected OPEN_ERROR when reading a corrupt profile file");
+        } catch (DOPOSoccerException ex) {
+            assertEquals(DOPOSoccerException.OPEN_ERROR, ex.getMessage());
+        }
+
+        try {
+            repo.load("   ");
+            fail("Expected NULL_ARGUMENT for blank player name");
+        } catch (DOPOSoccerException ex) {
+            assertEquals(DOPOSoccerException.NULL_ARGUMENT, ex.getMessage());
+        }
+
+        try {
+            repo.save(null);
+            fail("Expected NULL_ARGUMENT when saving null profile");
+        } catch (DOPOSoccerException ex) {
+            assertEquals(DOPOSoccerException.NULL_ARGUMENT, ex.getMessage());
+        }
+    }
+
+    /**
+     * Verifies that SerializedMatchRepository rejects null arguments with NULL_ARGUMENT
+     * and unwritable paths (such as a directory) with SAVE_ERROR.
+     *
+     * @throws DOPOSoccerException if match setup fails
+     * @throws IOException if temporary directory creation fails
+     */
+    @Test
+    public void testSerializedMatchRepositoryHandlesNullAndUnwritablePath() throws DOPOSoccerException, IOException {
+        SerializedMatchRepository repo = new SerializedMatchRepository();
+        Match match = new Match(MatchConfig.builder().build());
+
+        try {
+            repo.save(null, File.createTempFile("doposoccer_null_", ".dat"));
+            fail("Expected NULL_ARGUMENT for null match");
+        } catch (DOPOSoccerException ex) {
+            assertEquals(DOPOSoccerException.NULL_ARGUMENT, ex.getMessage());
+        }
+
+        try {
+            repo.open(null);
+            fail("Expected NULL_ARGUMENT for null file");
+        } catch (DOPOSoccerException ex) {
+            assertEquals(DOPOSoccerException.NULL_ARGUMENT, ex.getMessage());
+        }
+
+        File dir = File.createTempFile("doposoccer_dir_", "");
+        assertTrue(dir.delete());
+        assertTrue(dir.mkdir());
+        dir.deleteOnExit();
+
+        try {
+            repo.save(match, dir);
+            fail("Expected SAVE_ERROR when saving to a directory path");
+        } catch (DOPOSoccerException ex) {
+            assertEquals(DOPOSoccerException.SAVE_ERROR, ex.getMessage());
+        }
     }
 }

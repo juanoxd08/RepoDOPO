@@ -21,26 +21,6 @@ public class Foot implements Serializable {
     private int kickElapsedTicks;
 
     /**
-     * Default constructor for foot.
-     */
-    public Foot() {
-        this.circle = new Circle();
-        this.powerKicking = 22;
-    }
-
-    /**
-     * Constructs a foot at specified coordinates and radius.
-     * 
-     * @param x Center horizontal coordinate
-     * @param y Center vertical coordinate
-     * @param radius Foot circle radius
-     */
-    public Foot(double x, double y, double radius) {
-        this.circle = new Circle(x, y, radius);
-        this.powerKicking = 22;
-    }
-
-    /**
      * Constructs a foot aligned to the ground and oriented based on player side.
      * 
      * @param playerX Player horizontal center position
@@ -55,11 +35,11 @@ public class Foot implements Serializable {
     }
 
     /**
-     * Gets the circle geometry of the foot.
-     * 
+     * Gets the circle geometry of the foot for domain physics.
+     *
      * @return Foot circle geometry
      */
-    public Circle getCircle() {
+    Circle getCircle() {
         return circle;
     }
 

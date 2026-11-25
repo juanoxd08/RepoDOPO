@@ -38,7 +38,7 @@ public class IllusionPower extends Power {
         ball.setVerticalSpeed(-5.0);
 
         fakeBalls.clear();
-        illusionTicksRemaining = (int) (effectDurationSeconds * 60);
+        illusionTicksRemaining = (int) (getEffectDurationSeconds() * Physics.FPS);
 
         double bx = ball.getCircle().getX();
         double by = ball.getCircle().getY();
@@ -98,8 +98,11 @@ public class IllusionPower extends Power {
         return copies;
     }
 
+    /**
+     * Clears all active illusion decoy balls when the power shot ends.
+     */
     @Override
-    protected void onShotFinished(){
+    protected void onShotFinished() {
         this.illusionTicksRemaining = 0;
         this.fakeBalls.clear();
     }

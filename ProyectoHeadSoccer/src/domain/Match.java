@@ -18,23 +18,26 @@ import java.util.Set;
 public class Match implements MatchView, Serializable {
     private static final long serialVersionUID = 1L;
     private static final double CROSSBAR_ROLL_SPEED = 1.5;
-    protected Player player1;
-    protected Player player2;
-    protected Controller controller1;
-    protected Controller controller2;
-    protected Field field;
-    protected Ball ball;
-    protected ScoreBoard scoreBoard;
-    protected GameStatus state;
-    private GameStatus stateBeforePause;
-    protected MatchRule rule;
-    protected transient List<MatchListener> listeners = new ArrayList<>();
-    private final Modality modality;
     private static final double PINCH_ESCAPE_SPEED = -10.0;
-  
+    private static final double KICKOFF_BALL_HEIGHT = 40.0;
+    private static final int GOAL_CELEBRATION_TICKS = 85;
+    private static final int WINNER_POINTS = 100;
+    private static final int LOSER_POINTS = 25;
 
-    protected int goalCelebrationTicks;
-    protected boolean pointsAwarded = false;
+    private Player player1;
+    private Player player2;
+    private Controller controller1;
+    private Controller controller2;
+    private Field field;
+    private Ball ball;
+    private ScoreBoard scoreBoard;
+    private GameStatus state;
+    private GameStatus stateBeforePause;
+    private MatchRule rule;
+    private transient List<MatchListener> listeners = new ArrayList<>();
+    private final Modality modality;
+    private int goalCelebrationTicks;
+    private boolean pointsAwarded = false;
 
     /**
      * Constructs a soccer match from a validated MatchConfig.
@@ -76,12 +79,12 @@ public class Match implements MatchView, Serializable {
     }
 
 
-    /**
-     * Resets player and ball positions back to kickoff spots, with ball dropping from center.
+    /*
+     * Resets player and ball positions back to kickoff spots, with the ball dropping from center.
      */
-    public void resetPositions() {
+    private void resetPositions() {
         if (ball != null) {
-            ball.reset(Field.WIDTH / 2.0, 40.0);
+            ball.reset(Field.WIDTH / 2.0, KICKOFF_BALL_HEIGHT);
             ball.setPowerShot(false);
         }
         if (player1 != null) {
@@ -160,10 +163,10 @@ public class Match implements MatchView, Serializable {
         }
     }
 
-    /**
+    /*
      * Resolves all physical collisions between entities, pitch boundaries, and goals.
      */
-    public void resolveCollisions() {
+    private void resolveCollisions() {
         player1.clearSupport();
         player2.clearSupport();
 
@@ -256,11 +259,8 @@ public class Match implements MatchView, Serializable {
         ball.collideWithEdges();
     }
 
-    /**
-     * Gives a ball resting on top of a crossbar a small push toward the pitch, so it never stays there forever.
-     *
-     * @param bar Crossbar the ball may be resting on
-     * @param towardField Horizontal direction of the pitch from that crossbar (1 or -1)
+    /*
+     * Gives a ball resting on top of a crossbar a small push toward the pitch so it never gets stuck.
      */
     private void rollOffCrossBar(Rectangle bar, double towardField) {
         double bottom = ball.getY() + ball.getRadius();
@@ -271,30 +271,24 @@ public class Match implements MatchView, Serializable {
         }
     }
 
-    /**
-     * Handles goal events by awarding points, updating power bars, and transitioning states.
-     * 
-     * @param goalSide Side of the goal where the ball entered
+    /*
+     * Handles goal events by updating the scoreboard, power gauges, and match state.
      */
-    public void onGoal(Side goalSide) {
+    private void onGoal(Side goalSide) {
         scoreBoard.goalIn(goalSide);
 
         if (goalSide == Side.LEFT) {
             player1.onGoalReceived();
-            for(MatchListener listener: listeners) listener.onGoal(goalSide.opposite());
+            for (MatchListener listener : listeners) listener.onGoal(goalSide.opposite());
         } else {
-
             player2.onGoalReceived();
-            for(MatchListener listener: listeners) listener.onGoal(goalSide.opposite());
+            for (MatchListener listener : listeners) listener.onGoal(goalSide.opposite());
         }
 
-        
         if (state == GameStatus.SUDDEN_DEATH) {
             finishMatch();
             return;
         }
-
-        
 
         if (rule.isOver(this)) {
             finishMatch();
@@ -302,7 +296,7 @@ public class Match implements MatchView, Serializable {
         }
 
         this.state = GameStatus.GOAL_SCORED;
-        this.goalCelebrationTicks = 85; 
+        this.goalCelebrationTicks = GOAL_CELEBRATION_TICKS;
     }
 
     /*
@@ -318,17 +312,17 @@ public class Match implements MatchView, Serializable {
         if (winner.isPresent()) {
             winSide = winner.get();
             if (player1.getSide() == winSide) {
-                player1.addPoints(100);
-                player2.addPoints(25);
+                player1.addPoints(WINNER_POINTS);
+                player2.addPoints(LOSER_POINTS);
             } else {
-                player2.addPoints(100);
-                player1.addPoints(25);
+                player2.addPoints(WINNER_POINTS);
+                player1.addPoints(LOSER_POINTS);
             }
-            for (MatchListener listener : listeners) listener.onMatchFinished(winSide, 100, 25);
+            for (MatchListener listener : listeners) listener.onMatchFinished(winSide, WINNER_POINTS, LOSER_POINTS);
         } else {
-            player1.addPoints(25);
-            player2.addPoints(25);
-            for (MatchListener listener : listeners) listener.onMatchFinished(null, 25, 25);
+            player1.addPoints(LOSER_POINTS);
+            player2.addPoints(LOSER_POINTS);
+            for (MatchListener listener : listeners) listener.onMatchFinished(null, LOSER_POINTS, LOSER_POINTS);
         }
     }
 
@@ -520,18 +514,18 @@ public class Match implements MatchView, Serializable {
     }
 
     /**
-     * Returns the scoreboard tracking both sides' goals.
+     * Returns the scoreboard tracking both sides' goals for domain rules.
      *
      * @return Match ScoreBoard
      */
-    public ScoreBoard getScoreBoard() { return scoreBoard; }
+    ScoreBoard getScoreBoard() { return scoreBoard; }
 
     /**
-     * Updates the current lifecycle status of the match.
+     * Updates the current lifecycle status of the match for domain rules.
      *
      * @param state New GameStatus
      */
-    public void setState(GameStatus state) { this.state = state; }
+    void setState(GameStatus state) { this.state = state; }
 
     /**
      * Returns the remaining ticks of the active goal celebration freeze.
@@ -539,34 +533,6 @@ public class Match implements MatchView, Serializable {
      * @return Remaining celebration ticks
      */
     public int getGoalCelebrationTicks() { return goalCelebrationTicks; }
-
-    /**
-     * Returns the controller assigned to the left player.
-     *
-     * @return Left player controller
-     */
-    public Controller getController1() { return controller1; }
-
-    /**
-     * Assigns a new controller to the left player.
-     *
-     * @param controller1 Left player controller
-     */
-    public void setController1(Controller controller1) { this.controller1 = controller1; }
-
-    /**
-     * Returns the controller assigned to the right player.
-     *
-     * @return Right player controller
-     */
-    public Controller getController2() { return controller2; }
-
-    /**
-     * Assigns a new controller to the right player.
-     *
-     * @param controller2 Right player controller
-     */
-    public void setController2(Controller controller2) { this.controller2 = controller2; }
 
     /**
      * Returns the underlying player profile for the given side for domain persistence coordination.

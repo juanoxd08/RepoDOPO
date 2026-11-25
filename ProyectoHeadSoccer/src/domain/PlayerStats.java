@@ -28,22 +28,26 @@ public class PlayerStats implements Serializable {
 
 	/**
 	 * Constructs player statistics with explicit ratings.
-	 * 
+	 *
 	 * @param speed Movement speed rating (1 to 10)
 	 * @param jump Jump rating (1 to 10)
 	 * @param kick Kick damage rating (1 to 10)
 	 * @param survival Health rating (1 to 10)
+	 * @throws DOPOSoccerException if any stat rating is outside [1, 10]
 	 */
-	public PlayerStats(int speed, int jump, int kick, int survival) {
+	public PlayerStats(int speed, int jump, int kick, int survival) throws DOPOSoccerException {
 		this.speed = validate(speed);
 		this.jump = validate(jump);
 		this.kick = validate(kick);
 		this.survival = validate(survival);
 	}
 
-	private int validate(int val) {
+	/*
+	 * Validates that a stat level falls within [1, 10].
+	 */
+	private int validate(int val) throws DOPOSoccerException {
 		if (val < 1 || val > 10) {
-			throw new IllegalArgumentException(DOPOSoccerException.INVALID_STAT + ": " + val);
+			throw new DOPOSoccerException(DOPOSoccerException.INVALID_STAT);
 		}
 		return val;
 	}
@@ -103,31 +107,31 @@ public class PlayerStats implements Serializable {
 
 	/**
 	 * Computes the kick damage multiplier formula:
-	 * multiplicadorKick = 1 + 0.10 * (Kick - 1)
-	 * 
+	 * kickMultiplier = 1 + 0.10 * (kick - 1).
+	 *
 	 * @return Damage multiplier (1.0 to 1.9)
 	 */
-	public double getMultiplicadorKick() {
+	public double getKickMultiplier() {
 		return 1.0 + 0.10 * (kick - 1);
 	}
 
 	/**
 	 * Computes normal kick damage against rival:
-	 * danioPatada = 10 * multiplicadorKick
-	 * 
+	 * kickDamage = 10 * kickMultiplier.
+	 *
 	 * @return Kick damage amount
 	 */
-	public double getDanioPatada() {
-		return 10.0 * getMultiplicadorKick();
+	public double getKickDamage() {
+		return 10.0 * getKickMultiplier();
 	}
 
 	/**
 	 * Computes maximum player health based on survival rating:
-	 * vidaMax = 100 * (1 + 0.10 * (Survival - 1))
-	 * 
+	 * maxLife = 100 * (1 + 0.10 * (survival - 1)).
+	 *
 	 * @return Maximum health points (100 to 190)
 	 */
-	public double getVidaMax() {
+	public double getMaxLife() {
 		return 100.0 * (1.0 + 0.10 * (survival - 1));
 	}
 
@@ -140,23 +144,31 @@ public class PlayerStats implements Serializable {
 		return 18.0;
 	}
 
+	/**
+	 * Returns the speed stat rating.
+	 *
+	 * @return Speed rating (1 to 10)
+	 */
 	public int getSpeed() { return speed; }
-	public void setSpeed(int speed) {
-		this.speed = validate(speed);
-	}
 
+	/**
+	 * Returns the jump stat rating.
+	 *
+	 * @return Jump rating (1 to 10)
+	 */
 	public int getJump() { return jump; }
-	public void setJump(int jump) {
-		this.jump = validate(jump);
-	}
 
+	/**
+	 * Returns the kick stat rating.
+	 *
+	 * @return Kick rating (1 to 10)
+	 */
 	public int getKick() { return kick; }
-	public void setKick(int kick) {
-		this.kick = validate(kick);
-	}
 
+	/**
+	 * Returns the survival stat rating.
+	 *
+	 * @return Survival rating (1 to 10)
+	 */
 	public int getSurvival() { return survival; }
-	public void setSurvival(int survival) {
-		this.survival = validate(survival);
-	}
 }

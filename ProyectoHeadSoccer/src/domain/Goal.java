@@ -46,11 +46,11 @@ public class Goal implements Serializable {
 	}
 
 	/**
-	 * Gets the rectangle representing the goal area.
-	 * 
+	 * Gets the rectangle representing the goal area for domain physics.
+	 *
 	 * @return Rectangle geometry of goal area
 	 */
-	public Rectangle getRectangle() {
+	Rectangle getRectangle() {
 		return goalArea;
 	}
 

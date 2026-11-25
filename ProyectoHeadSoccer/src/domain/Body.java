@@ -13,25 +13,6 @@ public class Body implements Serializable {
 	private Rectangle rectangle;
 
 	/**
-	 * Default constructor.
-	 */
-	public Body() {
-		this.rectangle = new Rectangle();
-	}
-
-	/**
-	 * Constructs the body with specified coordinates and dimensions.
-	 * 
-	 * @param x Top-left horizontal coordinate
-	 * @param y Top-left vertical coordinate
-	 * @param width Rectangle width
-	 * @param height Rectangle height
-	 */
-	public Body(double x, double y, double width, double height) {
-		this.rectangle = new Rectangle(x, y, width, height);
-	}
-
-	/**
 	 * Constructs the body aligned to the player's horizontal coordinate and side.
 	 * 
 	 * @param playerX Player horizontal center position
@@ -46,11 +27,11 @@ public class Body implements Serializable {
 	}
 
 	/**
-	 * Gets the rectangular geometry of the body.
-	 * 
+	 * Gets the rectangular geometry of the body for domain physics.
+	 *
 	 * @return Rectangle geometry
 	 */
-	public Rectangle getRectangle() {
+	Rectangle getRectangle() {
 		return rectangle;
 	}
 

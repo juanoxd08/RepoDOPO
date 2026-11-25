@@ -1,10 +1,43 @@
 package test;
 
-import domain.*;
+import domain.AuraAzulPower;
+import domain.Ball;
+import domain.BallView;
+import domain.Circle;
+import domain.Controller;
+import domain.Country;
+import domain.DOPOSoccer;
+import domain.DOPOSoccerException;
+import domain.Effect;
+import domain.Field;
+import domain.GameStatus;
+import domain.IllusionPower;
+import domain.LightningPower;
+import domain.MachineProfile;
+import domain.Match;
+import domain.MatchConfig;
+import domain.MatchListener;
+import domain.MatchType;
+import domain.Modality;
+import domain.Physics;
+import domain.Player;
+import domain.PlayerAction;
+import domain.PlayerBody;
+import domain.PlayerEffect;
+import domain.PlayerProfile;
+import domain.PlayerStats;
+import domain.PlayerView;
+import domain.Power;
+import domain.PowerHit;
+import domain.Rectangle;
+import domain.Side;
+import domain.StatType;
+import domain.TornadoPower;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -33,7 +66,7 @@ public class DOPOSoccerDomainTest {
      * Initializes baseline players, ball, and field before each test.
      */
     @Before
-    public void setUp() {
+    public void setUp() throws DOPOSoccerException {
         p1 = new Player("Jugador 1", Country.SOUTH_KOREA, Side.LEFT, new AuraAzulPower(), new PlayerStats(1, 1, 1, 1));
         p2 = new Player("Jugador 2", Country.CAMEROON, Side.RIGHT, new LightningPower(), new PlayerStats(1, 1, 1, 1));
         ball = new Ball(Field.WIDTH / 2.0, 50.0, 10.0);
@@ -42,65 +75,73 @@ public class DOPOSoccerDomainTest {
 
     /**
      * Verifies the survival maximum health formula across levels 1 to 10.
+     *
+     * @throws DOPOSoccerException if stat values are invalid
      */
     @Test
-    public void testSurvivalFormula() {
+    public void testSurvivalFormula() throws DOPOSoccerException {
         PlayerStats stats1 = new PlayerStats(1, 1, 1, 1);
-        assertEquals(100.0, stats1.getVidaMax(), 0.001);
+        assertEquals(100.0, stats1.getMaxLife(), 0.001);
 
         PlayerStats stats3 = new PlayerStats(1, 1, 1, 3);
-        assertEquals(120.0, stats3.getVidaMax(), 0.001);
+        assertEquals(120.0, stats3.getMaxLife(), 0.001);
 
         PlayerStats stats5 = new PlayerStats(1, 1, 1, 5);
-        assertEquals(140.0, stats5.getVidaMax(), 0.001);
+        assertEquals(140.0, stats5.getMaxLife(), 0.001);
 
         PlayerStats stats10 = new PlayerStats(1, 1, 1, 10);
-        assertEquals(190.0, stats10.getVidaMax(), 0.001);
+        assertEquals(190.0, stats10.getMaxLife(), 0.001);
     }
 
     /**
      * Verifies the kick damage multiplier formula across levels 1 to 10.
+     *
+     * @throws DOPOSoccerException if stat values are invalid
      */
     @Test
-    public void testKickMultiplierFormula() {
+    public void testKickMultiplierFormula() throws DOPOSoccerException {
         PlayerStats stats1 = new PlayerStats(1, 1, 1, 1);
-        assertEquals(1.0, stats1.getMultiplicadorKick(), 0.001);
+        assertEquals(1.0, stats1.getKickMultiplier(), 0.001);
 
         PlayerStats stats5 = new PlayerStats(1, 1, 5, 1);
-        assertEquals(1.4, stats5.getMultiplicadorKick(), 0.001);
+        assertEquals(1.4, stats5.getKickMultiplier(), 0.001);
 
         PlayerStats stats10 = new PlayerStats(1, 1, 10, 1);
-        assertEquals(1.9, stats10.getMultiplicadorKick(), 0.001);
+        assertEquals(1.9, stats10.getKickMultiplier(), 0.001);
     }
 
     /**
      * Verifies normal kick damage computation from kick level.
+     *
+     * @throws DOPOSoccerException if stat values are invalid
      */
     @Test
-    public void testKickDamageFormula() {
+    public void testKickDamageFormula() throws DOPOSoccerException {
         PlayerStats stats1 = new PlayerStats(1, 1, 1, 1);
-        assertEquals(10.0, stats1.getDanioPatada(), 0.001);
+        assertEquals(10.0, stats1.getKickDamage(), 0.001);
 
         PlayerStats stats5 = new PlayerStats(1, 1, 5, 1);
-        assertEquals(14.0, stats5.getDanioPatada(), 0.001);
+        assertEquals(14.0, stats5.getKickDamage(), 0.001);
     }
 
     /**
-     * Verifies that setting a statistic below 1 throws an IllegalArgumentException.
+     * Verifies that constructing stats below 1 throws DOPOSoccerException.
+     *
+     * @throws DOPOSoccerException expected validation exception
      */
-    @Test(expected = IllegalArgumentException.class)
-    public void testStatsBoundsValidationBelowMin() {
-        PlayerStats stats = new PlayerStats();
-        stats.setKick(0);
+    @Test(expected = DOPOSoccerException.class)
+    public void testStatsBoundsValidationBelowMin() throws DOPOSoccerException {
+        new PlayerStats(1, 1, 0, 1);
     }
 
     /**
-     * Verifies that setting a statistic above 10 throws an IllegalArgumentException.
+     * Verifies that constructing stats above 10 throws DOPOSoccerException.
+     *
+     * @throws DOPOSoccerException expected validation exception
      */
-    @Test(expected = IllegalArgumentException.class)
-    public void testStatsBoundsValidationAboveMax() {
-        PlayerStats stats = new PlayerStats();
-        stats.setSurvival(11);
+    @Test(expected = DOPOSoccerException.class)
+    public void testStatsBoundsValidationAboveMax() throws DOPOSoccerException {
+        new PlayerStats(1, 1, 1, 11);
     }
 
     /**
@@ -189,7 +230,7 @@ public class DOPOSoccerDomainTest {
      * Verifies that South Korea's Aura Azul power applies the PUSHED effect and damage on hit.
      */
     @Test
-    public void testKoreaAuraAzulPushesOpponent() {
+    public void testKoreaAuraAzulPushesOpponent() throws DOPOSoccerException {
         AuraAzulPower koreaPower = new AuraAzulPower();
         p1 = new Player("Jugador 1", Country.SOUTH_KOREA, Side.LEFT, koreaPower, new PlayerStats(1, 1, 1, 1));
         koreaPower.setCharge(100.0);
@@ -208,9 +249,11 @@ public class DOPOSoccerDomainTest {
 
     /**
      * Verifies that Cameroon's Rayo power applies the ELECTROCUTED effect on hit.
+     *
+     * @throws DOPOSoccerException if stat values are invalid
      */
     @Test
-    public void testCameroonLightningElectrocutesOpponent() {
+    public void testCameroonLightningElectrocutesOpponent() throws DOPOSoccerException {
         LightningPower lightning = new LightningPower();
         p2 = new Player("Jugador 2", Country.CAMEROON, Side.RIGHT, lightning, new PlayerStats(1, 1, 1, 1));
         lightning.setCharge(100.0);
@@ -227,9 +270,11 @@ public class DOPOSoccerDomainTest {
 
     /**
      * Verifies that Nigeria's Tornado power applies the KNOCKED_OUT effect and disables the opponent.
+     *
+     * @throws DOPOSoccerException if stat values are invalid
      */
     @Test
-    public void testNigeriaTornadoKnocksOutOpponent() {
+    public void testNigeriaTornadoKnocksOutOpponent() throws DOPOSoccerException {
         TornadoPower tornado = new TornadoPower();
         p1 = new Player("Jugador 1", p1.getCountry(), Side.LEFT, tornado, new PlayerStats(1, 1, 1, 1));
         tornado.setCharge(100.0);
@@ -247,9 +292,11 @@ public class DOPOSoccerDomainTest {
 
     /**
      * Verifies that USA's Illusion power spawns 7 decoy balls around the real ball.
+     *
+     * @throws DOPOSoccerException if stat values are invalid
      */
     @Test
-    public void testUSAIllusionDividesBallIntoEight() {
+    public void testUSAIllusionDividesBallIntoEight() throws DOPOSoccerException {
         IllusionPower illusion = new IllusionPower();
         p1 = new Player("Jugador 1", p1.getCountry(), Side.LEFT, illusion, new PlayerStats(1, 1, 1, 1));
         illusion.setCharge(100.0);
@@ -282,7 +329,7 @@ public class DOPOSoccerDomainTest {
      * @throws DOPOSoccerException if match configuration is invalid
      */
     @Test
-    public void testMatchAwardsPointsOnCompletion() throws DOPOSoccerException {
+    public void testMatchAwardsPointsOnCompletion() throws Exception {
         MatchConfig config = MatchConfig.builder()
                 .modality(Modality.PVP)
                 .leftCountry(Country.SOUTH_KOREA)
@@ -292,7 +339,12 @@ public class DOPOSoccerDomainTest {
                 .build();
         Match match = new Match(config);
 
-        match.onGoal(Side.RIGHT);
+        Rectangle rightGoal = match.getGoalArea(Side.RIGHT);
+        java.lang.reflect.Field ballField = Match.class.getDeclaredField("ball");
+        ballField.setAccessible(true);
+        Ball rawBall = (Ball) ballField.get(match);
+        rawBall.reset(rightGoal.getX() + rightGoal.getWidth() / 2.0, rightGoal.getY() + rightGoal.getHeight() / 2.0);
+        match.tick();
 
         assertEquals(GameStatus.FINISHED, match.getStatus());
         assertEquals(100, match.getPlayer(Side.LEFT).getPoints());
@@ -366,9 +418,11 @@ public class DOPOSoccerDomainTest {
 
     /**
      * Verifies that upgrading a stat already at level 10 throws MAX_STAT_REACHED and returns cost 0.
+     *
+     * @throws DOPOSoccerException if stat setup fails
      */
     @Test
-    public void testProfileUpgradeAtMaxLevelThrowsException() {
+    public void testProfileUpgradeAtMaxLevelThrowsException() throws DOPOSoccerException {
         PlayerProfile profile = new PlayerProfile("Juan", new PlayerStats(10, 1, 1, 1));
         profile.addPoints(100000);
 
@@ -700,5 +754,206 @@ public class DOPOSoccerDomainTest {
         assertEquals("Original shooter's country should still own the charging shot",
                 Country.SOUTH_KOREA, ball.getPowerShotCountry());
         assertTrue("Rival's aura should remain unconsumed while original shot is charging", pRight.hasAura());
+    }
+
+    /**
+     * Verifies BUG-16: when a player with aura touches the ball behind, above, or in front of
+     * the head on either side, the charging ball is always held in front of the head toward the rival goal.
+     */
+    @Test
+    public void testPowerShotAlwaysHoldsBallInFrontOfHeadForBothSides() {
+        double[] offsetMultipliers = {-0.8, 0.0, 0.8};
+        for (Side side : Side.values()) {
+            for (double mult : offsetMultipliers) {
+                Power power = new AuraAzulPower();
+                power.setCharge(100.0);
+                Player player = new Player("Shooter", Country.SOUTH_KOREA, side, power, new PlayerStats());
+                player.activatePower();
+                assertTrue(player.hasAura());
+
+                Circle head = player.getHeadShape();
+                double bx = head.getX() + side.dir() * (head.getRadius() * mult);
+                double by = head.getY() - head.getRadius() * 0.6;
+                Ball ball = new Ball(bx, by, 8.0);
+
+                player.collideWithBall(ball);
+                assertTrue("Ball should enter charging phase for " + side + " mult=" + mult,
+                        ball.isPowerShotCharging());
+                double forwardOffset = (ball.getX() - head.getX()) * side.dir();
+                assertTrue("Charging ball must be strictly in front of head (" + side + ", mult=" + mult + ")",
+                        forwardOffset > head.getRadius());
+            }
+        }
+    }
+
+    /**
+     * Verifies IllusionPower full lifecycle: spawns 7 decoy balls during flight and clears them on hit.
+     */
+    @Test
+    public void testIllusionPowerSpawnsSevenDecoysDuringFlightAndClearsOnHit() {
+        IllusionPower illusion = new IllusionPower();
+        Ball ball = new Ball(100, Field.HEIGHT - 20, 8.0);
+        illusion.setCharge(100.0);
+        illusion.activateAura();
+        illusion.executePowerShot(ball, Side.LEFT);
+
+        for (int i = 0; i < Power.TICKS_PER_POWER; i++) {
+            illusion.updateShot(ball);
+        }
+        assertTrue("Illusion should be active after charging finishes", illusion.hasActiveIllusion());
+        assertEquals("Illusion should spawn 7 decoy balls", 7, illusion.getDecoyBalls().size());
+
+        illusion.updateShot(ball);
+        assertEquals(7, illusion.getFakeBalls().size());
+
+        PowerHit hit = illusion.onHitRival(1.0);
+        assertNotNull(hit);
+        assertEquals(30.0, hit.getDamage(), 0.001);
+        assertFalse("Decoy balls must clear when shot hits rival", illusion.hasActiveIllusion());
+        assertTrue(illusion.getDecoyBalls().isEmpty());
+    }
+
+    /**
+     * Verifies runtime behavior of PushedEffect, ElectrocutedEffect, and ConfusedEffect on a player.
+     */
+    @Test
+    public void testStatusEffectsPushedElectrocutedAndConfused() {
+        Player pushedPlayer = new Player("P1", Country.SOUTH_KOREA, Side.LEFT, new AuraAzulPower(), new PlayerStats());
+        double initialX = pushedPlayer.getHeadShape().getX();
+        pushedPlayer.applyEffect(PlayerEffect.PUSHED, 1.5);
+        assertEquals(PlayerEffect.PUSHED, pushedPlayer.getActiveEffect());
+        pushedPlayer.tick();
+        assertTrue("Pushed left player should be pushed backward toward left goal",
+                pushedPlayer.getHeadShape().getX() < initialX);
+
+        Player shockedPlayer = new Player("P2", Country.CAMEROON, Side.LEFT, new LightningPower(), new PlayerStats());
+        shockedPlayer.applyEffect(PlayerEffect.ELECTROCUTED, 3.0);
+        double normalStep = new PlayerStats().speedPx();
+        double beforeShockX = shockedPlayer.getHeadShape().getX();
+        shockedPlayer.moveRight();
+        assertEquals("Electrocuted player should move at half speed",
+                normalStep * 0.5, shockedPlayer.getHeadShape().getX() - beforeShockX, 0.01);
+        double beforeJumpY = shockedPlayer.getHeadShape().getY();
+        shockedPlayer.jump();
+        shockedPlayer.tick();
+        assertEquals("Electrocuted player must not jump", beforeJumpY, shockedPlayer.getHeadShape().getY(), 0.01);
+
+        Player confusedPlayer = new Player("P3", Country.USA, Side.LEFT, new IllusionPower(), new PlayerStats());
+        confusedPlayer.applyEffect(PlayerEffect.CONFUSED, 2.5);
+        double beforeConfX = confusedPlayer.getHeadShape().getX();
+        confusedPlayer.moveRight();
+        assertTrue("Confused player moving right should actually move left",
+                confusedPlayer.getHeadShape().getX() < beforeConfX);
+    }
+
+    /**
+     * Verifies incrementing all four statistics up to level 10 and rejecting null or capped increments.
+     *
+     * @throws DOPOSoccerException if an unexpected validation error occurs
+     */
+    @Test
+    public void testPlayerStatsIncrementAllFourAndEnforceCap() throws DOPOSoccerException {
+        PlayerStats stats = new PlayerStats();
+        for (StatType type : StatType.values()) {
+            for (int level = 2; level <= 10; level++) {
+                stats.increment(type);
+            }
+        }
+        assertEquals(10, stats.getSpeed());
+        assertEquals(10, stats.getJump());
+        assertEquals(10, stats.getKick());
+        assertEquals(10, stats.getSurvival());
+
+        for (StatType type : StatType.values()) {
+            try {
+                stats.increment(type);
+                fail("Expected MAX_STAT_REACHED for " + type);
+            } catch (DOPOSoccerException ex) {
+                assertEquals(DOPOSoccerException.MAX_STAT_REACHED, ex.getMessage());
+            }
+        }
+
+        try {
+            stats.increment(null);
+            fail("Expected NULL_ARGUMENT for null stat type");
+        } catch (DOPOSoccerException ex) {
+            assertEquals(DOPOSoccerException.NULL_ARGUMENT, ex.getMessage());
+        }
+    }
+
+    /**
+     * Verifies Controller's default receive method is safely ignored by autonomous machines.
+     */
+    @Test
+    public void testControllerDefaultReceiveIsIgnoredByMachine() {
+        Controller machine = MachineProfile.DEFENSIVA.create(Side.RIGHT);
+        machine.receive(EnumSet.of(PlayerAction.KICK, PlayerAction.JUMP));
+        assertTrue(machine.decide(null).isEmpty());
+    }
+
+    /**
+     * Verifies MatchRule's default winner method returns empty while in progress and the leader when over.
+     *
+     * @throws Exception if match setup or reflection fails
+     */
+    @Test
+    public void testMatchRuleDefaultWinnerForTimeMatch() throws Exception {
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftCountry(Country.SOUTH_KOREA)
+                .rightCountry(Country.CAMEROON)
+                .matchType(MatchType.TIME)
+                .targetValue(1)
+                .build();
+        Match match = new Match(config);
+        assertEquals(Optional.empty(), match.getWinner());
+
+        Rectangle rightGoal = match.getGoalArea(Side.RIGHT);
+        java.lang.reflect.Field ballField = Match.class.getDeclaredField("ball");
+        ballField.setAccessible(true);
+        Ball rawBall = (Ball) ballField.get(match);
+        rawBall.reset(rightGoal.getX() + rightGoal.getWidth() / 2.0, rightGoal.getY() + rightGoal.getHeight() / 2.0);
+        match.tick();
+
+        for (int t = 0; t < Physics.seconds(65) && match.getStatus() != GameStatus.FINISHED; t++) {
+            match.tick();
+        }
+        assertEquals(GameStatus.FINISHED, match.getStatus());
+        assertEquals(Optional.of(Side.LEFT), match.getWinner());
+    }
+
+    /**
+     * Verifies all eight default no-op methods of MatchListener execute safely without overrides.
+     */
+    @Test
+    public void testMatchListenerDefaultMethodsHandleAllEventsSafely() {
+        MatchListener empty = new MatchListener() { };
+        empty.onGoal(Side.LEFT);
+        empty.onStunned(Side.RIGHT);
+        empty.onMatchFinished(Side.LEFT, 100, 25);
+        empty.onBallKicked(Side.LEFT);
+        empty.onPowerActivated(Side.LEFT);
+        empty.onPowerShot(Side.LEFT, Country.SOUTH_KOREA);
+        empty.onPowerHit(Side.RIGHT, 40.0);
+        empty.onProfileSaveFailed("error");
+    }
+
+    /**
+     * Verifies Effect interface default methods across all status effect implementations.
+     */
+    @Test
+    public void testEffectDefaultMethodsAcrossAllImplementations() {
+        PlayerBody body = new PlayerBody(Side.LEFT);
+        for (PlayerEffect type : PlayerEffect.values()) {
+            Effect eff = type.createEffect();
+            assertEquals(type, eff.getType());
+            eff.onStart(body);
+            eff.onTick(body, Side.LEFT);
+            eff.canMove();
+            eff.canJump();
+            eff.canKick();
+            eff.isConfused();
+            assertTrue(eff.speedFactor() > 0.0);
+        }
     }
 }

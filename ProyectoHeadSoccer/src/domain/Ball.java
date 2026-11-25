@@ -74,11 +74,11 @@ public class Ball implements BallView, Serializable {
 	}
 	
 	/**
-	 * Gets the circle geometric representation of the ball.
-	 * 
+	 * Gets the circle geometric representation of the ball for domain physics.
+	 *
 	 * @return Circle geometry
 	 */
-	public Circle getCircle() {
+	Circle getCircle() {
 		return circle;
 	}
 
@@ -118,9 +118,17 @@ public class Ball implements BallView, Serializable {
 		}
 	}
 
-	public boolean bounceOff(Figure obstacule, double restitution, double impulse){
-		if(obstacule == null) return false;
-		Optional<Contact> opt = obstacule.contactWith(this.circle);
+	/**
+	 * Resolves bounce against a geometric obstacle using restitution and optional impulse.
+	 *
+	 * @param obstacle Colliding geometric figure
+	 * @param restitution Bounce restitution coefficient
+	 * @param impulse Optional outward impulse added along the contact normal
+	 * @return True if contact occurred and was resolved
+	 */
+	public boolean bounceOff(Figure obstacle, double restitution, double impulse) {
+		if (obstacle == null) return false;
+		Optional<Contact> opt = obstacle.contactWith(this.circle);
 		if(opt.isEmpty()) return false;
 		Contact c = opt.get();
 		Vector2 normal = c.getNormal();
@@ -175,21 +183,6 @@ public class Ball implements BallView, Serializable {
 		getCircle().setY(y);
 		setHorizontalSpeed(0);
 		setVerticalSpeed(0);
-	}
-
-	/**
-	 * Creates a deep copy of the ball state.
-	 * 
-	 * @return Cloned ball instance
-	 */
-	public Ball copy() {
-		Ball copy = new Ball(this.circle.getX(), this.circle.getY(), this.circle.getRadius());
-		copy.setHorizontalSpeed(horizontalSpeed);
-		copy.setVerticalSpeed(verticalSpeed);
-		copy.setPowerShot(powerShot);
-		copy.setPowerShotCountry(powerShotCountry);
-		copy.setPowerShotCharging(powerShotCharging, powerShotChargeProgress);
-		return copy;
 	}
 
 	@Override

@@ -1,14 +1,11 @@
 package presentation;
 
-import java.util.stream.Stream.Builder;
-
 import domain.Country;
 import domain.DOPOSoccerException;
 import domain.MachineProfile;
 import domain.MatchConfig;
 import domain.MatchType;
 import domain.Modality;
-import persistence.Log;
 
 /**
  * Holds the user-selected match configuration across setup screens
@@ -189,7 +186,13 @@ public class MatchSetup {
         }
     }
 
-    public MatchConfig toConfig() throws DOPOSoccerException{
+    /**
+     * Builds a validated MatchConfig from the current UI selection values.
+     *
+     * @return Immutable MatchConfig instance
+     * @throws DOPOSoccerException if any configuration field is invalid
+     */
+    public MatchConfig toConfig() throws DOPOSoccerException {
         int target = (matchType == MatchType.TIME) ? matchDurationMinutes : targetGoals;
         
          MatchConfig.Builder builder = MatchConfig.builder()

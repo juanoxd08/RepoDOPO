@@ -34,30 +34,12 @@ public class Field implements Serializable {
 	}
 
 	/**
-	 * Sets the left goal entity.
-	 * 
-	 * @param leftGoal New left goal
-	 */
-	public void setLeftGoal(Goal leftGoal) {
-		this.leftGoal = leftGoal;
-	}
-
-	/**
 	 * Gets the right goal entity.
 	 * 
 	 * @return Right goal
 	 */
 	public Goal getRightGoal() {
 		return rightGoal;
-	}
-
-	/**
-	 * Sets the right goal entity.
-	 * 
-	 * @param rightGoal New right goal
-	 */
-	public void setRightGoal(Goal rightGoal) {
-		this.rightGoal = rightGoal;
 	}
 
 	/**

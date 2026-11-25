@@ -1,6 +1,11 @@
 package presentation;
 
-import domain.*;
+import domain.DOPOSoccer;
+import domain.GameStatus;
+import domain.MatchView;
+import domain.Physics;
+import domain.PlayerAction;
+import domain.Side;
 import persistence.Log;
 import persistence.SerializedMatchRepository;
 import persistence.SerializedProfileRepository;

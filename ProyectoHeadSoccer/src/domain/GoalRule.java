@@ -1,7 +1,5 @@
 package domain;
 
-import java.util.Optional;
-
 /**
  * Goal-based match rule: first player to reach targetGoals wins.
  *
@@ -42,20 +40,6 @@ public class GoalRule implements MatchRule {
     @Override
     public boolean isOver(Match match) {
         return match.getGoals(Side.LEFT) >= targetGoals || match.getGoals(Side.RIGHT) >= targetGoals;
-    }
-
-    /**
-     * Returns the winning side once the target goal count has been reached.
-     *
-     * @param match Active match instance
-     * @return Optional containing the leading side, or empty if the match is not over
-     */
-    @Override
-    public Optional<Side> winner(Match match) {
-        if (!isOver(match)) {
-            return Optional.empty();
-        }
-        return match.getScoreBoard().getLeader();
     }
 
     /**

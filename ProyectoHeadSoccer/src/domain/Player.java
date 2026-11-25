@@ -51,7 +51,7 @@ public class Player implements PlayerView, Serializable {
 		this.power = power;
 		this.playerBody = new PlayerBody(side);
 		this.playerBody.getFoot().setPowerKicking((int) this.profile.getStats().kickBallForce());
-		this.life = new Life(this.profile.getStats().getVidaMax());
+		this.life = new Life(this.profile.getStats().getMaxLife());
 		this.effect = new EffectState();
 	}
 
@@ -93,7 +93,7 @@ public class Player implements PlayerView, Serializable {
 	 * @return True if disabled
 	 */
 	public boolean isDisabled() {
-		return life.isStunned() || !effect.canMove() || playerBody.getHead().isStunned()
+		return life.isStunned() || !effect.canMove()
 				|| (power != null && power.isChargingShot());
 	}
 
@@ -147,9 +147,6 @@ public class Player implements PlayerView, Serializable {
 	public void moveVertical() {
 		life.tick();
 		effect.tick(playerBody, side);
-		if (!life.isStunned() && effect.canMove()) {
-			playerBody.getHead().setStunned(false);
-		}
 		playerBody.tick();
 	}
 
@@ -206,9 +203,6 @@ public class Player implements PlayerView, Serializable {
 	 */
 	public void takeDamage(double damage) {
 		life.takeDamage(damage);
-		if(life.isStunned()){
-			playerBody.getHead().setStunned(true);
-		}
 	}
 
 	/**
@@ -227,9 +221,6 @@ public class Player implements PlayerView, Serializable {
 	 */
 	public void clearEffect() {
 		effect.clear();
-		if (!life.isStunned()) {
-			playerBody.getHead().setStunned(false);
-		}
 	}
 
 	/**
@@ -303,7 +294,7 @@ public class Player implements PlayerView, Serializable {
 		playerBody.collideWithPlayer(player.playerBody, player.profile.getStats().speedPx());
 
 		if (!kickDealtDamage && !isDisabled() && playerBody.isKickHitting(player.playerBody)) {
-			player.takeDamage(profile.getStats().getDanioPatada());
+			player.takeDamage(profile.getStats().getKickDamage());
 			kickDealtDamage = true;
 		}
 	}
@@ -344,7 +335,7 @@ public class Player implements PlayerView, Serializable {
 	 * @return Kick multiplier
 	 */
 	public double getKickMultiplier() {
-		return profile.getStats().getMultiplicadorKick();
+		return profile.getStats().getKickMultiplier();
 	}
 
 	/**

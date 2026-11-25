@@ -12,13 +12,6 @@ public class Circle extends Figure {
 	private double radius;
 
 	/**
-	 * Default constructor initializing circle at origin.
-	 */
-	public Circle() {
-		super();
-	}
-
-	/**
 	 * Constructs a circle at specified center coordinates with given radius.
 	 * 
 	 * @param x Center horizontal coordinate

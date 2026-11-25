@@ -1,6 +1,14 @@
 package presentation;
 
-import domain.*;
+import domain.Country;
+import domain.DOPOSoccer;
+import domain.DOPOSoccerException;
+import domain.GameStatus;
+import domain.MatchConfig;
+import domain.MatchListener;
+import domain.MatchView;
+import domain.PlayerView;
+import domain.Side;
 import persistence.Log;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;

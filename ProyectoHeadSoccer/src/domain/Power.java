@@ -10,25 +10,27 @@ import java.util.List;
  * 2. Gains 25% charge instantly upon receiving a goal.
  * 3. Activating power gives the player an enduring visible aura and immediately begins recharging.
  * 4. Hitting the ball releases the power shot, which vanishes the aura and accelerates the ball.
- * 5. Hitting the opponent applies damage: DaÃ±oPoder = DaÃ±oTiro * multiplicadorKick, and applies the specific status effect.
+ * 5. Hitting the opponent applies damage: powerDamage = baseDamage * kickMultiplier, and applies the specific status effect.
  * 
  * @author Juan Espitia
  * @author Cristian Salamanca
  */
 public abstract class Power implements Serializable {
     private static final long serialVersionUID = 1L;
-    protected String name;
-    protected double charge;
-    protected boolean auraActive;
-    protected boolean powerShotActive;
-    protected double effectDurationSeconds;
     public static final int TICKS_PER_POWER = 90;
-    protected int ticksPerPower;
-    protected Side shotSide;
-    protected double holdX;
-    protected  double holdY;
     public static final int MAX_FLIGHT_TICKS = Physics.seconds(2);
-    protected int flightRemainingTicks;
+    private static final double CHARGE_LIFT_PX = 30.0;
+
+    private final String name;
+    private double charge;
+    private boolean auraActive;
+    private boolean powerShotActive;
+    private final double effectDurationSeconds;
+    private int ticksPerPower;
+    private Side shotSide;
+    private double holdX;
+    private double holdY;
+    private int flightRemainingTicks;
 
     /**
      * Constructs a special power with its display name and effect duration.
@@ -88,21 +90,38 @@ public abstract class Power implements Serializable {
     }
 
     /**
-     * Executes the power shot when the player with active aura contacts the soccer ball.
+     * Executes the power shot when the player with active aura contacts the soccer ball,
+     * suspending the ball above its current position.
      *
      * @param ball Soccer ball in play
      * @param side Side of the shooting player
      */
     public final void executePowerShot(Ball ball, Side side) {
+        if (ball == null) return;
+        double targetY = Math.max(ball.getRadius() + 5, ball.getY() - CHARGE_LIFT_PX);
+        executePowerShot(ball, side, ball.getX(), targetY);
+    }
+
+    /**
+     * Executes the power shot and suspends the ball at the specified charging coordinates
+     * (clamped inside field boundaries) before launching toward the opponent's goal.
+     *
+     * @param ball Soccer ball in play
+     * @param side Side of the shooting player
+     * @param targetX Desired horizontal charging coordinate
+     * @param targetY Desired vertical charging coordinate
+     */
+    public final void executePowerShot(Ball ball, Side side, double targetX, double targetY) {
         if (auraActive && ball != null && !ball.isPowerShotCharging()) {
             this.auraActive = false;
             this.powerShotActive = true;
             ball.setPowerShot(true);
             ball.setPowerShotCharging(true, 0.0);
-            double targetY = Math.max(ball.getRadius() + 5, ball.getY() - 30);
-            ball.getCircle().setY(targetY);
-            holdX = ball.getX();
-            holdY = targetY;
+            double r = ball.getRadius();
+            holdX = Math.max(r, Math.min(Field.WIDTH - r, targetX));
+            holdY = Math.max(r + 5, Math.min(Field.HEIGHT - r, targetY));
+            ball.getCircle().setX(holdX);
+            ball.getCircle().setY(holdY);
             shotSide = side;
             ticksPerPower = TICKS_PER_POWER;
             ball.setHorizontalSpeed(0);
@@ -171,7 +190,11 @@ public abstract class Power implements Serializable {
     protected void updateActiveShot(Ball ball) {
     }
 
-    protected void onShotFinished(){}
+    /**
+     * Optional hook invoked when an active power shot terminates on hit, goal, or flight expiry.
+     */
+    protected void onShotFinished() {
+    }
 
     /**
      * Resets power to empty uncharged state.
@@ -237,13 +260,6 @@ public abstract class Power implements Serializable {
     public boolean isAuraActive() { return auraActive; }
 
     /**
-     * Enables or disables the player's power aura state.
-     *
-     * @param auraActive New aura state
-     */
-    public void setAuraActive(boolean auraActive) { this.auraActive = auraActive; }
-
-    /**
      * Indicates whether this power shot is currently in its suspended windup charging phase.
      *
      * @return True while charging ticks remain
@@ -258,25 +274,11 @@ public abstract class Power implements Serializable {
     public boolean isPowerShotActive() { return powerShotActive; }
 
     /**
-     * Updates whether a power shot from this power is currently active.
-     *
-     * @param active New active state
-     */
-    public void setPowerShotActive(boolean active) { this.powerShotActive = active; }
-
-    /**
      * Returns the duration of the status effect inflicted by this power, in seconds.
      *
      * @return Effect duration in seconds
      */
     public double getEffectDurationSeconds() { return effectDurationSeconds; }
-
-    /**
-     * Returns the status effect enum type inflicted by this power.
-     *
-     * @return Corresponding PlayerEffect
-     */
-    public PlayerEffect getEffectType() { return createEffect().getType(); }
 
     /**
      * Decoy balls created by this power, if any. Only the Illusion power creates them.
