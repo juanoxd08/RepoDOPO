@@ -3,7 +3,7 @@
 Código de partida: commit **`fix12`** (`10f321e`).
 Enunciado: `DOPOSoccer_2026-2.pdf`.
 
-> **Estado:** el código está terminado: todos los bugs medidos están arreglados. Falta: **archivos de sonido**, **entregables** (pruebas de aceptación, ajustes de diagramas, planificación), revisiones cortas y dos detalles menores del poder (ver "Cambios en `fix12`").
+> **Estado:** el código está terminado: todos los bugs medidos están arreglados. Falta: **archivos de sonido**, **entregables** (pruebas de aceptación, ajustes de diagramas, planificación), revisiones cortas (los detalles del poder ya se arreglaron).
 
 ---
 
@@ -34,9 +34,9 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
   - **Mala práctica:** `Math.random()` dentro del dominio no se puede controlar en las pruebas. Mejor un `Random` inyectable (como en `ClumsyMachine`), o quitar la variación si no se necesita.
 - Siguen bien: BUG-13 (0 tiros que tocan al rival sin contar, en los 4 países) y las 4 máquinas.
 
-**Detalles menores pendientes (≈ 30 min en total):**
-- [ ] **`onPowerHit` se avisa aunque el aura proteja al rival.** En la medición, el evento llega como `onPowerHit(RIGHT, 40.0)` aunque Camerún no perdió vida. La GUI va a mostrar el golpe y sonar como si hubiera daño. Arreglo: en `Match.resolveCollisions`, avisar `onPowerHit` solo si el rival no tenía aura (o con daño 0).
-- [ ] **`Math.random()` en `PlayerBody`:** reemplazarlo por un `Random` inyectable, o quitar la variación de la patada.
+**Detalles menores (arreglados después de `fix12`, en la rama `claude/brave-newton-pne4dc`):**
+- [x] **`onPowerHit` ya no se avisa si el aura protegió al rival:** `Match.applyPowerHit` (un solo método para los dos jugadores, en lugar del código repetido) aplica el golpe y solo avisa si el rival no tenía aura. Prueba: `testPowerShotOnRivalWithAuraDoesNotNotifyPowerHit` (falla con el código de `fix12` y pasa con el arreglo).
+- [x] **`Math.random()` reemplazado por un `Random` inyectable:** `PlayerBody(Side)` crea uno nuevo y `PlayerBody(Side, Random)` permite pasar uno con semilla fija. Prueba: `testSeededKickIsReproducibleAndMirrored` (con la misma semilla, la patada izquierda y la derecha salen exactamente espejadas).
 
 ## Cambios en `fix11` (verificado)
 
@@ -350,13 +350,12 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 | Orden | Qué | Horas |
 |---|---|---|
 | 0 | Sacar `DOPOSoccer.log` y `profiles.dat` del repositorio (y agregarlos a `.gitignore`) | 0.1 |
-| 1 | Detalles del poder: `onPowerHit` cuando el aura protege, y `Math.random()` en `PlayerBody` | 0.5 |
-| 2 | **GUI:** los 7 archivos de sonido, revisar abrir partida en pausa, revisar las 3 resoluciones, `CREDITOS.txt` | 1 – 1.5 |
-| 3 | **Entregables:** pruebas de aceptación, ajustar diagramas (`AJUSTES_DIAGRAMAS_fix10.md` + S08, S09, estados y clases), planificación | 2 – 3 |
-| | **Total** | **≈ 3.5 – 5 h** |
+| 1 | **GUI:** los 7 archivos de sonido, revisar abrir partida en pausa, revisar las 3 resoluciones, `CREDITOS.txt` | 1 – 1.5 |
+| 2 | **Entregables:** pruebas de aceptación, ajustar diagramas (`AJUSTES_DIAGRAMAS_fix10.md` + S08, S09, estados y clases), planificación | 2 – 3 |
+| | **Total** | **≈ 3 – 4.5 h** |
 | — | *Opcionales:* tirador inamovible durante la carga, partir `Match`/`Player`, resto de `Theme`, barrita del aturdido, dash | — |
 
-**Sugerencia de reparto:** Juan, las pruebas de aceptación y los diagramas; Cristian, los detalles del poder, los archivos de sonido, `CREDITOS.txt` y las revisiones cortas.
+**Sugerencia de reparto:** Juan, las pruebas de aceptación y los diagramas; Cristian, los archivos de sonido, `CREDITOS.txt` y las revisiones cortas.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.

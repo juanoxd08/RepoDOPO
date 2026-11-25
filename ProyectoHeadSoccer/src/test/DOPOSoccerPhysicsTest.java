@@ -16,12 +16,14 @@ import domain.MatchType;
 import domain.Modality;
 import domain.Player;
 import domain.PlayerAction;
+import domain.PlayerBody;
 import domain.PlayerProfile;
 import domain.PlayerStats;
 import domain.PlayerView;
 import domain.Rectangle;
 import domain.Side;
 import java.util.EnumSet;
+import java.util.Random;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -430,5 +432,35 @@ public class DOPOSoccerPhysicsTest {
 
         assertTrue("Ball should gain forward horizontal speed when dribbled",
                 ball.getHorizontalSpeed() > 1.0);
+    }
+
+    /**
+     * Verifies that the kick angle variation is reproducible with a fixed seed: two bodies with the
+     * same seed, one on each side, launch the ball with exactly mirrored velocities.
+     */
+    @Test
+    public void testSeededKickIsReproducibleAndMirrored() {
+        PlayerBody left = new PlayerBody(Side.LEFT, new Random(42));
+        PlayerBody right = new PlayerBody(Side.RIGHT, new Random(42));
+
+        Ball leftBall = new Ball(left.getFootShape().getX() + 18.0, Field.HEIGHT - 10.0, 10.0);
+        Ball rightBall = new Ball(right.getFootShape().getX() - 18.0, Field.HEIGHT - 10.0, 10.0);
+
+        left.startKick();
+        right.startKick();
+        for (int t = 0; t < 10; t++) {
+            left.tick();
+            right.tick();
+            leftBall.tick();
+            rightBall.tick();
+            leftBall.collideWithEdges();
+            rightBall.collideWithEdges();
+            left.collideWithBall(leftBall, null);
+            right.collideWithBall(rightBall, null);
+        }
+
+        assertTrue("Left kick should launch the ball right", leftBall.getHorizontalSpeed() > 5.0);
+        assertEquals(leftBall.getHorizontalSpeed(), -rightBall.getHorizontalSpeed(), 0.001);
+        assertEquals(leftBall.getVerticalSpeed(), rightBall.getVerticalSpeed(), 0.001);
     }
 }

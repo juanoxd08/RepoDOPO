@@ -2,6 +2,7 @@ package domain;
 
 import java.io.Serializable;
 import java.util.Optional;
+import java.util.Random;
 
 /**
  * Encapsulates a player's physical limbs (head, torso, foot), anchor position,
@@ -23,6 +24,7 @@ public class PlayerBody implements Serializable {
     private double lastHorizontalMove;
     private static final double DRIBBLE_SPEED_FACTOR = 1.5;
     private static final double KICK_LIFT_VARIANCE = 0.30;
+    private final Random kickRandom;
 
     /*
      * Synchronizes head, torso, and foot collision shapes with the current anchor and kick offsets.
@@ -45,7 +47,19 @@ public class PlayerBody implements Serializable {
      * @param side Field side defended by this player
      */
     public PlayerBody(Side side){
+        this(side, new Random());
+    }
+
+    /**
+     * Constructs a player body with an injectable random generator for the kick angle variation,
+     * so tests can reproduce the exact same kicks with a fixed seed.
+     *
+     * @param side Field side defended by this player
+     * @param kickRandom Random generator used to vary the kick lift; a new one is created if null
+     */
+    public PlayerBody(Side side, Random kickRandom){
         this.side = side;
+        this.kickRandom = (kickRandom != null) ? kickRandom : new Random();
         anchor = new Vector2(side.startX(), Field.HEIGHT);
         head = new Head(anchor.getX(), side);
         body = new Body(anchor.getX(), side);
@@ -295,7 +309,7 @@ public class PlayerBody implements Serializable {
             boolean inFront = (ball.getX() - footCircle.getX()) * side.dir() >= -ball.getRadius();
             if (inFront) {
                 ball.getCircle().translate(side.dir() * c.getPenetration(), 0);
-                double lift = Physics.KICK_LIFT_FACTOR + (Math.random() * 2.0 - 1.0) * KICK_LIFT_VARIANCE;
+                double lift = Physics.KICK_LIFT_FACTOR + (kickRandom.nextDouble() * 2.0 - 1.0) * KICK_LIFT_VARIANCE;
                 Vector2 vel = new Vector2(side.dir(), lift).normalized().scale(foot.getPowerKicking());
                 ball.setHorizontalSpeed(vel.getX());
                 ball.setVerticalSpeed(vel.getY());

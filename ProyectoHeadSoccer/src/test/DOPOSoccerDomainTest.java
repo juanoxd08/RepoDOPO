@@ -1011,4 +1011,52 @@ public class DOPOSoccerDomainTest {
             }
         }
     }
+
+    /**
+     * Verifies that a power shot hitting a rival protected by an active aura does not
+     * notify onPowerHit, because the rival takes no damage or effect.
+     *
+     * @throws DOPOSoccerException if match configuration is invalid
+     */
+    @Test
+    public void testPowerShotOnRivalWithAuraDoesNotNotifyPowerHit() throws DOPOSoccerException {
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftCountry(Country.SOUTH_KOREA)
+                .rightCountry(Country.CAMEROON)
+                .matchType(MatchType.TIME)
+                .targetValue(1)
+                .build();
+        Match match = new Match(config);
+        PlayerView pLeft = match.getPlayer(Side.LEFT);
+        PlayerView pRight = match.getPlayer(Side.RIGHT);
+        AtomicInteger hitsOnRight = new AtomicInteger();
+        match.addListener(new MatchListener() {
+            @Override
+            public void onPowerHit(Side victim, double damage) {
+                if (victim == Side.RIGHT) {
+                    hitsOnRight.incrementAndGet();
+                }
+            }
+        });
+
+        for (int i = 0; i < 600; i++) {
+            match.tick();
+        }
+        match.setIntention(Side.LEFT, EnumSet.of(PlayerAction.POWER));
+        match.setIntention(Side.RIGHT, EnumSet.of(PlayerAction.POWER));
+        match.tick();
+        for (int i = 0; i < 120 && pLeft.hasAura(); i++) {
+            match.setIntention(Side.LEFT, EnumSet.of(PlayerAction.RIGHT, PlayerAction.KICK));
+            match.tick();
+        }
+        for (int i = 0; i < Power.TICKS_PER_POWER + 60 && pRight.hasAura(); i++) {
+            match.setIntention(Side.LEFT, EnumSet.noneOf(PlayerAction.class));
+            match.setIntention(Side.RIGHT, EnumSet.noneOf(PlayerAction.class));
+            match.tick();
+        }
+
+        assertFalse("Right player should have used its aura on the counter-shot", pRight.hasAura());
+        assertEquals("No onPowerHit must be notified for a rival protected by its aura", 0, hitsOnRight.get());
+    }
 }

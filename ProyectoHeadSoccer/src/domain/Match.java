@@ -194,25 +194,8 @@ public class Match implements MatchView, Serializable {
         player1.collideWithPlayer(player2);
         player2.collideWithPlayer(player1);
 
-        PowerHit hit1 = player1.powerHitOn(player2, ball);
-        if (hit1 != null) {
-            player1.finishPowerShot();
-            ball.setPowerShot(false);
-            player2.receiveHit(hit1);
-            for (MatchListener listener : listeners) {
-                listener.onPowerHit(player2.getSide(), hit1.getDamage());
-            }
-        }
-
-        PowerHit hit2 = player2.powerHitOn(player1, ball);
-        if (hit2 != null) {
-            player2.finishPowerShot();
-            ball.setPowerShot(false);
-            player1.receiveHit(hit2);
-            for (MatchListener listener : listeners) {
-                listener.onPowerHit(player1.getSide(), hit2.getDamage());
-            }
-        }
+        applyPowerHit(player1, player2);
+        applyPowerHit(player2, player1);
 
         boolean touched1 = player1.isHitByBall(ball);
         
@@ -244,6 +227,23 @@ public class Match implements MatchView, Serializable {
         }
 
 
+    }
+
+    /*
+     * Applies the shooter's power shot to the victim if it hits, ends the shot and notifies listeners.
+     * A victim with an active aura is protected: it takes no damage or effect, so no hit is notified.
+     */
+    private void applyPowerHit(Player shooter, Player victim) {
+        PowerHit hit = shooter.powerHitOn(victim, ball);
+        if (hit == null) return;
+        boolean protectedByAura = victim.hasAura();
+        shooter.finishPowerShot();
+        ball.setPowerShot(false);
+        victim.receiveHit(hit);
+        if (protectedByAura) return;
+        for (MatchListener listener : listeners) {
+            listener.onPowerHit(victim.getSide(), hit.getDamage());
+        }
     }
 
     /*
