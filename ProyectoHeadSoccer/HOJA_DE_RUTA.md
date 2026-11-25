@@ -3,7 +3,7 @@
 Código de partida: commit **`fix11`** (`fea3df6`).
 Enunciado: `DOPOSoccer_2026-2.pdf`.
 
-> **Estado:** el código está prácticamente terminado: todos los bugs arreglados, código limpio y cobertura del dominio en 90.6 %. Falta: **archivos de sonido**, **entregables** (pruebas de aceptación, ajustes de diagramas, planificación) y revisiones cortas.
+> **Estado:** el código está casi terminado (cobertura del dominio en 90.6 %). Falta: **BUG-17 y BUG-18** del poder, **archivos de sonido**, **entregables** (pruebas de aceptación, ajustes de diagramas, planificación) y revisiones cortas.
 
 ---
 
@@ -99,7 +99,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-## Prioridad 1 — Interfaz gráfica · ≈ 1 – 1.5 h
+## Prioridad 1 — Interfaz gráfica y bugs del poder · ≈ 2.5 – 3.5 h
 
 ### 1.0 Datos del dominio que la GUI necesita · ✅ hecho en `fix8`
 - [x] `PlayerView`: `getActiveEffect()` y `getEffectProgress()`.
@@ -130,7 +130,28 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 - [ ] *(Opcional, ≈ 45 min)* `MatchFileDialogs` para guardar y abrir, y los botones de pausa/fin como `JButton` reales en vez de comprobar a mano si el clic cayó en el rectángulo.
 - [ ] Después de cada paso: abrir el juego y probar menú → selección → partido → pausa → guardar → abrir → fin → mejoras.
 
-### 1.1c Bugs del poder · ✅ todos hechos (BUG-16 en `fix11`)
+### 1.1c Bugs del poder · 8, 12 a 16 ✅ · faltan el BUG-17 y el BUG-18, ≈ 1.5 – 2 h
+- [ ] **BUG-17 · Un jugador con aura no debe recibir el efecto del tiro rival.** *(Cambio de regla pedido por el equipo.)*
+  - **Hoy:** si el tiro de poder golpea a un rival que tiene el aura activa, el rival recibe el **daño y el efecto** (por ejemplo, queda empujado o electrocutado) y después responde con su propio tiro.
+  - **Comportamiento esperado:** si el rival tiene el aura activa, **el efecto no se le aplica**. Sigue respondiendo con su propio tiro al tocar el balón (BUG-12).
+  - **Por decidir:** si el **daño** sí se aplica. Propuesta: sí se aplica el daño y no el efecto, así el golpe "cuenta" pero el aura lo protege. Como el PDF dice que *"si el tiro de poder golpea al rival, se aplican el daño y el efecto"* (regla 5), anotarlo como **decisión de diseño** y mencionarlo en la sustentación.
+  - **Arreglo (≈ 20 min):** en `Match.resolveCollisions`, antes de `receiveHit`, preguntar si el rival tiene aura (`rival.hasAura()`). Si la tiene, aplicar solo el daño (`takeDamage`) y no el efecto. Es mejor dejar la decisión en `Player.receiveHit`, que ya conoce su aura: `if (!hasAura()) effect.apply(...)`.
+  - **Pruebas:** actualizar `testPowerShotAgainstRivalWithAuraAppliesHitAndTriggersCounterShot` (hoy espera que el efecto sí se aplique) y agregar una que compruebe que, con aura, `getActiveEffect()` sigue en `NONE` después del golpe.
+- [ ] **BUG-18 · El rival atraviesa el balón mientras se carga un tiro.** *(Difícil.)*
+  - **Medición (`fix11`):** Corea carga su tiro y el rival (Camerún) camina hacia el balón quieto en el aire: está **dentro del balón 13 de los 90 ticks** y termina del otro lado.
+  - **Causa:** desde `fix10` (BUG-14 y BUG-11), `PlayerBody.collideWithBall` ignora por completo el balón mientras carga, para que nadie lo mueva ni robe el tiro. Por eso tampoco frena a los jugadores.
+  - **Comportamiento esperado:** el balón en carga es un **obstáculo fijo**: no se mueve, pero los jugadores no lo pueden atravesar (chocan contra él como contra un poste).
+  - **Arreglo propuesto (≈ 1 – 1.5 h):** en `PlayerBody.collideWithBall`, cuando `ball.isPowerShotCharging()`, en lugar de salir sin hacer nada, **sacar al jugador** del círculo del balón, igual que `resolveCircleAgainstBar` saca al jugador del travesaño:
+    1. Calcular el contacto entre el círculo del balón y la cabeza, el cuerpo y el pie (`contactWith`).
+    2. Mover **al jugador**, no al balón, en la dirección de la normal por la penetración (`translate`), preferiblemente solo en horizontal.
+    3. No ejecutar ningún tiro ni dar impulso al balón.
+  - **Por qué es difícil:**
+    - El jugador tiene tres figuras (cabeza, cuerpo y pie), y empujarlo por una puede meterlo en otra cosa (el arco, el otro jugador, la pared).
+    - Si el jugador salta y cae encima del balón, hay que decidir si se apoya en él o resbala; lo más simple es empujarlo solo en horizontal.
+    - El orden importa: este empuje debe ir **después** de `collideWithPlayer` y antes de `collideWithEdges`, para no dejar a nadie fuera de la cancha.
+    - El que carga el tiro está quieto y el balón queda 26 px delante de su cabeza: comprobar que no lo empuje a él.
+  - **Pruebas:** el rival camina contra el balón en carga desde los dos lados; durante los 90 ticks `isHitByBall` debe ser falso (o la penetración casi cero) y el rival nunca debe terminar del otro lado.
+
 - [x] **BUG-16 · Al ejecutar el poder, el balón puede quedar detrás del jugador.** Medición (`fix10`, los dos lados): si el jugador con aura toca el balón con la parte de atrás de la cabeza, el balón queda sostenido **16 px detrás** del centro de la cabeza; si lo toca justo encima, queda **dentro** de la cabeza. El tiro sale igual hacia el arco rival, pero arrancando desde atrás del jugador (y a través de su cuerpo).
   - **Causa:** `Power.executePowerShot` sostiene el balón en su posición de ese momento (`holdX = ball.getX()`, y lo sube 30 px), sin mirar dónde está el jugador.
   - **Comportamiento esperado:** al ejecutar el poder, el balón **siempre** queda **delante** del jugador, del lado del arco rival, a la altura de la cabeza.
@@ -315,12 +336,13 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 | Orden | Qué | Horas |
 |---|---|---|
 | 0 | Sacar `DOPOSoccer.log` y `profiles.dat` del repositorio (y agregarlos a `.gitignore`) | 0.1 |
-| 1 | **GUI:** los 7 archivos de sonido, revisar abrir partida en pausa, revisar las 3 resoluciones, `CREDITOS.txt` | 1 – 1.5 |
-| 2 | **Entregables:** pruebas de aceptación, ajustar diagramas (`AJUSTES_DIAGRAMAS_fix10.md` + S08, S09, estados y clases), planificación | 2 – 3 |
-| | **Total** | **≈ 3 – 4.5 h** |
+| 1 | **BUG-17** (el aura protege del efecto rival) y **BUG-18** (no atravesar el balón en carga) | 1.5 – 2 |
+| 2 | **GUI:** los 7 archivos de sonido, revisar abrir partida en pausa, revisar las 3 resoluciones, `CREDITOS.txt` | 1 – 1.5 |
+| 3 | **Entregables:** pruebas de aceptación, ajustar diagramas (`AJUSTES_DIAGRAMAS_fix10.md` + S08, S09, estados y clases), planificación | 2 – 3 |
+| | **Total** | **≈ 4.5 – 6.5 h** |
 | — | *Opcionales:* tirador inamovible durante la carga, partir `Match`/`Player`, resto de `Theme`, barrita del aturdido, dash | — |
 
-**Sugerencia de reparto:** Juan, las pruebas de aceptación y los diagramas; Cristian, los archivos de sonido, `CREDITOS.txt` y las revisiones cortas.
+**Sugerencia de reparto:** Juan, las pruebas de aceptación y los diagramas; Cristian, el BUG-17, el BUG-18, los archivos de sonido, `CREDITOS.txt` y las revisiones cortas.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.
