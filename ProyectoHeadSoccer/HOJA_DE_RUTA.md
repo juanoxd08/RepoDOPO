@@ -189,6 +189,41 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 
 ---
 
+### 2.5 Cobertura de las pruebas · ≈ 1.5 – 2 h
+Medida con JaCoCo sobre `fix10` (63 pruebas):
+
+| Paquete | Líneas | Ramas |
+|---|---|---|
+| `domain` | 80.7 % | 59.7 % |
+| `persistence` | 68.8 % | 60.0 % |
+| `presentation` | ~0 % | — (normal: la GUI no se prueba con JUnit) |
+
+**Paso 1 · Borrar código muerto (≈ 20 min).** Estos métodos no los llama nadie (ni el juego ni las pruebas); bajan el porcentaje sin aportar nada:
+- [ ] `Head`: `collideWithFoot`, `isStruck`, `isNotStruck`, `getKicksRecieved`, `setKicksRecieved`, `tick` y el atributo `kicksRecieved`. Por esto `Head` está en 22 %.
+- [ ] `Match`: `getController1`, `setController1`, `getController2`, `setController2`.
+- [ ] `Field`: `setLeftGoal`, `setRightGoal`.
+- [ ] `PlayerStats`: `setJump`, `setSpeed` (`setKick` y `setSurvival` solo los usa una prueba; se pueden reemplazar por el constructor).
+- [ ] `Power`: `setAuraActive`, `setPowerShotActive`, `getEffectType`.
+- [ ] `Ball.copy()`.
+- [ ] Constructores sin uso de `Head`, `Body`, `Foot` y `Circle` (revisar uno por uno antes de borrar).
+
+**Paso 2 · Pruebas para lo que sí se usa (≈ 1 – 1.5 h).** Las clases más bajas:
+
+| Clase | Líneas | Ramas | Qué probar |
+|---|---|---|---|
+| `DefensiveMachine` | 60 % | 12.5 % | Balón lejos → vuelve a su posición; balón cerca → se pone entre el balón y su arco, salta y patea. |
+| `ClumsyMachine` | 66.7 % | 27.3 % | Con un `Random` de semilla fija: cada una de las 6 opciones; la acción se mantiene al menos 12 ticks; usa el poder con la barra llena. |
+| `ExpertMachine` | 69 % | 37.5 % | Cada rama: tiro de poder hacia su arco, rival con aura, rival con efecto, muerte súbita, ganando, perdiendo. |
+| `OffensiveMachine` | 70 % | 53.3 % | Balón adelante y atrás; salto; patada; poder; balón sobre el travesaño. |
+| `MachineProfile` | 78.6 % | 0 % | `create(...)` devuelve la clase correcta para cada perfil (y `create(side, random)` para la Torpe). |
+| `SerializedProfileRepository` | 63 % | 60 % | Archivo de perfiles corrupto → `OPEN_ERROR`; nombre vacío → `NULL_ARGUMENT`. |
+| `SerializedMatchRepository` | 65.2 % | 50 % | Guardar en una ruta donde no se puede escribir → `SAVE_ERROR`; `null` → `NULL_ARGUMENT`. |
+| `IllusionPower` | 65.2 % | 45 % | Tiro de EE. UU. completo: 7 falsos durante el vuelo, se borran al golpear. |
+| `PushedEffect`, `ElectrocutedEffect`, `ConfusedEffect` | 0 – 50 % | — | Empujado: se mueve hacia su arco; electrocutado: velocidad 0.5 y no salta; confundido: izquierda y derecha invertidas. |
+| `PlayerStats` | 69.4 % | 47.4 % | Subir cada una de las 4 estadísticas y el tope de 10. |
+
+Las pruebas de la máquina de este paso son las mismas de 2.2: hacerlas una sola vez.
+
 ## Prioridad 3 — Entregables · ≈ 2 – 3 h
 - [ ] **Pruebas de aceptación** (V3): jugar PvM contra cada perfil; partido por tiempo que termina en muerte súbita; guardar a mitad, cerrar y abrir; ganar, recibir 100 puntos y comprar una mejora.
 - [x] **Diagramas de secuencia:** 16 terminados en Astah (faltan la 8 y la 9 del tiro de poder, que esperan los BUG-8, 11, 12 y 13).
@@ -232,11 +267,11 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 |---|---|---|
 | 0 | Sacar los archivos generados del repositorio | 0.1 |
 | 1 | **GUI:** revisar abrir partida en pausa, revisar las 3 resoluciones, `CREDITOS.txt`, **archivos de sonido** (y opcionales: `Theme`, barrita del aturdido, posición del balón en carga) | 1.5 – 2 |
-| 2 | **Dominio:** pruebas de la máquina (2.2) | 1 – 1.5 |
+| 2 | **Dominio:** borrar código muerto y subir la cobertura (2.2 y 2.5; las pruebas de la máquina cuentan para las dos) | 1.5 – 2 |
 | 3 | **Entregables:** pruebas de aceptación, diagrama de clases, planificación | 2 – 3 |
-| | **Total** | **≈ 4.5 – 6.5 h** (sin opcionales ni dash) |
+| | **Total** | **≈ 5 – 7 h** (sin opcionales ni dash) |
 
-**Sugerencia de reparto:** Juan, los entregables (pruebas de aceptación y diagrama de clases); Cristian, los archivos de sonido y las pruebas de la máquina.
+**Sugerencia de reparto:** Juan, los entregables (pruebas de aceptación y diagrama de clases); Cristian, los archivos de sonido, borrar el código muerto y las pruebas que suben la cobertura.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.
