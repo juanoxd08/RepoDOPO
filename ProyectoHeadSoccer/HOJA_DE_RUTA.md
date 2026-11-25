@@ -1,9 +1,9 @@
 # DOPOSoccer 2026-2 — Hoja de ruta
 
-Código de partida: commit **`fix10`** (`c668a70`, 25 nov).
+Código de partida: commit **`fix11`** (`fea3df6`).
 Enunciado: `DOPOSoccer_2026-2.pdf`.
 
-> **Estado:** todos los bugs medidos están arreglados. Falta **pulido** (archivos de sonido, `Theme`), **pruebas de la máquina** y **entregables** (pruebas de aceptación, diagrama de clases, planificación).
+> **Estado:** el código está prácticamente terminado: todos los bugs arreglados, código limpio y cobertura del dominio en 90.6 %. Falta: **archivos de sonido**, **entregables** (pruebas de aceptación, ajustes de diagramas, planificación) y revisiones cortas.
 
 ---
 
@@ -20,9 +20,32 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 ## Antes de seguir · ≈ 5 min
 
 - [x] **Prueba del piso:** arreglo aplicado en `Ball.bounceOff` y la prueba `testFloorDisputeNeverPushesBallBelowFloor` de vuelta (`fix9`).
-- [ ] **Siguen subidos archivos generados** (en `fix10` el log creció 770 líneas): `DOPOSoccer.log` y `profiles.dat`. Agregarlos a `.gitignore` y sacarlos del repositorio sin borrarlos del disco (`git rm --cached ProyectoHeadSoccer/DOPOSoccer.log ProyectoHeadSoccer/profiles.dat`). Si no, cada partido cambia esos archivos y genera conflictos entre los dos.
+- [ ] **Siguen subidos archivos generados** (en `fix11` el log creció otras 619 líneas): `DOPOSoccer.log` y `profiles.dat`. Agregarlos a `.gitignore` y sacarlos del repositorio sin borrarlos del disco (`git rm --cached ProyectoHeadSoccer/DOPOSoccer.log ProyectoHeadSoccer/profiles.dat`). Si no, cada partido cambia esos archivos y genera conflictos entre los dos.
 
 ---
+
+## Cambios en `fix11` (verificado)
+
+- Compila; **84 de 84 pruebas pasan** (antes 63), en 6 clases: dominio (38), máquina (6, nueva), persistencia (14), física (14), presentación (5, nueva) y estática/dinámica (7). Ningún comentario `//`.
+- **BUG-16 arreglado:** `PlayerBody.triggerPowerShot` le pasa a `Power` un punto delante de la cabeza, del lado del arco rival (`executePowerShot(ball, side, holdX, holdY)`). Medido en los dos lados, tocando el balón con la nuca, encima y de frente: en los 6 casos el balón queda sostenido **26 px delante** del centro de la cabeza.
+- **Siguen bien:** BUG-13 (0 tiros que tocan al rival sin contar, en los 4 países), BUG-14 (el rival con aura no roba el tiro) y BUG-15 (el tirador no se mueve durante la carga: 0 px).
+- **Limpieza (2.5.1 y 2.5.2), casi completa:**
+  - Código muerto borrado: `Head` quedó en 44 líneas (sin `collideWithFoot`, `isStruck`, `kicksRecieved` ni su propio aturdimiento), sin `get/setController` en `Match`, sin `set` en `Field`, sin `Ball.copy`, sin `GoalRule.winner` duplicado, sin los `set` de `Power`.
+  - `Match` y `Power` con atributos `private`; `resetPositions`, `resolveCollisions` y `onGoal` privados; `setState` y `getScoreBoard` de paquete; `getHead`, `getBody`, `getFoot` y los `getCircle`/`getRectangle` internos ya no son públicos.
+  - Una sola fuente de verdad para el aturdimiento (`Life`).
+  - `PlayerStats` lanza `DOPOSoccerException`; nombres en inglés (`getKickDamage`, `getMaxLife`, `getKickMultiplier`); sin `golIn` ni `obstacule`.
+  - Números mágicos con nombre (`GOAL_CELEBRATION_TICKS`, `WINNER_POINTS`, `LOSER_POINTS`, `KICKOFF_BALL_HEIGHT`, `CHARGE_LIFT_PX`).
+  - Sin `import domain.*` (quedan solo `java.awt.*` y `javax.swing.*`, que es lo habitual en Swing). `Log` escribe en `System.err` en vez de `printStackTrace`.
+- **Cobertura (JaCoCo):**
+
+  | Paquete | Líneas (`fix10` → `fix11`) | Ramas (`fix10` → `fix11`) |
+  |---|---|---|
+  | `domain` | 80.7 % → **90.6 %** | 59.7 % → **70.4 %** |
+  | `persistence` | 68.8 % → **84.4 %** | 60.0 % → **80.0 %** |
+  | `presentation` | ~0 % → 13.3 % | ~0 % → 13.4 % (`Theme`, `Sound`, `MatchSetup` y `FieldResolution` en 98–100 %; el resto es Swing) |
+
+  Solo quedan bajo 80 % de líneas `Head` (75 %, 6 de 8), `GoalRule` (75 %) y `Country` (78.6 %): son 2 o 3 líneas cada una.
+- Probado abriendo el juego: menú, selección, partido con gol, pausa, fin con puntos y mejoras funcionan igual.
 
 ## Cambios en `fix10` (verificado)
 
@@ -76,7 +99,7 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
-## Prioridad 1 — Interfaz gráfica y BUG-16 · ≈ 2 – 2.5 h
+## Prioridad 1 — Interfaz gráfica · ≈ 1 – 1.5 h
 
 ### 1.0 Datos del dominio que la GUI necesita · ✅ hecho en `fix8`
 - [x] `PlayerView`: `getActiveEffect()` y `getEffectProgress()`.
@@ -107,8 +130,8 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 - [ ] *(Opcional, ≈ 45 min)* `MatchFileDialogs` para guardar y abrir, y los botones de pausa/fin como `JButton` reales en vez de comprobar a mano si el clic cayó en el rectángulo.
 - [ ] Después de cada paso: abrir el juego y probar menú → selección → partido → pausa → guardar → abrir → fin → mejoras.
 
-### 1.1c Bugs del poder · 13, 8, 12, 14 y 15 ✅ · falta el BUG-16, ≈ 30 min
-- [ ] **BUG-16 · Al ejecutar el poder, el balón puede quedar detrás del jugador.** Medición (`fix10`, los dos lados): si el jugador con aura toca el balón con la parte de atrás de la cabeza, el balón queda sostenido **16 px detrás** del centro de la cabeza; si lo toca justo encima, queda **dentro** de la cabeza. El tiro sale igual hacia el arco rival, pero arrancando desde atrás del jugador (y a través de su cuerpo).
+### 1.1c Bugs del poder · ✅ todos hechos (BUG-16 en `fix11`)
+- [x] **BUG-16 · Al ejecutar el poder, el balón puede quedar detrás del jugador.** Medición (`fix10`, los dos lados): si el jugador con aura toca el balón con la parte de atrás de la cabeza, el balón queda sostenido **16 px detrás** del centro de la cabeza; si lo toca justo encima, queda **dentro** de la cabeza. El tiro sale igual hacia el arco rival, pero arrancando desde atrás del jugador (y a través de su cuerpo).
   - **Causa:** `Power.executePowerShot` sostiene el balón en su posición de ese momento (`holdX = ball.getX()`, y lo sube 30 px), sin mirar dónde está el jugador.
   - **Comportamiento esperado:** al ejecutar el poder, el balón **siempre** queda **delante** del jugador, del lado del arco rival, a la altura de la cabeza.
   - **Arreglo:** que `PlayerBody` le pase a `Power` el punto de sostén delante de la cabeza: `holdX = cabeza.x + lado.dir() × (radioCabeza + radioBalón + 4)` y `holdY = cabeza.y`. Por ejemplo, `executePowerShot(ball, side, holdX, holdY)`. Esto arregla también el detalle de que el balón quedaba pegado a la cara (1.3).
@@ -150,7 +173,7 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 - [x] Tono de color que pulsa sobre la cabeza, símbolo corto por estado y barrita de duración (`PlayerRenderer.drawStatusEffect`).
 - [x] Colores por país y por efecto en `Theme` (`EnumMap`).
 - [ ] *(Opcional)* Barrita también para el aturdimiento: hoy muestra `***` pero no cuánto le queda (haría falta un `getStunProgress()` en `PlayerView`).
-- [ ] El balón en carga queda pegado a la cara del que tira: se arregla con el **BUG-16** (1.1c).
+- [x] El balón en carga ya no queda pegado a la cara: se arregló con el BUG-16.
 - [ ] *(Opcional)* Destello al golpear al rival (`onPowerHit`).
 
 ### 1.4 Sonidos · código hecho en `fix9` · faltan los archivos ≈ 30 min
@@ -163,7 +186,7 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 
 ---
 
-## Prioridad 2 — Lo que falta del dominio · ≈ 3 – 4 h
+## Prioridad 2 — Dominio · ✅ (solo opcionales)
 
 ### 2.1 Jugador contra máquina · ✅ hecho
 - [x] **`OffensiveMachine`** (primero: la Experta delega en ella cuando va empatando o perdiendo): ubicarse detrás del balón respecto al arco rival, saltar si viene alto, patear si está al alcance, activar el poder cuando va a tocar el balón. Constantes con nombre, como en `DefensiveMachine`.
@@ -172,7 +195,7 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 - [x] Con las figuras más pequeñas, revisar los alcances de `DefensiveMachine` (zona de defensa a 170 en `fix10`) (distancias pensadas para los tamaños anteriores).
 - [x] La defensa de la Experta contra el tiro de poder ya funciona bien: desde `fix9` el balón se desmarca al terminar el tiro (BUG-8).
 
-### 2.2 Pruebas de la máquina · se hacen junto con 2.5.3
+### 2.2 Pruebas de la máquina · ✅ `DOPOSoccerMachineTest` en `fix11`
 - [ ] Defensiva: balón cerca de su arco → queda entre el balón y el arco; balón lejos → vuelve a su posición.
 - [ ] Experta: va perdiendo → ofensiva; va ganando → defensiva; rival con aura → defensiva.
 - [ ] Torpe con un `Random` de semilla fija → siempre las mismas acciones, y cada acción se mantiene al menos 12 ticks.
@@ -194,33 +217,33 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 
 ---
 
-### 2.5 Calidad del código: código muerto, malas prácticas y pruebas · ≈ 3 – 4 h
+### 2.5 Calidad del código · ✅ casi todo hecho en `fix11` (ver "Cambios en `fix11`")
 Hacerlo en este orden: primero borrar lo que sobra, después corregir las malas prácticas y al final escribir las pruebas (así no se prueban métodos que se van a borrar o cambiar). Después de cada paso: todas las pruebas en verde.
 
-#### 2.5.1 Código muerto · ≈ 20 min
-- [ ] `Head`: `collideWithFoot`, `isStruck`, `isNotStruck`, `getKicksRecieved`, `setKicksRecieved`, `tick` y el atributo `kicksRecieved`. Por esto `Head` está en 22 %.
-- [ ] `Match`: `getController1`, `setController1`, `getController2`, `setController2`.
-- [ ] `Field`: `setLeftGoal`, `setRightGoal`.
-- [ ] `PlayerStats`: `setJump`, `setSpeed` (`setKick` y `setSurvival` solo los usa una prueba; se pueden reemplazar por el constructor).
-- [ ] `Power`: `setAuraActive`, `setPowerShotActive`, `getEffectType`.
-- [ ] `Ball.copy()`.
-- [ ] Constructores sin uso de `Head`, `Body`, `Foot` y `Circle` (revisar uno por uno antes de borrar).
+#### 2.5.1 Código muerto · ✅
+- [x] `Head`: `collideWithFoot`, `isStruck`, `isNotStruck`, `getKicksRecieved`, `setKicksRecieved`, `tick` y el atributo `kicksRecieved`. Por esto `Head` está en 22 %.
+- [x] `Match`: `getController1`, `setController1`, `getController2`, `setController2`.
+- [x] `Field`: `setLeftGoal`, `setRightGoal`.
+- [x] `PlayerStats`: `setJump`, `setSpeed` (`setKick` y `setSurvival` solo los usa una prueba; se pueden reemplazar por el constructor).
+- [x] `Power`: `setAuraActive`, `setPowerShotActive`, `getEffectType`.
+- [x] `Ball.copy()`.
+- [x] Constructores sin uso de `Head`, `Body`, `Foot` y `Circle` (revisar uno por uno antes de borrar).
 
 
-#### 2.5.2 Malas prácticas · ≈ 1.5 – 2 h
-- [ ] **Atributos `protected` sin necesidad.** `Match` tiene 11 (`player1`, `ball`, `scoreBoard`, `state`, …) y no tiene subclases: pasarlos a `private`. En `Power`, dejar `private` lo que las subclases no usan (`charge`, `auraActive`, `ticksPerPower`, `holdX`, `holdY`, …) y darles acceso solo a lo necesario con métodos `protected`.
-- [ ] **Métodos públicos que cambian el partido desde afuera.** `Match.resetPositions`, `resolveCollisions`, `onGoal` y `setState` son `public`: cualquiera podría saltarse las reglas. Pasarlos a `private` (o de paquete, si una regla los necesita, como `setState` y `getScoreBoard` para `TimeRule`).
-- [ ] **Getters que entregan objetos internos que se pueden modificar.** `Ball.getCircle()`, `PlayerBody.getHead()`, `getBody()`, `getFoot()`, `Head.getCircle()`, `Body.getRectangle()`, `Goal.getRectangle()` y `Match.getScoreBoard()` son `public`: dejarlos de paquete (la GUI ya usa las vistas, que entregan copias).
-- [ ] **Dos fuentes de verdad para el aturdimiento:** `Life.stunned` y `Head.stunned`. Dejar solo el de `Life` y que la cabeza lo consulte.
-- [ ] **Excepción equivocada:** `PlayerStats.validate` lanza `IllegalArgumentException`; usar `DOPOSoccerException(INVALID_STAT)` como el resto del dominio.
-- [ ] **Nombres mezclados y con errores:** `getDanioPatada`, `getVidaMax`, `getMultiplicadorKick` y `golIn` (español en código en inglés), `kicksRecieved` (se escribe *received*; se borra con el código muerto) y el parámetro `obstacule` de `Ball.bounceOff`. Renombrar a `getKickDamage`, `getMaxLife`, `getKickMultiplier` y borrar el alias `golIn`.
-- [ ] **Números mágicos** en el dominio: los 85 ticks de celebración del gol, los 100 y 25 puntos, la altura de 40 px del saque y los 30 px que sube el balón al ejecutar el poder. Pasarlos a constantes con nombre (en `Physics` o en la clase que los usa).
-- [ ] **`import domain.*`** en 6 clases de `presentation` y en las 4 de pruebas: importar solo lo que se usa.
-- [ ] **`Log` usa `printStackTrace`** cuando no puede escribir el archivo del log. Es aceptable como último recurso, pero mejor escribir un mensaje corto en `System.err`.
-- [ ] **Clases largas:** `Match` (607 líneas) y `Player` (502). Opcional: sacar el aviso de eventos de `Match` a métodos `notifyGoal`, `notifyPowerHit`, … o a una clase `MatchEvents`.
+#### 2.5.2 Malas prácticas · ✅ (opcional: clases largas)
+- [x] **Atributos `protected` sin necesidad.** `Match` tiene 11 (`player1`, `ball`, `scoreBoard`, `state`, …) y no tiene subclases: pasarlos a `private`. En `Power`, dejar `private` lo que las subclases no usan (`charge`, `auraActive`, `ticksPerPower`, `holdX`, `holdY`, …) y darles acceso solo a lo necesario con métodos `protected`.
+- [x] **Métodos públicos que cambian el partido desde afuera.** `Match.resetPositions`, `resolveCollisions`, `onGoal` y `setState` son `public`: cualquiera podría saltarse las reglas. Pasarlos a `private` (o de paquete, si una regla los necesita, como `setState` y `getScoreBoard` para `TimeRule`).
+- [x] **Getters que entregan objetos internos que se pueden modificar.** `Ball.getCircle()`, `PlayerBody.getHead()`, `getBody()`, `getFoot()`, `Head.getCircle()`, `Body.getRectangle()`, `Goal.getRectangle()` y `Match.getScoreBoard()` son `public`: dejarlos de paquete (la GUI ya usa las vistas, que entregan copias).
+- [x] **Dos fuentes de verdad para el aturdimiento:** `Life.stunned` y `Head.stunned`. Dejar solo el de `Life` y que la cabeza lo consulte.
+- [x] **Excepción equivocada:** `PlayerStats.validate` lanza `IllegalArgumentException`; usar `DOPOSoccerException(INVALID_STAT)` como el resto del dominio.
+- [x] **Nombres mezclados y con errores:** `getDanioPatada`, `getVidaMax`, `getMultiplicadorKick` y `golIn` (español en código en inglés), `kicksRecieved` (se escribe *received*; se borra con el código muerto) y el parámetro `obstacule` de `Ball.bounceOff`. Renombrar a `getKickDamage`, `getMaxLife`, `getKickMultiplier` y borrar el alias `golIn`.
+- [x] **Números mágicos** en el dominio: los 85 ticks de celebración del gol, los 100 y 25 puntos, la altura de 40 px del saque y los 30 px que sube el balón al ejecutar el poder. Pasarlos a constantes con nombre (en `Physics` o en la clase que los usa).
+- [x] **`import domain.*`** en 6 clases de `presentation` y en las 4 de pruebas: importar solo lo que se usa.
+- [x] **`Log` usa `printStackTrace`** cuando no puede escribir el archivo del log. Es aceptable como último recurso, pero mejor escribir un mensaje corto en `System.err`.
+- [ ] *(Opcional)* **Clases largas:** `Match` (hoy 573 líneas) y `Player` (493). Opcional: sacar el aviso de eventos de `Match` a métodos `notifyGoal`, `notifyPowerHit`, … o a una clase `MatchEvents`.
 - [ ] Revisar con **SonarLint** o **PMD** después de estos cambios, por si queda algo más.
 
-#### 2.5.3 Pruebas y cobertura · ≈ 1 – 1.5 h
+#### 2.5.3 Pruebas y cobertura · ✅ dominio 90.6 %, persistencia 84.4 %
 Medida con JaCoCo sobre `fix10` (63 pruebas):
 
 | Paquete | Líneas | Ramas |
@@ -255,6 +278,10 @@ Las pruebas de la máquina de este paso son las mismas de 2.2: hacerlas una sola
 
 ---
 
+### Nota · El rival puede empujar al que carga su tiro
+- En `fix11`, el que carga su tiro queda quieto, pero si el rival camina contra él, lo empuja (en la medición, 124 px durante la carga). El balón sigue sostenido delante del punto donde se ejecutó el poder, así que el tiro sale bien, pero el tirador puede quedar lejos de él.
+- El PDF no dice nada de esto. Si se quiere que el tirador sea "inamovible" durante la carga, en `Player.collideWithPlayer` no empujar a un jugador con `isChargingShot()`. Opcional.
+
 ## Prioridad 4 — Bugs · ✅ todos los medidos están arreglados
 
 Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
@@ -287,13 +314,13 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 
 | Orden | Qué | Horas |
 |---|---|---|
-| 0 | Sacar los archivos generados del repositorio | 0.1 |
-| 1 | **BUG-16** (balón siempre delante al ejecutar el poder) y **GUI:** revisar abrir partida en pausa, revisar las 3 resoluciones, `CREDITOS.txt`, **archivos de sonido** (y opcionales: `Theme`, barrita del aturdido) | 2 – 2.5 |
-| 2 | **Calidad del código (2.5):** borrar código muerto → corregir malas prácticas → pruebas que suben la cobertura (incluye las de la máquina de 2.2) | 3 – 4 |
-| 3 | **Entregables:** pruebas de aceptación, diagrama de clases, planificación | 2 – 3 |
-| | **Total** | **≈ 7 – 9.5 h** (sin opcionales ni dash) |
+| 0 | Sacar `DOPOSoccer.log` y `profiles.dat` del repositorio (y agregarlos a `.gitignore`) | 0.1 |
+| 1 | **GUI:** los 7 archivos de sonido, revisar abrir partida en pausa, revisar las 3 resoluciones, `CREDITOS.txt` | 1 – 1.5 |
+| 2 | **Entregables:** pruebas de aceptación, ajustar diagramas (`AJUSTES_DIAGRAMAS_fix10.md` + S08, S09, estados y clases), planificación | 2 – 3 |
+| | **Total** | **≈ 3 – 4.5 h** |
+| — | *Opcionales:* tirador inamovible durante la carga, partir `Match`/`Player`, resto de `Theme`, barrita del aturdido, dash | — |
 
-**Sugerencia de reparto:** Juan, los entregables (pruebas de aceptación y diagrama de clases); Cristian, el BUG-16, los archivos de sonido y la calidad del código (2.5: código muerto, malas prácticas y pruebas).
+**Sugerencia de reparto:** Juan, las pruebas de aceptación y los diagramas; Cristian, los archivos de sonido, `CREDITOS.txt` y las revisiones cortas.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.
