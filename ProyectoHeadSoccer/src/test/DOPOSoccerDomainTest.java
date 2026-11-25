@@ -616,4 +616,89 @@ public class DOPOSoccerDomainTest {
         assertTrue("Opponent with aura should take power shot damage", pRight.getLife() < rightInitialLife);
         assertFalse("Opponent's aura should trigger counter-shot on ball contact", pRight.hasAura());
     }
+
+    /**
+     * Verifies BUG-15: while charging a power shot, the shooter cannot move horizontally.
+     *
+     * @throws DOPOSoccerException if match configuration is invalid
+     */
+    @Test
+    public void testShooterStaysStillWhileChargingPowerShot() throws DOPOSoccerException {
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftCountry(Country.SOUTH_KOREA)
+                .rightCountry(Country.CAMEROON)
+                .matchType(MatchType.TIME)
+                .targetValue(1)
+                .build();
+        Match match = new Match(config);
+        PlayerView pLeft = match.getPlayer(Side.LEFT);
+        BallView ball = match.getBall();
+
+        for (int i = 0; i < 600; i++) {
+            match.tick();
+        }
+        match.setIntention(Side.LEFT, EnumSet.of(PlayerAction.POWER));
+        match.tick();
+
+        for (int i = 0; i < 120 && !ball.isPowerShotCharging(); i++) {
+            match.setIntention(Side.LEFT, EnumSet.of(PlayerAction.RIGHT));
+            match.tick();
+        }
+        assertTrue("Ball should enter charging phase", ball.isPowerShotCharging());
+
+        double startX = pLeft.getHeadShape().getX();
+        for (int i = 0; i < 30; i++) {
+            match.setIntention(Side.LEFT, EnumSet.of(PlayerAction.RIGHT, PlayerAction.JUMP, PlayerAction.KICK));
+            match.tick();
+        }
+        assertEquals("Shooter should remain stationary while charging", startX, pLeft.getHeadShape().getX(), 0.001);
+    }
+
+    /**
+     * Verifies BUG-11 and BUG-14: a rival with active aura cannot steal or disturb a charging power shot.
+     *
+     * @throws DOPOSoccerException if match configuration is invalid
+     */
+    @Test
+    public void testRivalWithAuraCannotStealOrDisturbChargingPowerShot() throws DOPOSoccerException {
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftCountry(Country.SOUTH_KOREA)
+                .rightCountry(Country.NIGERIA)
+                .matchType(MatchType.TIME)
+                .targetValue(1)
+                .build();
+        Match match = new Match(config);
+        PlayerView pRight = match.getPlayer(Side.RIGHT);
+        BallView ball = match.getBall();
+
+        for (int i = 0; i < 600; i++) {
+            match.tick();
+        }
+        match.setIntention(Side.LEFT, EnumSet.of(PlayerAction.POWER));
+        match.setIntention(Side.RIGHT, EnumSet.of(PlayerAction.POWER));
+        match.tick();
+
+        for (int i = 0; i < 120 && !ball.isPowerShotCharging(); i++) {
+            match.setIntention(Side.LEFT, EnumSet.of(PlayerAction.RIGHT));
+            match.setIntention(Side.RIGHT, EnumSet.noneOf(PlayerAction.class));
+            match.tick();
+        }
+        assertTrue("Left player should start charging power shot", ball.isPowerShotCharging());
+        double holdX = ball.getX();
+        double holdY = ball.getY();
+
+        for (int i = 0; i < 50 && ball.isPowerShotCharging(); i++) {
+            match.setIntention(Side.LEFT, EnumSet.noneOf(PlayerAction.class));
+            match.setIntention(Side.RIGHT, EnumSet.of(PlayerAction.LEFT, PlayerAction.KICK));
+            match.tick();
+            assertEquals("Charging ball X should stay steady", holdX, ball.getX(), 0.001);
+            assertEquals("Charging ball Y should stay steady", holdY, ball.getY(), 0.001);
+        }
+
+        assertEquals("Original shooter's country should still own the charging shot",
+                Country.SOUTH_KOREA, ball.getPowerShotCountry());
+        assertTrue("Rival's aura should remain unconsumed while original shot is charging", pRight.hasAura());
+    }
 }

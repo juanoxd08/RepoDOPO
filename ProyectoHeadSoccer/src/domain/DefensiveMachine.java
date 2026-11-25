@@ -12,7 +12,7 @@ import java.util.Set;
 public class DefensiveMachine extends MachineController {
     private static final long serialVersionUID = 1L;
     private static final double HOME_GOAL_OFFSET = 70.0;
-    private static final double DEFEND_ZONE_RADIUS = 130.0;
+    private static final double DEFEND_ZONE_RADIUS = 170.0;
     private static final double BEHIND_BALL_OFFSET = 12.0;
     private static final double MOVE_TOLERANCE = 10.0;
     private static final double JUMP_MAX_DX = 30.0;

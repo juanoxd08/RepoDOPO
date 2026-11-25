@@ -20,6 +20,8 @@ public class PlayerBody implements Serializable {
     private Vector2 anchor;
     private double verticalSpeed;
     private boolean onTop;
+    private double lastHorizontalMove;
+    private static final double DRIBBLE_SPEED_FACTOR = 1.5;
 
     /*
      * Synchronizes head, torso, and foot collision shapes with the current anchor and kick offsets.
@@ -61,6 +63,7 @@ public class PlayerBody implements Serializable {
         onTop = false;
         foot.stopKicking(side);
         syncShapes();
+        this.lastHorizontalMove = 0;
     }
 
     /**
@@ -72,6 +75,16 @@ public class PlayerBody implements Serializable {
     public void translate(double dx, double dy) {
         anchor = anchor.add(new Vector2(dx, dy));
         syncShapes();
+    }
+
+    /**
+     * Translates the player horizontally and records the movement delta for ground dribbling.
+     *
+     * @param dx Horizontal displacement in pixels
+     */
+    public void moveHorizontally(double dx) {
+        this.lastHorizontalMove = dx;
+        translate(dx, 0);
     }
 
     /**
@@ -180,7 +193,7 @@ public class PlayerBody implements Serializable {
         boolean collide;
         boolean hitHead;
         boolean hitBody;
-        if(ball == null) return false;
+        if (ball == null || ball.isPowerShotCharging()) return false;
         if(foot.isKicking()){
             collide = collideFootWithBall(ball, power);
             hitHead = ball.bounceOff(head.getCircle(), Physics.HEAD_RESTITUTION, Physics.HEAD_IMPULSE);
@@ -193,6 +206,7 @@ public class PlayerBody implements Serializable {
         if((hitHead || hitBody) && power != null && power.isAuraActive()){
             power.executePowerShot(ball, side);
         }
+        this.lastHorizontalMove = 0.0;
         return collide;
     }
 
@@ -220,6 +234,13 @@ public class PlayerBody implements Serializable {
             }
         }
         hitFoot = ball.bounceOff(footCircle, Physics.FOOT_RESTITUTION, 0.0);
+        if((hitFoot && Math.abs(this.lastHorizontalMove) > 0.01) && ball.getY() + ball.getRadius() >= Field.HEIGHT - 2.0 && (ball.getX()-footCircle.getX())*lastHorizontalMove > 0){
+            double dir = Math.signum(lastHorizontalMove);
+            double dribbleSpeed = Math.abs(lastHorizontalMove)*DRIBBLE_SPEED_FACTOR;
+            if (ball.getHorizontalSpeed() * dir < dribbleSpeed) {
+                ball.setHorizontalSpeed(dir * dribbleSpeed);
+            }
+        }
         if (hitFoot && power != null && power.isAuraActive()) {
             power.executePowerShot(ball, side);
         }

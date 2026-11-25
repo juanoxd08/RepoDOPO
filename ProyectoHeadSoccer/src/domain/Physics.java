@@ -18,6 +18,7 @@ public final class Physics {
 
     public static final int FPS = 60;
     public static final double GRAVITY = 1.0;
+    public static final double BASE_JUMP_IMPULSE = 7.0;
     public static final double RESTITUTION = 0.48;
     public static final double CORNER_RESTITUTION = 0.74;
     public static final double HEAD_RESTITUTION = RESTITUTION;

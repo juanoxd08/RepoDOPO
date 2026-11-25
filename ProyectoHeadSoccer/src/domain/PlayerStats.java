@@ -98,7 +98,7 @@ public class PlayerStats implements Serializable {
 	 * @return Jump impulse in pixels/tick
 	 */
 	public double jumpPx() {
-		return 12.8 * (1.0 + 0.10 * (jump - 1));
+		return Physics.BASE_JUMP_IMPULSE * (1.0 + 0.10 * (jump - 1));
 	}
 
 	/**

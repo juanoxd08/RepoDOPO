@@ -144,7 +144,7 @@ public class DOPOSoccerStaticDynamicTest {
     @Test
     public void testDynamicMachineControllersReaction() throws DOPOSoccerException {
         for (MachineProfile profile : MachineProfile.values()) {
-            COMController com = new COMController(Side.RIGHT, profile);
+            MachineController com = profile.create(Side.RIGHT);
             MatchConfig config = MatchConfig.builder()
                     .modality(Modality.PVP)
                     .leftCountry(Country.SOUTH_KOREA)

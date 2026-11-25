@@ -30,6 +30,7 @@ public class Match implements MatchView, Serializable {
     protected MatchRule rule;
     protected transient List<MatchListener> listeners = new ArrayList<>();
     private final Modality modality;
+    private static final double PINCH_ESCAPE_SPEED = -10.0;
   
 
     protected int goalCelebrationTicks;
@@ -210,11 +211,21 @@ public class Match implements MatchView, Serializable {
             }
         }
 
+        boolean touched1 = player1.isHitByBall(ball);
+        
+
         if(player1.collideWithBall(ball)){
             for(MatchListener listener : listeners) listener.onBallKicked(player1.getSide());
         }
+
+        boolean touched2 = player2.isHitByBall(ball);
+
         if(player2.collideWithBall(ball)){
             for(MatchListener listener : listeners) listener.onBallKicked(player2.getSide());
+        }
+
+        if(touched1 && touched2 && !ball.hasPowerShot()){
+            escapeBallFromPinch();
         }
 
         if(hadAura1 && !player1.hasAura()){
@@ -230,6 +241,19 @@ public class Match implements MatchView, Serializable {
         }
 
 
+    }
+
+    /*
+     * Lifts the ball out of both players when pinched between them and launches it upward.
+     */
+    private void escapeBallFromPinch() {
+        while ((player1.isHitByBall(ball) || player2.isHitByBall(ball))
+                && ball.getY() > ball.getRadius()) {
+            ball.getCircle().translate(0.0, -2.0);
+        }
+        ball.setHorizontalSpeed(0.0);
+        ball.setVerticalSpeed(PINCH_ESCAPE_SPEED);
+        ball.collideWithEdges();
     }
 
     /**

@@ -1,6 +1,7 @@
 package test;
 
 import domain.*;
+import java.util.EnumSet;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -342,5 +343,70 @@ public class DOPOSoccerPhysicsTest {
 
         assertEquals(leftBall.getHorizontalSpeed(), -rightBall.getHorizontalSpeed(), 0.001);
         assertEquals(leftBall.getVerticalSpeed(), rightBall.getVerticalSpeed(), 0.001);
+    }
+
+    /**
+     * Verifies that when two adjacent players simultaneously kick a ball between them,
+     * the ball pops upward and never remains overlapping either player's body.
+     *
+     * @throws DOPOSoccerException if match configuration is invalid
+     */
+    @Test
+    public void testSimultaneousKickPinchPopsBallUpwardAndLeavesNoOverlap() throws DOPOSoccerException {
+        MatchConfig config = MatchConfig.builder()
+                .modality(Modality.PVP)
+                .leftCountry(Country.SOUTH_KOREA)
+                .rightCountry(Country.CAMEROON)
+                .matchType(MatchType.TIME)
+                .targetValue(1)
+                .build();
+        Match match = new Match(config);
+
+        boolean poppedUp = false;
+        for (int t = 0; t < 120; t++) {
+            match.setIntention(Side.LEFT, EnumSet.of(PlayerAction.RIGHT, PlayerAction.KICK));
+            match.setIntention(Side.RIGHT, EnumSet.of(PlayerAction.LEFT, PlayerAction.KICK));
+            match.tick();
+
+            BallView b = match.getBall();
+            if (b.getVerticalSpeed() < -5.0 && Math.abs(b.getHorizontalSpeed()) < 0.01) {
+                poppedUp = true;
+                Circle ballCircle = new Circle(b.getX(), b.getY(), b.getRadius());
+                PlayerView p1 = match.getPlayer(Side.LEFT);
+                PlayerView p2 = match.getPlayer(Side.RIGHT);
+                assertFalse("Ball should not remain inside left player after pinch escape",
+                        ballCircle.detectCollisionWithCircle(p1.getHeadShape())
+                                || ballCircle.detectCollisionWithRectangle(p1.getBodyShape())
+                                || ballCircle.detectCollisionWithCircle(p1.getFootShape()));
+                assertFalse("Ball should not remain inside right player after pinch escape",
+                        ballCircle.detectCollisionWithCircle(p2.getHeadShape())
+                                || ballCircle.detectCollisionWithRectangle(p2.getBodyShape())
+                                || ballCircle.detectCollisionWithCircle(p2.getFootShape()));
+                break;
+            }
+        }
+        assertTrue("Ball pinched between both kicking players should pop upward", poppedUp);
+    }
+
+    /**
+     * Verifies that walking into a stationary ground ball imparts forward dribbling velocity.
+     */
+    @Test
+    public void testWalkingIntoStationaryBallImpartsDribbleSpeed() {
+        Player player = new Player(new PlayerProfile("Dribbler"), Country.SOUTH_KOREA, Side.LEFT);
+        double footX = player.getFootShape().getX();
+        double footR = player.getFootShape().getRadius();
+        Ball ball = new Ball(footX + footR + 9.0, Field.HEIGHT - 8.0, 8.0);
+
+        for (int t = 0; t < 5; t++) {
+            player.moveRight();
+            player.tick();
+            ball.tick();
+            ball.collideWithEdges();
+            player.collideWithBall(ball);
+        }
+
+        assertTrue("Ball should gain forward horizontal speed when dribbled",
+                ball.getHorizontalSpeed() > 1.0);
     }
 }

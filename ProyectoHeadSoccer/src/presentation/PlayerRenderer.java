@@ -1,7 +1,6 @@
 package presentation;
 
 import domain.Circle;
-import domain.Country;
 import domain.PlayerEffect;
 import domain.PlayerView;
 import domain.Rectangle;
@@ -19,9 +18,8 @@ import java.awt.Graphics2D;
  * @author Cristian Salamanca
  */
 public class PlayerRenderer {
-    private static final Font EFFECT_FONT = new Font("Arial", Font.BOLD, 7);
+    private static final Font EFFECT_FONT = new Font("Arial", Font.BOLD, 8);
     private int animFrame;
-    
 
     /**
      * Draws the given player in scaled field coordinates.
@@ -38,10 +36,9 @@ public class PlayerRenderer {
         int hy = (int) hc.getY();
         int hr = (int) hc.getRadius();
 
-        Color baseColor = getColorByCountry(p.getCountry());
+        Color baseColor = Theme.countryColor(p.getCountry());
 
         drawAura(g2d, p, hx, hy, hr);
-        drawStatusEffect(g2d, p, hx, hy, hr);
 
         Rectangle br = p.getBodyShape();
         if (br != null) {
@@ -74,20 +71,8 @@ public class PlayerRenderer {
             g2d.setColor(Color.BLACK);
             g2d.drawOval(fx - fr, fy - fr, fr * 2, fr * 2);
         }
-    }
 
-    /*
-     * Resolves the display color associated with a playable country.
-     */
-    private Color getColorByCountry(Country c) {
-        if (c == null) return Color.RED;
-        switch (c) {
-            case SOUTH_KOREA: return new Color(230, 60, 60);
-            case CAMEROON: return new Color(30, 160, 80);
-            case NIGERIA: return new Color(20, 130, 60);
-            case USA: return new Color(60, 100, 220);
-            default: return Color.ORANGE;
-        }
+        drawStatusEffect(g2d, p, hx, hy, hr);
     }
 
     /*
@@ -98,17 +83,17 @@ public class PlayerRenderer {
         double pulse = 0.5 + 0.5 * Math.sin(animFrame * 0.25);
         int pad = (int) Math.round(7 + pulse * 5);
         int fillAlpha = (int) Math.round(55 + pulse * 55);
-        Color pc = getPowerColor(p.getCountry());
-    
+        Color pc = Theme.powerColor(p.getCountry());
+
         g2d.setColor(new Color(pc.getRed(), pc.getGreen(), pc.getBlue(), fillAlpha));
         g2d.fillOval(hx - hr - pad, hy - hr - pad, (hr + pad) * 2, (hr + pad) * 2);
         g2d.setColor(new Color(pc.getRed(), pc.getGreen(), pc.getBlue(), 190));
         g2d.setStroke(new BasicStroke(2f));
         g2d.drawOval(hx - hr - pad + 2, hy - hr - pad + 2, (hr + pad - 2) * 2, (hr + pad - 2) * 2);
     }
-    
+
     /*
-     * Draws the active status effect label and remaining duration bar above the player's head.
+     * Draws the pulsing head tint, short status symbol, and remaining duration bar for active effects.
      */
     private void drawStatusEffect(Graphics2D g2d, PlayerView p, int hx, int hy, int hr) {
         PlayerEffect effect = p.getActiveEffect();
@@ -117,13 +102,23 @@ public class PlayerRenderer {
                 || (effect != null && effect != PlayerEffect.NONE)
                 || (effectName != null && !effectName.isEmpty());
         if (!hasEffect) return;
-    
-        Color ec = getEffectColor(effect);
-        String tag = (effectName != null && !effectName.isEmpty()) ? effectName : "STUN";
-        g2d.setColor(ec);
+
+        Color ec = Theme.effectColor(effect);
+
+        double pulse = 0.5 + 0.5 * Math.sin(animFrame * 0.2);
+        int alpha = (int) (90 + 60 * pulse);
+        g2d.setColor(new Color(ec.getRed(), ec.getGreen(), ec.getBlue(), alpha));
+        g2d.fillOval(hx - hr, hy - hr, hr * 2, hr * 2);
+
+        String symbol = getEffectSymbol(effect, p.getSide());
         g2d.setFont(EFFECT_FONT);
-        g2d.drawString("★ " + tag + " ★", hx - 14, hy - hr - 10);
-    
+        int textX = hx - g2d.getFontMetrics().stringWidth(symbol) / 2;
+        int textY = hy - hr - 10;
+        g2d.setColor(new Color(0, 0, 0, 170));
+        g2d.drawString(symbol, textX + 1, textY + 1);
+        g2d.setColor(ec);
+        g2d.drawString(symbol, textX, textY);
+
         double progress = Math.max(0.0, Math.min(1.0, p.getEffectProgress()));
         if (progress > 0.0) {
             int barW = 28;
@@ -136,32 +131,25 @@ public class PlayerRenderer {
             g2d.fillRect(barX, barY, (int) Math.round(barW * progress), barH);
         }
     }
-    
+
     /*
-     * Resolves the power aura color associated with each playable country.
+     * Resolves the compact indicator symbol for the active status effect or stun state.
      */
-    private Color getPowerColor(Country c) {
-        if (c == null) return new Color(255, 200, 50);
-        switch (c) {
-            case SOUTH_KOREA: return new Color(60, 170, 255);
-            case CAMEROON: return new Color(255, 220, 40);
-            case NIGERIA: return new Color(50, 210, 110);
-            case USA: return new Color(230, 80, 110);
-            default: return new Color(255, 200, 50);
+    private String getEffectSymbol(PlayerEffect effect, Side side) {
+        if (effect == null || effect == PlayerEffect.NONE) {
+            return "***";
         }
-    }
-    
-    /*
-     * Resolves the indicator color for an active player status effect.
-     */
-    private Color getEffectColor(PlayerEffect effect) {
-        if (effect == null) return Color.WHITE;
         switch (effect) {
-            case PUSHED: return new Color(80, 190, 255);
-            case ELECTROCUTED: return new Color(255, 230, 50);
-            case KNOCKED_OUT: return new Color(90, 230, 130);
-            case CONFUSED: return new Color(240, 110, 220);
-            default: return Color.WHITE;
+            case PUSHED:
+                return (side == Side.LEFT) ? "<<" : ">>";
+            case ELECTROCUTED:
+                return "!!";
+            case KNOCKED_OUT:
+                return "Z z";
+            case CONFUSED:
+                return "?";
+            default:
+                return "***";
         }
     }
 }

@@ -94,7 +94,7 @@ public abstract class Power implements Serializable {
      * @param side Side of the shooting player
      */
     public final void executePowerShot(Ball ball, Side side) {
-        if (auraActive && ball != null) {
+        if (auraActive && ball != null && !ball.isPowerShotCharging()) {
             this.auraActive = false;
             this.powerShotActive = true;
             ball.setPowerShot(true);
@@ -242,6 +242,13 @@ public abstract class Power implements Serializable {
      * @param auraActive New aura state
      */
     public void setAuraActive(boolean auraActive) { this.auraActive = auraActive; }
+
+    /**
+     * Indicates whether this power shot is currently in its suspended windup charging phase.
+     *
+     * @return True while charging ticks remain
+     */
+    public boolean isChargingShot() { return ticksPerPower > 0; }
 
     /**
      * Indicates whether a power shot launched by this power is currently in flight.

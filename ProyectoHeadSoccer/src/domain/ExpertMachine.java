@@ -34,7 +34,7 @@ public class ExpertMachine extends MachineController {
      * Chooses between the defensive and the offensive behavior, in this order:
      * <ul>
      *   <li>Defends if a power shot is coming toward its goal or the rival has the aura.</li>
-     *   <li>Attacks if the rival is stunned or knocked out.</li>
+     *   <li>Attacks if the rival is stunned or affected by any power status effect.</li>
      *   <li>In sudden death, defends while the ball is in its own half and attacks otherwise.</li>
      *   <li>Defends while winning, unless the score is tied with little time left.</li>
      *   <li>Attacks in any other case.</li>
@@ -56,10 +56,12 @@ public class ExpertMachine extends MachineController {
 
         MachineController chosen;
         boolean ballPowerThreat = ball.hasPowerShot() && (ball.getHorizontalSpeed() * side.dir() < 0);
+        boolean rivalUnderEffect = rival != null && (rival.isStunned()
+                || (rival.getActiveEffect() != null && rival.getActiveEffect() != PlayerEffect.NONE));
 
         if (ballPowerThreat || (rival != null && rival.hasAura())) {
             chosen = defensive;
-        } else if (rival != null && (rival.isStunned() || PlayerEffect.KNOCKED_OUT.name().equals(rival.getActiveEffectName()))) {
+        } else if (rivalUnderEffect) {
             chosen = offensive;
         } else if (match.isSuddenDeath()) {
             double distToGoal = Math.abs(ball.getX() - ownGoalX(match));

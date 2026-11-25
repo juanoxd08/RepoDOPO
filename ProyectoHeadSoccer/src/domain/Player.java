@@ -93,7 +93,8 @@ public class Player implements PlayerView, Serializable {
 	 * @return True if disabled
 	 */
 	public boolean isDisabled() {
-		return life.isStunned() || !effect.canMove() || playerBody.getHead().isStunned();
+		return life.isStunned() || !effect.canMove() || playerBody.getHead().isStunned()
+				|| (power != null && power.isChargingShot());
 	}
 
 	/**
@@ -122,13 +123,13 @@ public class Player implements PlayerView, Serializable {
 
 	private void moveLeftInternal() {
 		double spd = profile.getStats().speedPx() * effect.speedFactor();
-		playerBody.translate(-spd, 0);
+		playerBody.moveHorizontally(-spd);
 		playerBody.collideWithEdges();
 	}
 
 	private void moveRightInternal() {
 		double spd = profile.getStats().speedPx() * effect.speedFactor();
-		playerBody.translate(spd, 0);
+		playerBody.moveHorizontally(spd);
 		playerBody.collideWithEdges();
 	}
 	

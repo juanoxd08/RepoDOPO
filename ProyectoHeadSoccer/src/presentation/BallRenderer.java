@@ -2,7 +2,6 @@ package presentation;
 
 import domain.BallView;
 import domain.Circle;
-import domain.Country;
 import domain.GameStatus;
 import domain.MatchView;
 
@@ -80,7 +79,7 @@ public class BallRenderer {
         if (!ball.isPowerShotCharging()) return;
         double progress = Math.max(0.0, Math.min(1.0, ball.getPowerShotChargeProgress()));
         int ringRadius = (int) Math.round(r + 18.0 * (1.0 - progress) + 2.0);
-        Color pc = getPowerColor(ball.getPowerShotCountry());
+        Color pc = Theme.powerColor(ball.getPowerShotCountry());
         g2d.setColor(new Color(pc.getRed(), pc.getGreen(), pc.getBlue(), 200));
         g2d.setStroke(new BasicStroke(2.2f));
         g2d.drawOval(bx - ringRadius, by - ringRadius, ringRadius * 2, ringRadius * 2);
@@ -103,17 +102,5 @@ public class BallRenderer {
             g2d.drawLine(bx, by - r + 2, bx, by + r - 2);
         }
     }
-    /*
-     * Resolves the power color associated with the launching country.
-     */
-    private Color getPowerColor(Country c) {
-        if (c == null) return new Color(255, 200, 50);
-        switch (c) {
-            case SOUTH_KOREA: return new Color(60, 170, 255);
-            case CAMEROON: return new Color(255, 220, 40);
-            case NIGERIA: return new Color(50, 210, 110);
-            case USA: return new Color(230, 80, 110);
-            default: return new Color(255, 200, 50);
-        }
-    }
+
 }
