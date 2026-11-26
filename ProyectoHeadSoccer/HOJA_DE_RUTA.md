@@ -24,6 +24,11 @@ Enunciado: `DOPOSoccer_2026-2.pdf`.
 
 ---
 
+## Cambios del 27 nov (rama `claude/brave-newton-pne4dc`)
+
+- **Aura y tiro rival, como dice el PDF (regla 5):** se quitó la protección del aura (BUG-17). Si el tiro de poder golpea a un rival con aura, este recibe el daño y el efecto, se avisa `onPowerHit` y, al tocar el balón, responde con su propio tiro. Pruebas ajustadas: `testPowerShotAgainstRivalWithAuraAppliesHitAndTriggersCounterShot` y `testPowerShotOnRivalWithAuraNotifiesPowerHit`.
+- **Pantalla de resolución:** los botones decían 700×400 y 1400×800; ahora muestran las resoluciones reales (840×480, 1050×600 y 1260×720) con `FieldResolution.getLabel()`.
+
 ## Cambios en `fix12` (verificado)
 
 - Compila; **85 de 85 pruebas pasan**, y siguen pasando en **10 corridas seguidas** (importante, por la patada aleatoria de abajo). Ningún comentario `//`.

@@ -667,10 +667,10 @@ public class DOPOSoccerDomainTest {
             match.tick();
         }
 
-        assertEquals("Opponent with aura must not lose life from rival power shot",
-                rightInitialLife, pRight.getLife(), 0.001);
+        assertTrue("Opponent with aura must still take the rival power shot damage",
+                pRight.getLife() < rightInitialLife);
         assertFalse("Opponent's aura should trigger counter-shot on ball contact", pRight.hasAura());
-        assertEquals("Opponent with aura must not receive rival status effect",
+        assertNotEquals("Opponent with aura must still receive the rival status effect",
                 PlayerEffect.NONE, pRight.getActiveEffect());
     }
 
@@ -1013,13 +1013,13 @@ public class DOPOSoccerDomainTest {
     }
 
     /**
-     * Verifies that a power shot hitting a rival protected by an active aura does not
-     * notify onPowerHit, because the rival takes no damage or effect.
+     * Verifies that a power shot hitting a rival who has an active aura is notified once with
+     * onPowerHit, because the rival takes the damage and the effect like any other rival.
      *
      * @throws DOPOSoccerException if match configuration is invalid
      */
     @Test
-    public void testPowerShotOnRivalWithAuraDoesNotNotifyPowerHit() throws DOPOSoccerException {
+    public void testPowerShotOnRivalWithAuraNotifiesPowerHit() throws DOPOSoccerException {
         MatchConfig config = MatchConfig.builder()
                 .modality(Modality.PVP)
                 .leftCountry(Country.SOUTH_KOREA)
@@ -1057,6 +1057,6 @@ public class DOPOSoccerDomainTest {
         }
 
         assertFalse("Right player should have used its aura on the counter-shot", pRight.hasAura());
-        assertEquals("No onPowerHit must be notified for a rival protected by its aura", 0, hitsOnRight.get());
+        assertEquals("onPowerHit must be notified once for the rival hit while having its aura", 1, hitsOnRight.get());
     }
 }

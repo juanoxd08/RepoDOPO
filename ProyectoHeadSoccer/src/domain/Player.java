@@ -339,12 +339,13 @@ public class Player implements PlayerView, Serializable {
 	}
 
 	/**
-	 * Applies damage and status effect from an opponent power hit.
+	 * Applies damage and status effect from an opponent power hit, as rule 5 of the statement says,
+	 * even if this player has an active aura.
 	 *
 	 * @param hit Power hit payload to apply
 	 */
 	public void receiveHit(PowerHit hit) {
-		if (hit == null || hasAura()) return;
+		if (hit == null) return;
 		if (hit.getDamage() > 0) {
 			takeDamage(hit.getDamage());
 		}

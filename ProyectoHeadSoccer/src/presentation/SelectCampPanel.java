@@ -54,9 +54,9 @@ public class SelectCampPanel extends JPanel {
         JPanel resRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 6));
         resRow.setOpaque(false);
 
-        btnSmall = createResButton("Pequeño (700×400)");
-        btnMedium = createResButton("Mediano (1050×600)");
-        btnLarge = createResButton("Grande (1400×800)");
+        btnSmall = createResButton(FieldResolution.SMALL.getLabel());
+        btnMedium = createResButton(FieldResolution.MEDIUM.getLabel());
+        btnLarge = createResButton(FieldResolution.LARGE.getLabel());
 
         btnSmall.addActionListener(e -> {
             setup.setResolution(FieldResolution.SMALL);

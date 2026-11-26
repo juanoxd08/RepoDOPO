@@ -230,17 +230,15 @@ public class Match implements MatchView, Serializable {
     }
 
     /*
-     * Applies the shooter's power shot to the victim if it hits, ends the shot and notifies listeners.
-     * A victim with an active aura is protected: it takes no damage or effect, so no hit is notified.
+     * Applies the shooter's power shot to the victim if it hits: ends the shot, applies the damage
+     * and the effect to the victim, and notifies listeners.
      */
     private void applyPowerHit(Player shooter, Player victim) {
         PowerHit hit = shooter.powerHitOn(victim, ball);
         if (hit == null) return;
-        boolean protectedByAura = victim.hasAura();
         shooter.finishPowerShot();
         ball.setPowerShot(false);
         victim.receiveHit(hit);
-        if (protectedByAura) return;
         for (MatchListener listener : listeners) {
             listener.onPowerHit(victim.getSide(), hit.getDamage());
         }
