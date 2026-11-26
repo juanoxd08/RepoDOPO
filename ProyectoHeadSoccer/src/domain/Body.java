@@ -16,9 +16,8 @@ public class Body implements Serializable {
 	 * Constructs the body aligned to the player's horizontal coordinate and side.
 	 * 
 	 * @param playerX Player horizontal center position
-	 * @param side Side of the field the player defends
 	 */
-	public Body(double playerX, Side side) {
+	public Body(double playerX) {
 		double width = 18;
 		double height = 16;
 		double bodyX = playerX - (width / 2.0);

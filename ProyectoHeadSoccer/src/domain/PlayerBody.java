@@ -62,8 +62,8 @@ public class PlayerBody implements Serializable {
         this.side = side;
         this.kickRandom = (kickRandom != null) ? kickRandom : new Random();
         anchor = new Vector2(side.startX(), Field.HEIGHT);
-        head = new Head(anchor.getX(), side);
-        body = new Body(anchor.getX(), side);
+        head = new Head(anchor.getX());
+        body = new Body(anchor.getX());
         foot = new Foot(anchor.getX(), side);
         verticalSpeed = 0;
         onTop = false;
@@ -319,7 +319,7 @@ public class PlayerBody implements Serializable {
             }
         }
         hitFoot = ball.bounceOff(footCircle, Physics.FOOT_RESTITUTION, 0.0);
-        if ((hitFoot && Math.abs(this.lastHorizontalMove) > 0.01) && ball.getY() + ball.getRadius() >= Field.HEIGHT - 2.0 && (ball.getX() - footCircle.getX()) * lastHorizontalMove > 0) {
+        if (hitFoot && Math.abs(this.lastHorizontalMove) > 0.01 && ball.getY() + ball.getRadius() >= Field.HEIGHT - 2.0 && (ball.getX() - footCircle.getX()) * lastHorizontalMove > 0) {
             double dir = Math.signum(lastHorizontalMove);
             double dribbleSpeed = Math.abs(lastHorizontalMove) * DRIBBLE_SPEED_FACTOR;
             if (ball.getHorizontalSpeed() * dir < dribbleSpeed) {

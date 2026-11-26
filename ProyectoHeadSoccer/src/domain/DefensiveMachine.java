@@ -44,11 +44,10 @@ public class DefensiveMachine extends MachineController {
             double defendX = ball.getX() - side.dir()*BEHIND_BALL_OFFSET;
             moveToward(myX, defendX, 4.0, actions);
             if(shouldJumpForBall(me, ball, JUMP_MAX_DX, JUMP_HEAD_MARGIN_Y)) actions.add(PlayerAction.JUMP);
-            if(shouldKickBall(match, me, ball, KICK_MAX_DX, KICK_MAX_HEIGHT)){
-                if((ball.getX() - myX)*side.dir() > -10){
-                    actions.add(PlayerAction.KICK);
-                }  
-            } 
+            if(shouldKickBall(match, me, ball, KICK_MAX_DX, KICK_MAX_HEIGHT)
+                    && (ball.getX() - myX) * side.dir() > -10){
+                actions.add(PlayerAction.KICK);
+            }
         }
         return actions;
         

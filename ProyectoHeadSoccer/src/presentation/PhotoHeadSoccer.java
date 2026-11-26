@@ -16,7 +16,6 @@ import javax.swing.JPanel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 import java.io.File;
 
 /**
@@ -40,9 +39,9 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
     private String lastScorerText = "¡Anotación!";
     private String winnerNotification = "Fin del juego";
 
-    public final java.awt.Rectangle btnSaveGame = new java.awt.Rectangle(0, 0, 0, 0);
-    public final java.awt.Rectangle btnMenu = new java.awt.Rectangle(0, 0, 0, 0);
-    public final java.awt.Rectangle btnUpgrades = new java.awt.Rectangle(0, 0, 0, 0);
+    public final Rectangle btnSaveGame = new Rectangle(0, 0, 0, 0);
+    public final Rectangle btnMenu = new Rectangle(0, 0, 0, 0);
+    public final Rectangle btnUpgrades = new Rectangle(0, 0, 0, 0);
     private final OverlayRenderer overlayRenderer = new OverlayRenderer(btnSaveGame, btnMenu, btnUpgrades);
 
     /**

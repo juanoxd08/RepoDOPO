@@ -44,12 +44,12 @@ public class SelectCampPanel extends JPanel {
         JLabel title = new JLabel("SELECT THE CAMP");
         title.setFont(new Font("Impact", Font.BOLD, 38));
         title.setForeground(Color.YELLOW);
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        title.setAlignmentX(CENTER_ALIGNMENT);
 
         JLabel subtitle = new JLabel("Tamaño de ventana / resolución:");
         subtitle.setFont(new Font("Arial", Font.BOLD, 16));
         subtitle.setForeground(Color.WHITE);
-        subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        subtitle.setAlignmentX(CENTER_ALIGNMENT);
 
         JPanel resRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 6));
         resRow.setOpaque(false);

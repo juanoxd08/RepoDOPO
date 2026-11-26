@@ -42,7 +42,7 @@ public class UpgradesPanel extends JPanel {
         this.title = new JLabel("MEJORAR ESTADÍSTICAS");
         this.title.setFont(new Font("Impact", Font.BOLD, 34));
         this.title.setForeground(Color.YELLOW);
-        this.title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        this.title.setAlignmentX(CENTER_ALIGNMENT);
 
         this.playersContainer = new JPanel(new GridLayout(1, 0, 20, 0));
         this.playersContainer.setOpaque(false);
@@ -52,7 +52,7 @@ public class UpgradesPanel extends JPanel {
         this.btnBack.setBackground(new Color(80, 90, 105));
         this.btnBack.setForeground(Color.WHITE);
         this.btnBack.setFocusPainted(false);
-        this.btnBack.setAlignmentX(Component.CENTER_ALIGNMENT);
+        this.btnBack.setAlignmentX(CENTER_ALIGNMENT);
         this.btnBack.addActionListener(e -> this.onBack.run());
 
         JPanel card = new JPanel();

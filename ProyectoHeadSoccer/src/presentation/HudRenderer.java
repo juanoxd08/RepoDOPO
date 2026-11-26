@@ -107,8 +107,7 @@ public class HudRenderer {
         g2d.fillRect(x, hpY, barW, 14);
 
         double hpRatio = Math.max(0.0, Math.min(1.0, p.getLife() / p.getMaxLife()));
-        Color hpColor = (hpRatio > 0.5) ? new Color(40, 200, 40) : (hpRatio > 0.25 ? Color.ORANGE : Color.RED);
-        g2d.setColor(hpColor);
+        g2d.setColor(healthColor(hpRatio));
         g2d.fillRect(x + 1, hpY + 1, (int) ((barW - 2) * hpRatio), 12);
         g2d.setColor(Color.WHITE);
         g2d.drawRect(x, hpY, barW, 14);
@@ -132,5 +131,18 @@ public class HudRenderer {
             g2d.setColor(Color.YELLOW);
             g2d.drawString("⚡ AURA ACTIVA ⚡", x + barW / 2 - 40, powY + 9);
         }
+    }
+
+    /*
+     * Chooses the health bar color: green above half life, orange above a quarter, red below.
+     */
+    private Color healthColor(double hpRatio) {
+        if (hpRatio > 0.5) {
+            return new Color(40, 200, 40);
+        }
+        if (hpRatio > 0.25) {
+            return Color.ORANGE;
+        }
+        return Color.RED;
     }
 }

@@ -16,9 +16,8 @@ public class Head implements Serializable {
 	 * Constructs a head aligned to the initial height and side of the player.
 	 *
 	 * @param playerX Player horizontal center position
-	 * @param side Player field side
 	 */
-	public Head(double playerX, Side side) {
+	public Head(double playerX) {
 		double radius = 14;
 		double headY = Field.HEIGHT - 38;
 		this.circle = new Circle(playerX, headY, radius);

@@ -180,7 +180,13 @@ public class MatchSetup {
      */
     public void selectOrCycleGoalsMatch() {
         if (matchType == MatchType.GOALS) {
-            targetGoals = (targetGoals == 3) ? 5 : (targetGoals == 5 ? 7 : 3);
+            if (targetGoals == 3) {
+                targetGoals = 5;
+            } else if (targetGoals == 5) {
+                targetGoals = 7;
+            } else {
+                targetGoals = 3;
+            }
         } else {
             matchType = MatchType.GOALS;
         }

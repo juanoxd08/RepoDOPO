@@ -28,12 +28,12 @@ public class MenuPanel extends JPanel {
         JLabel title = new JLabel("HEAD SOCCER GAME");
         title.setFont(new Font("Impact", Font.BOLD, 48));
         title.setForeground(new Color(255, 220, 40));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        title.setAlignmentX(CENTER_ALIGNMENT);
 
         JLabel subtitle = new JLabel("DOPOSoccer 2026-2  •  Proyecto Final POOB");
         subtitle.setFont(new Font("Arial", Font.BOLD, 16));
         subtitle.setForeground(Color.WHITE);
-        subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        subtitle.setAlignmentX(CENTER_ALIGNMENT);
 
         JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 24, 0));
         buttonRow.setOpaque(false);
@@ -54,7 +54,7 @@ public class MenuPanel extends JPanel {
                 BorderFactory.createLineBorder(new Color(245, 195, 35), 2),
                 BorderFactory.createEmptyBorder(14, 24, 14, 24)
         ));
-        controlsBox.setAlignmentX(Component.CENTER_ALIGNMENT);
+        controlsBox.setAlignmentX(CENTER_ALIGNMENT);
 
         JLabel ctrlTitle = new JLabel("CONTROLES DE JUEGO (Mismo Teclado):");
         ctrlTitle.setFont(new Font("Arial", Font.BOLD, 15));

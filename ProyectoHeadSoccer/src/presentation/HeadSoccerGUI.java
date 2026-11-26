@@ -100,7 +100,7 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
         this.cardsPanel.add(photo, Screen.MATCH.name());
         this.cardsPanel.add(upgradesPanel, Screen.UPGRADES.name());
 
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setDefaultCloseOperation(EXIT_ON_CLOSE);
         this.setLayout(new BorderLayout());
         this.add(cardsPanel, BorderLayout.CENTER);
         this.pack();
@@ -279,10 +279,9 @@ public class HeadSoccerGUI extends JFrame implements KeyListener, ActionListener
                 game.finish();
                 setCurrentScreen(Screen.MENU);
             }
-        } else if (status == GameStatus.FINISHED) {
-            if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_M || code == KeyEvent.VK_SPACE) {
-                setCurrentScreen(Screen.MENU);
-            }
+        } else if (status == GameStatus.FINISHED
+                && (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_M || code == KeyEvent.VK_SPACE)) {
+            setCurrentScreen(Screen.MENU);
         }
     }
 

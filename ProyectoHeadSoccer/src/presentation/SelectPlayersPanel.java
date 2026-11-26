@@ -58,7 +58,7 @@ public class SelectPlayersPanel extends JPanel {
         JLabel title = new JLabel("SELECT PLAYERS");
         title.setFont(new Font("Impact", Font.BOLD, 38));
         title.setForeground(Color.YELLOW);
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        title.setAlignmentX(CENTER_ALIGNMENT);
 
         JPanel modeRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 4));
         modeRow.setOpaque(false);

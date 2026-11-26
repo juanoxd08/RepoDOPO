@@ -45,7 +45,7 @@ public class IllusionPower extends Power {
         double r = ball.getCircle().getRadius();
 
         for (int i = 0; i < 7; i++) {
-            double angle = (i * (2 * Math.PI / 7));
+            double angle = i * (2 * Math.PI / 7);
             double fx = bx + Math.cos(angle) * (18 + i * 4);
             double fy = by + Math.sin(angle) * (15 + i * 3);
             fakeBalls.add(new Circle(fx, fy, r));
@@ -65,8 +65,8 @@ public class IllusionPower extends Power {
             for (int i = 0; i < fakeBalls.size(); i++) {
                 Circle c = fakeBalls.get(i);
                 double offsetAngle = (i * 0.9) + (illusionTicksRemaining * 0.1);
-                c.setX(bx + Math.cos(offsetAngle) * (20 + (i % 3) * 8));
-                c.setY(by + Math.sin(offsetAngle) * (14 + (i % 2) * 6));
+                c.setX(bx + Math.cos(offsetAngle) * (20 + i % 3 * 8));
+                c.setY(by + Math.sin(offsetAngle) * (14 + i % 2 * 6));
             }
         } else {
             fakeBalls.clear();

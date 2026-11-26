@@ -73,10 +73,9 @@ public class OffensiveMachine extends MachineController {
             actions.add(PlayerAction.JUMP);
         }
 
-        if (shouldKickBall(match, me, ball, KICK_MAX_DX, KICK_MAX_HEIGHT)) {
-            if ((bx - myX) * side.dir() > KICK_DIRECTION_MARGIN) {
-                actions.add(PlayerAction.KICK);
-            }
+        if (shouldKickBall(match, me, ball, KICK_MAX_DX, KICK_MAX_HEIGHT)
+                && (bx - myX) * side.dir() > KICK_DIRECTION_MARGIN) {
+            actions.add(PlayerAction.KICK);
         }
 
         if (me.getPowerProgress() >= FULL_POWER) {

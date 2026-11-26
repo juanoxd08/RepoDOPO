@@ -31,7 +31,7 @@ public interface MatchRule extends Serializable {
      * @param match Active match
      * @return Optional containing the winning side, or empty if not over or tied
      */
-    public default Optional<Side> winner(Match match){
+    default Optional<Side> winner(Match match){
         if (!isOver(match)) {
             return Optional.empty();
         }
