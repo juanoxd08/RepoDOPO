@@ -215,11 +215,13 @@ Estos tres van antes de las imágenes y las animaciones: el BUG-8 se ve en la in
 - [x] El balón en carga ya no queda pegado a la cara: se arregló con el BUG-16.
 - [ ] *(Opcional)* Destello al golpear al rival (`onPowerHit`).
 
-### 1.4 Sonidos · código hecho en `fix9` · faltan los archivos ≈ 30 min
+### 1.4 Sonidos · ✅ hecho (archivos y música de fondo)
 - [x] Clase `SoundPlayer` en `presentation`: `javax.sound.sampled.Clip`, archivos **WAV**, cargados una sola vez en un `Map`.
 - [x] Gol, aturdido, fin, patada, aura, tiro y golpe, cada uno con su evento (ya existen todos).
 - [x] Opción de silenciar. Si un sonido falta o no hay audio, el juego sigue sin sonido (registrarlo en el log).
-- [ ] **Agregar los 7 `.wav`** (16 bits, 44.1 kHz) en `src/presentation/resources/sounds/`: `goal.wav`, `stunned.wav`, `finish.wav`, `kick.wav`, `power_aura.wav`, `power_shot.wav`, `power_hit.wav`. Fuentes: sfxr.me (sin licencia), Kenney.nl (CC0), Freesound.org (filtrar CC0). Los CC-BY van en `CREDITOS.txt`.
+- [x] **Archivos de sonido agregados** en `src/presentation/resources/sounds/`: los 7 efectos (`goal`, `stunned`, `finish`, `kick`, `power_aura`, `power_shot`, `power_hit`) y la **música de fondo** (`soundtrack.wav`, 14 s en bucle). Todos WAV de 16 bits, 44.1 kHz. La música empieza al abrir el juego y la tecla **N** silencia todo (efectos y música) desde cualquier pantalla.
+- [x] **Arreglado:** en un computador sin tarjeta de sonido, `AudioSystem.getClip()` lanza `IllegalArgumentException` y el juego no arrancaba; ahora `SoundPlayer` la atrapa, la registra en el log y el juego sigue sin sonido. Prueba nueva: `testEverySoundHasItsWavAndSoundtrackRespectsMute`.
+- [ ] Si alguno de los sonidos es CC-BY, anotarlo en `CREDITOS.txt` con su autor y enlace.
 
 **Listo cuando:** se puede configurar, jugar, mejorar estadísticas y guardar/abrir sin tocar código, y cada poder se distingue a simple vista.
 
@@ -354,12 +356,12 @@ Los BUG-8, 12 y 13 se movieron al paso **1.1c**.
 | Orden | Qué | Horas |
 |---|---|---|
 | 0 | Sacar `DOPOSoccer.log` y `profiles.dat` del repositorio (y agregarlos a `.gitignore`) | 0.1 |
-| 1 | **GUI:** los 7 archivos de sonido, revisar abrir partida en pausa, revisar las 3 resoluciones, `CREDITOS.txt` | 1 – 1.5 |
+| 1 | **GUI:** revisar abrir partida en pausa, revisar las 3 resoluciones, `CREDITOS.txt` (con la fuente de los sonidos) | 0.5 – 1 |
 | 2 | **Entregables:** pruebas de aceptación, ajustar diagramas (`AJUSTES_DIAGRAMAS_fix10.md` + S08, S09, estados y clases), planificación | 2 – 3 |
-| | **Total** | **≈ 3 – 4.5 h** |
+| | **Total** | **≈ 2.5 – 4 h** |
 | — | *Opcionales:* tirador inamovible durante la carga, partir `Match`/`Player`, resto de `Theme`, barrita del aturdido, dash | — |
 
-**Sugerencia de reparto:** Juan, las pruebas de aceptación y los diagramas; Cristian, los archivos de sonido, `CREDITOS.txt` y las revisiones cortas.
+**Sugerencia de reparto:** Juan, las pruebas de aceptación y los diagramas; Cristian, `CREDITOS.txt` y las revisiones cortas.
 
 ## Reglas de trabajo
 1. La GUI solo usa la fachada, las vistas, los eventos, los `enum` y `DOPOSoccerException`. Si falta un dato, se agrega a la vista; nunca se busca dentro del dominio.

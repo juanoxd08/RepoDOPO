@@ -198,4 +198,33 @@ public class DOPOSoccerPresentationTest {
         }
         assets.getBall();
     }
+
+    /**
+     * Verifies that every sound, including the background soundtrack, has its WAV file in the
+     * resources, and that starting, stopping and muting the music never fails, even without an
+     * audio device.
+     */
+    @Test
+    public void testEverySoundHasItsWavAndSoundtrackRespectsMute() {
+        for (Sound s : Sound.values()) {
+            assertNotNull("Missing WAV resource for " + s,
+                    SoundPlayer.class.getResource("/presentation/resources/sounds/" + s.getFileName()));
+        }
+        assertEquals("soundtrack.wav", Sound.SOUNDTRACK.getFileName());
+
+        SoundPlayer player = new SoundPlayer();
+        player.startMusic();
+        player.startMusic();
+        player.stopMusic();
+        player.play(Sound.SOUNDTRACK);
+
+        player.toggleMute();
+        assertTrue(player.isMuted());
+        player.startMusic();
+        player.stopMusic();
+
+        player.toggleMute();
+        assertFalse(player.isMuted());
+        player.stopMusic();
+    }
 }

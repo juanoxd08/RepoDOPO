@@ -40,6 +40,10 @@ public class SoundPlayer {
      * @param sound Sound effect to play
      */
     public void play(Sound sound) {
+        if (sound == Sound.SOUNDTRACK) {
+            startMusic();
+            return;
+        }
         if (muted || sound == null) return;
         Clip clip = audios.get(sound);
         if (clip == null) return;
@@ -55,6 +59,33 @@ public class SoundPlayer {
      */
     public void toggleMute() {
         muted = !muted;
+        if (muted) {
+            stopMusic();
+        } else {
+            startMusic();
+        }
+    }
+
+    /**
+     * Starts looping the background soundtrack, unless sound is muted or the soundtrack is unavailable.
+     * Does nothing if the soundtrack is already playing.
+     */
+    public void startMusic() {
+        if (muted) return;
+        Clip music = audios.get(Sound.SOUNDTRACK);
+        if (music == null || music.isRunning()) return;
+        music.setFramePosition(0);
+        music.loop(Clip.LOOP_CONTINUOUSLY);
+    }
+
+    /**
+     * Stops the background soundtrack if it is playing.
+     */
+    public void stopMusic() {
+        Clip music = audios.get(Sound.SOUNDTRACK);
+        if (music != null && music.isRunning()) {
+            music.stop();
+        }
     }
 
     /**
@@ -67,7 +98,9 @@ public class SoundPlayer {
     }
 
     /*
-     * Loads a single WAV resource into a reusable Clip, logging any missing or unsupported audio.
+     * Loads a single WAV resource into a reusable Clip. If the file is missing, cannot be read, or the
+     * computer has no audio device (AudioSystem.getClip throws IllegalArgumentException when no line
+     * supports the format), the error is logged and that sound is simply not played.
      */
     private void loadClip(Sound sound) {
         String path = SOUNDS_DIR + sound.getFileName();
@@ -82,7 +115,8 @@ public class SoundPlayer {
             Clip clip = AudioSystem.getClip();
             clip.open(audio);
             audios.put(sound, clip);
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException
+                 | IllegalArgumentException ex) {
             Log.record(ex);
         }
     }

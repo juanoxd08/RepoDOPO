@@ -55,10 +55,24 @@ public class PhotoHeadSoccer extends JPanel implements MatchListener {
     }
 
     /**
-     * Toggles global match sound effects on or off.
+     * Toggles all sound on or off: match sound effects and the background soundtrack.
      */
     public void toggleMute() {
         soundPlayer.toggleMute();
+    }
+
+    /**
+     * Starts looping the background soundtrack.
+     */
+    public void startMusic() {
+        soundPlayer.startMusic();
+    }
+
+    /**
+     * Stops the background soundtrack.
+     */
+    public void stopMusic() {
+        soundPlayer.stopMusic();
     }
 
     /**
