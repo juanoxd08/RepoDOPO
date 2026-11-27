@@ -675,7 +675,7 @@ public class DOPOSoccerDomainTest {
     }
 
     /**
-     * Verifies BUG-15: while charging a power shot, the shooter cannot move horizontally.
+     * Verifies that while charging a power shot, the shooter cannot move horizontally.
      *
      * @throws DOPOSoccerException if match configuration is invalid
      */
@@ -713,7 +713,7 @@ public class DOPOSoccerDomainTest {
     }
 
     /**
-     * Verifies BUG-11 and BUG-14: a rival with active aura cannot steal or disturb a charging power shot.
+     * Verifies that a rival with active aura cannot steal or disturb a charging power shot.
      *
      * @throws DOPOSoccerException if match configuration is invalid
      */
@@ -760,7 +760,7 @@ public class DOPOSoccerDomainTest {
     }
 
     /**
-     * Verifies BUG-16: when a player with aura touches the ball behind, above, or in front of
+     * Verifies that when a player with aura touches the ball behind, above, or in front of
      * the head on either side, the charging ball is always held in front of the head toward the rival goal.
      */
     @Test
@@ -961,7 +961,7 @@ public class DOPOSoccerDomainTest {
     }
 
     /**
-     * Verifies BUG-18: while a power shot is charging, an opponent walking into the ball
+     * Verifies that while a power shot is charging, an opponent walking into the ball
      * from either side cannot pass through or remain overlapping the charging ball.
      *
      * @throws DOPOSoccerException if match configuration is invalid
